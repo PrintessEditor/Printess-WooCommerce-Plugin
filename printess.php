@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.24
+ * Version: 1.6.25
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923986dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923987dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -220,6 +220,10 @@ function printess_add_save_token_to_order_items( $item, $cart_item_key, $values 
 		$item->add_meta_data( '_printess-design-id', $values['printess-design-id'], true );
 	}
 
+	if ( ! empty( $values['printess-additional-settings'] ) ) {
+		$item->add_meta_data( 'printess-additional-settings', $values['printess-additional-settings'], true );
+	}
+
 	$product = wc_get_product( $values['product_id'] );
 
 	if ( isset( $product ) ) {
@@ -242,6 +246,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$save_token_to_remove_from_cart = filter_input( INPUT_POST, 'printess-save-token-to-remove-from-cart', FILTER_SANITIZE_SPECIAL_CHARS );
 	$thumbnail_url                  = filter_input( INPUT_POST, 'printess-thumbnail-url', FILTER_VALIDATE_URL );
 	$design_id                      = filter_input( INPUT_POST, 'printess-design-id', FILTER_SANITIZE_SPECIAL_CHARS );
+	$additionalSettings             = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
 
 	if ( empty( $save_token ) || strlen( $save_token ) !== 89 ) {
 		return $cart_item_data;
@@ -255,6 +260,10 @@ function printess_add_cart_item_data( $cart_item_data ) {
 
 	if ( ! empty( $thumbnail_url ) ) {
 		$cart_item_data['printess-thumbnail-url'] = $thumbnail_url;
+	}
+
+	if ( ! empty( $additionalSettings ) ) {
+		$cart_item_data['printess-additional-settings'] = $additionalSettings;
 	}
 
 	if ( ! empty( $design_id ) ) {
@@ -928,7 +937,7 @@ function printess_order_item_get_dropship_product_definition_id( $product, &$ite
 	$save_token          = $item->get_meta( '_printess-save-token', true );
 
 	if ( ! isset( $save_token ) || '' === $save_token ) {
-		return false;
+		return -1;
 	}
 
 	if ( null === $system_dropshipping || '' === $system_dropshipping || ! is_numeric( $system_dropshipping ) ) {
@@ -943,7 +952,7 @@ function printess_order_item_get_dropship_product_definition_id( $product, &$ite
 		$dropshipping = $system_dropshipping;
 	}
 
-	return $dropshipping;
+	return intval("" . $dropshipping);
 }
 
 /**
