@@ -1,0 +1,230 @@
+msgid ""
+msgstr ""
+"Project-Id-Version: Printess Editor\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2023-09-26 09:19+0000\n"
+"PO-Revision-Date: 2023-09-26 11:09+0000\n"
+"Last-Translator: \n"
+"Language-Team: English (United States)\n"
+"Language: en_US\n"
+"Plural-Forms: nplurals=2; plural=n != 1;\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Loco https://localise.biz/\n"
+"X-Loco-Version: 2.6.6; wp-6.3.1\n"
+"X-Domain: printess-editor"
+
+#: printess.php:471
+msgid "Please close this window or tab."
+msgstr "Please close this window or tab."
+
+#: printess.php:688 printess.php:2528
+msgid "Customize"
+msgstr "Customize"
+
+#: printess.php:1398
+msgid "View thumbnail in new window."
+msgstr "View thumbnail in new window."
+
+#: printess.php:1423 printess.php:1540
+msgid "Tracking link"
+msgstr "Tracking link"
+
+#: printess.php:1440 printess.php:1526
+msgid "Tracking"
+msgstr "Tracking"
+
+#: printess.php:1461 printess.php:1529
+msgid "Shipping status"
+msgstr "Shipping status"
+
+#: printess.php:1519
+msgid "Shipping"
+msgstr "Shipping"
+
+#: printess.php:1524
+msgid "Product"
+msgstr "Product"
+
+#: printess.php:1621
+msgid "Edit Customer Design"
+msgstr "Edit Customer Design"
+
+#: printess.php:1630
+msgid "Printess Error Details"
+msgstr "Printess Error Details"
+
+#: printess.php:1636 printess.php:1644 printess.php:1652
+msgid "Printess Production Files"
+msgstr "Printess Production Files"
+
+#: printess.php:1668
+msgid "Approve and send to production."
+msgstr "Approve and send to production."
+
+#: printess.php:1670
+msgid "Processing."
+msgstr "Processing."
+
+#: printess.php:1687
+msgid "Please copy & paste the shop and service tokens from your"
+msgstr "Please copy & paste the shop and service tokens from your"
+
+#: printess.php:1688
+msgid "account page"
+msgstr "account page"
+
+#: printess.php:1694
+msgid "Save Settings"
+msgstr "Save Settings"
+
+#: printess.php:1837
+msgid "Automatic"
+msgstr "Automatic"
+
+#: printess.php:1838
+msgid "Manual"
+msgstr "Manual"
+
+#. section slug .
+#: printess.php:1861
+msgid "Printess Settings"
+msgstr "Printess Settings"
+
+#. setting slug .
+#: printess.php:1870
+msgid "Shop Token"
+msgstr "Shop Token"
+
+#: printess.php:1880
+msgid "Service Token"
+msgstr "Service Token"
+
+#: printess.php:1897
+msgid "Api Domain"
+msgstr "Api Domain"
+
+#: printess.php:1914
+msgid "Embed Html Url"
+msgstr "Embed Html Url"
+
+#: printess.php:1931
+msgid "Ids to hide when showing editor"
+msgstr "Ids to hide when showing editor"
+
+#: printess.php:1948
+msgid "Class names to hide when showing editor"
+msgstr "Class names to hide when showing editor"
+
+#: printess.php:1965
+msgid "Additional classes for customize button"
+msgstr "Additional classes for customize button"
+
+#: printess.php:1982
+msgid "Order Approval Mode"
+msgstr "Order Approval Mode"
+
+#: printess.php:1999
+msgid "Add to cart after customization"
+msgstr "Add to cart after customization"
+
+#: printess.php:2016
+msgid "Show customize button on archive page"
+msgstr "Show customize button on archive page"
+
+#: printess.php:2033
+msgid "Enable Debug Mode"
+msgstr "Enable Debug Mode"
+
+#: printess.php:2071
+msgid "Edit"
+msgstr "Edit"
+
+#: printess.php:2156 printess.php:2180 printess.php:2191
+msgid "No dropshipping"
+msgstr "No dropshipping"
+
+#: printess.php:2158 printess.php:2192
+msgid "Use template settings"
+msgstr "Use template settings"
+
+#: printess.php:2190
+msgid "Defaults"
+msgstr "Defaults"
+
+#: printess.php:2241
+msgid "Dropshipping"
+msgstr "Dropshipping"
+
+#: printess.php:2254
+msgid "Merge Template 1"
+msgstr "Merge Template 1"
+
+#: printess.php:2255
+msgid "The name of the optional 1st merge template within Printess"
+msgstr "The name of the optional 1st merge template within Printess"
+
+#: printess.php:2262
+msgid "Merge Template 2"
+msgstr "Merge Template 2"
+
+#: printess.php:2263
+msgid "The name of the optional 2nd merge template within Printess"
+msgstr "The name of the optional 2nd merge template within Printess"
+
+#: printess.php:2270
+msgid "Merge Template 3"
+msgstr "Merge Template 3"
+
+#: printess.php:2271
+msgid "The name of the optional 3rd merge template within Printess"
+msgstr "The name of the optional 3rd merge template within Printess"
+
+#: printess.php:2282
+msgid "Output Type"
+msgstr "Output Type"
+
+#: printess.php:2283
+msgid "The output file type. Defaults to output a pdf file."
+msgstr "The output file type. Defaults to output a pdf file."
+
+#: printess.php:2296
+msgid "Output DPI"
+msgstr "Output DPI"
+
+#: printess.php:2297
+msgid "The used output dpi. Defaults to 300"
+msgstr "The used output dpi. Defaults to 300"
+
+#: printess.php:2561
+msgid "Saving design and redirecting back to product page..."
+msgstr "Saving design and redirecting back to product page..."
+
+#: printess.php:2670
+msgid "Printess Template"
+msgstr "Printess Template"
+
+#. Name of the plugin
+msgid "Printess Editor"
+msgstr "Printess Editor"
+
+#. Description of the plugin
+msgid ""
+"Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless "
+"possibilities."
+msgstr ""
+"Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless "
+"possibilities."
+
+#. URI of the plugin
+msgid "https://printess.com/kb/integrations/woo-commerce/index.html"
+msgstr "https://printess.com/kb/integrations/woo-commerce/index.html"
+
+#. Author of the plugin
+msgid "Printess"
+msgstr "Printess"
+
+#. Author URI of the plugin
+msgid "https://printess.com"
+msgstr "https://printess.com"
