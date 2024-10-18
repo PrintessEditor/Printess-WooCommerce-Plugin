@@ -835,6 +835,9 @@ function printess_produce( $product, $order_id, $line_item_id, $line_item, $save
 	$order = wc_get_order( $order_id );
 	add_production_vdp_data($order, $line_item, $product, $data);
 
+	//Add file name options to order meta
+	$data["orderMetaData"] = wp_json_encode($data["vdp"]["form"]);
+
 	//In case output file config is provided
 	if(is_array($outputFilesConfig) && count($outputFilesConfig) > 0) {
 		$data["outputFiles"] = array();
@@ -2943,10 +2946,39 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 
 	$product             = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 	$printess_save_token = $cart_item['printess-save-token'];
+	$additional_settings = $cart_item['printess-additional-settings'];
+	$design_name = null;
+
+	if(isset($additional_settings) && !empty($additional_settings)) {
+		$additional_settings = json_decode( $additional_settings, true );
+
+		if(isset($additional_settings) && is_array($additional_settings)) {
+			if(array_key_exists("designName", $additional_settings)) {
+				$design_name = $additional_settings["designName"];
+			}
+
+			if((!isset($design_name) || empty($design_name)) && array_key_exists("designId", $additional_settings)) {
+				$design_name = $additional_settings["designId"];
+			}
+		}
+	}
 
 	if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
+
+		if(isset($design_name) && !empty($design_name)) {
+			?>
+				<div class="wc-block-components-product-details">
+					<span class="wc-block-components-product-details__name"><?php echo esc_html__( 'Saved design name', 'printess-editor' );?></span>
+					<span class="wc-block-components-product-details__value"><?php echo esc_html($design_name);?></span>
+				</div>
+			<?php
+		}
+
 		?>
+
+		<?php echo phpinfo() ?>
+
 		<span> - </span><a href="<?php echo esc_url( add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
 		<?php
 	}
@@ -4518,6 +4550,33 @@ function printess_load_externalscripts() {
 	wp_enqueue_script( 'printess_editor_woo', plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ ), array(), 1, array( 'in_footer' => true ) );
 }
 
+function printess_on_render_block($html, $block) {
+	if(isset($block) && array_key_exists("blockName", $block)) {
+		$myfile = file_put_contents('/home/alex/wooCommerceLog/' . str_replace("/", "_", $block["blockName"]) . ".html", $html.PHP_EOL , FILE_APPEND | LOCK_EX);
+
+		switch($block["blockName"]) {
+			case "woocommerce/aftercartitem": {
+				break;
+			}
+			case "woocommerce/cart-line-items-block": {
+				break;
+			}
+			case "woocommerce/cart-items-block": {
+				break;
+			}
+			default: {
+				$blockname = $block["blockName"];
+				$code = $html;
+				if($Debug < 10) {
+
+				}
+			}
+		}
+	}
+
+	return $html;
+}
+
 /**
  * Registers the plugin hooks used for the Printess integration.
  */
@@ -4574,6 +4633,9 @@ function printess_register_hooks() {
 	// Woodmart Mini Basket.
 	add_filter( 'woocommerce_widget_cart_item_quantity', 'printess_render_edit_button_before_mini_basket_buttons', 10, 2 );
 	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
+
+	//Support for new block system
+	add_filter( 'render_block', 'printess_on_render_block', 9999, 2 );
 
 	// CALLBACKS.
 	add_action(
