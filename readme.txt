@@ -205,4 +205,4 @@ Please check https://printess.com/pricing.html for more details.
 * Fixed: 1.6.24 introduced issues with unparsable product definition id's that are specified directly inside the product configuration.
 
 = 1.6.26 =
-* Fixed: Added support for dropship variables without having to create template form fields
+* Added: Added support for dropship variables without having to create template form fields
