@@ -206,3 +206,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.26 =
 * Added: Added support for dropship variables without having to create template form fields
+
+= 1.6.27 =
+* Fixed: Fixed broken variant handling during saving of designs while not being logged in (variant settings got lost during the login process when saving a design)

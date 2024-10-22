@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.26
+ * Version: 1.6.27
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923988dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923989dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -4154,6 +4154,35 @@ function printess_get_value_from_array( $arr, $key, $default_value = '' ) {
 			return $default_value;
 }
 
+/***
+ * Returns a lookup for product option names and the correponding slug.
+ * @param mixed $product The woocmmerce product object (wp post).
+ *
+ * @return array Associative array that can be used as lookup for product option name -> slug
+ */
+function printess_get_product_options_and_slugs($product) {
+	$productAttributes = printess_get_product_attributes( $product );
+	$ret = array();
+
+	foreach ( $product->get_attributes() as $key => $attribute ) {
+		if(is_string($attribute)) {
+			if(array_key_exists($key, $productAttributes) ) {
+				$ret[$attribute] = $key;
+			}
+		} else {
+			if(method_exists($attribute, "get_data")) {
+				$data = $attribute->get_data();
+
+				if(array_key_exists("name", $data)) {
+					$ret[$data["name"]] = $key;
+				}
+			}
+		}
+	}
+
+	return $ret;
+}
+
 /**
  * Saves a design after login in case the user has not been logged in before
  *
@@ -4195,7 +4224,21 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 
 				printess_unexpire_save_token( $save_token, printess_create_new_unexpiration_date() );
 
-				$design_id = $repo->add_design( $user_id, $save_token, $thumbnail_url, intval( '' . $product_id ), $product->get_data()['name'], $display_name, json_decode( stripslashes( $options ), true ) );
+				$product_options = json_decode( stripslashes( $options ), true );
+				$product_attributes = printess_get_product_options_and_slugs($product);
+				$variant_options = array();
+
+				if ( isset( $product_options ) && !empty($options) ) {
+					foreach ( $product_options as $key => $value ) {
+						if ( strpos( $key, 'attribute_' ) === 0 ) {
+							$variant_options[$key] = $value;
+						} else if(array_key_exists($key, $product_attributes)) {
+							$variant_options["attribute_" . $product_attributes[$key]] = $value;
+						}
+					}
+				}
+
+				$design_id = $repo->add_design( $user_id, $save_token, $thumbnail_url, intval( '' . $product_id ), $product->get_data()['name'], $display_name, $variant_options);
 
 				$design = $repo->get_design( $user_id, $design_id );
 
@@ -4205,30 +4248,18 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 				$product_url = add_query_arg( 'printess-save-token', $design['saveToken'], $permalink );
 				$product_url = add_query_arg( 'design_id', '' . $design['id'], $product_url );
 
-				if ( null !== $options && '' !== $options ) {
-					try {
-						$options = json_decode( stripslashes( $options ), true );
-
-						if ( isset( $options ) ) {
-							foreach ( $options as $key => $value ) {
-								if ( strpos( $key, 'attribute_' ) === 0 ) {
-									$product_url = $product_url . '&' . rawurlencode( $key ) . '=' . rawurlencode( $value );
-								}
-							}
-						}
-					} catch ( \Exception $ex ) {
-						// In case json is invalid, just ignore it.
-					}
+				foreach ( $variant_options as $key => $value ) {
+					$product_url = $product_url . '&' . rawurlencode( $key ) . '=' . rawurlencode( $value );
 				}
 
 				return $product_url;
 			}
 		}
 	} catch ( Exception $ex ) {
-					return $redirect;
+		return $redirect;
 	}
 
-					return $redirect;
+	return $redirect;
 }
 
 /**
