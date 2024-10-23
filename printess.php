@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.27
+ * Version: 1.6.28
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923989dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923990dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -220,6 +220,10 @@ function printess_add_save_token_to_order_items( $item, $cart_item_key, $values 
 		$item->add_meta_data( '_printess-design-id', $values['printess-design-id'], true );
 	}
 
+	if ( ! empty( $values['printess-design-name'] ) ) {
+		$item->add_meta_data( '_printess-design-name', $values['printess-design-name'], true );
+	}
+
 	if ( ! empty( $values['printess-additional-settings'] ) ) {
 		$item->add_meta_data( 'printess-additional-settings', $values['printess-additional-settings'], true );
 	}
@@ -246,6 +250,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$save_token_to_remove_from_cart = filter_input( INPUT_POST, 'printess-save-token-to-remove-from-cart', FILTER_SANITIZE_SPECIAL_CHARS );
 	$thumbnail_url                  = filter_input( INPUT_POST, 'printess-thumbnail-url', FILTER_VALIDATE_URL );
 	$design_id                      = filter_input( INPUT_POST, 'printess-design-id', FILTER_SANITIZE_SPECIAL_CHARS );
+	$design_name                    = filter_input( INPUT_POST, 'printess-design-name', FILTER_SANITIZE_SPECIAL_CHARS );
 	$additionalSettings             = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
 
 	if ( empty( $save_token ) || strlen( $save_token ) !== 89 ) {
@@ -268,6 +273,10 @@ function printess_add_cart_item_data( $cart_item_data ) {
 
 	if ( ! empty( $design_id ) ) {
 		$cart_item_data['printess-design-id'] = $design_id;
+	}
+
+	if ( ! empty( $design_name ) ) {
+		$cart_item_data['printess-design-name'] = $design_name;
 	}
 
 	$cart_item_data['printess_date_added'] = ( new DateTime() )->format( 'Y-m-d H:i:s' );
@@ -1461,6 +1470,7 @@ function printess_hide_order_item_meta_fields( $fields ) {
 		$fields[] = '_printess-result';
 		$fields[] = '_printess-dropshipping';
 		$fields[] = '_printess-design-id';
+		$fields[] = '_printess-design-name';
 		$fields[] = '_printess-valid-until';
 		$fields[] = '_printess-dropship-nonce';
 	}
@@ -1856,6 +1866,8 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 	$printess_tracking_id     = $item->get_meta( '_printess-dropship-tracking-id' );
 	$printess_tracking_url    = $item->get_meta( '_printess-dropship-tracking-url' );
 	$printess_shipping_status = $item->get_meta( '_printess_shipping-status' );
+	$printess_design_name = $item->get_meta( '_printess-design-name' );
+	$printess_design_id = $item->get_meta( '_printess-design-id' );
 
 	if ( ! empty( $printess_save_token ) ) {
 		echo '<hr />';
@@ -4607,6 +4619,10 @@ function printess_register_hooks() {
 	// Woodmart Mini Basket.
 	add_filter( 'woocommerce_widget_cart_item_quantity', 'printess_render_edit_button_before_mini_basket_buttons', 10, 2 );
 	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
+
+	//New theme block supports
+	include_once('includes/printessBlockintegrations.php');
+	printess_register_block_hooks();
 
 	// CALLBACKS.
 	add_action(

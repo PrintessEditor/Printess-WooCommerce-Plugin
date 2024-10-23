@@ -1,1 +1,948 @@
-﻿const initPrintessWCEditor=function(f){const p="form.cart";if(void 0!==window.printessWooEditor)return window.printessWooEditor;function l(e,t,n,s){function r(e,t){(e=document.getElementById(e))&&(e.value=t)}r("printess-save-token",e),t&&r("printess-thumbnail-url",t),n&&r("printess-design-id",n),s&&r("printess-additional-settings",JSON.stringify(s))}function s(g){const v={templateNameOrSaveToken:g.templateNameOrSaveToken||g.product.templateName,stickers:[],legalText:g.legalText||"",legalTextUrl:g.legalUrl||"",snippetPrices:[],chargeEachStickerUsage:!1,hidePricesInEditor:void 0!==f.showPricesInEditor&&!1===f.showPricesInEditor,getProductName:()=>(void 0===f.showProductName||!1!==f.showProductName)&&(g.product&&g.product.name)||"",getPriceInfo:()=>null,getMergeTemplates:()=>{let e=[];if(g.mergeTemplates)if("string"==typeof g.mergeTemplates)try{var t=JSON.parse(g.mergeTemplates);if(!Array.isArray(t))return[];e=[...e,...t.map(e=>"string"==typeof e?{templateName:e}:e)]}catch(e){return[]}else e=[...e,...g.mergeTemplates.map(e=>"string"==typeof e?{templateName:e}:e)];return e=g.product.mergeTemplates?[...e,...g.product.mergeTemplates.map(e=>"string"==typeof e?{templateName:e}:e)]:e},formatMoney:e=>f.priceFormatOptions?(!0===f.priceFormatOptions.currencySymbolOnLeftSide?f.priceFormatOptions.currencySymbol:"")+((e,t,n,s)=>{e=(e+"").replace(/[^0-9+\-Ee.]/g,"");e=isFinite(+e)?+e:0,t=isFinite(+t)?Math.abs(t):0,s=void 0===s?",":s,n=void 0===n?".":n,e=(t?function(e,t){t=Math.pow(10,t);return""+Math.round(e*t)/t}(e,t):""+Math.round(e)).split(".");return 3<e[0].length&&(e[0]=e[0].replace(/\B(?=(?:\d{3})+(?!\d))/g,s)),(e[1]||"").length<t&&(e[1]=e[1]||"",e[1]+=new Array(t-e[1].length+1).join("0")),e.join(n)})(""+e,2,f.priceFormatOptions.decimalSeperator,f.priceFormatOptions.thousandsSeperator)+(!0!==f.priceFormatOptions.currencySymbolOnLeftSide?f.priceFormatOptions.currencySymbol:""):parseFloat(""+e).toFixed(2),onFormFieldChanged:(e,s,t,r)=>{var n=o(g.product);let i=e;n[e]?i=n[e].key:n[t]&&(i=n[t].key);e=document.querySelectorAll('input[type="radio"][name="attribute_'+i+'"], input[type="radio"][name="'+i+'"],input[type="radio"][name="attribute_'+t+'"], input[type="radio"][name="'+t+'"]');if(e&&0<e.length)e.forEach(e=>{e.getAttribute("value")===s||e.getAttribute("value")===r?(e.setAttribute("checked",(!0).toString()),e.checked=!0):(e.removeAttribute("checked"),e.checked=!1)});else{n=document.querySelectorAll('select[name="attribute_'+i+'"],select[name="'+i+'"],select[name="attribute_'+t+'"],select[name="'+t+'"]');if(n&&0<n.length)n.forEach(t=>{if(t.options)for(let e=0;e<t.options.length;++e){var n=t.options[e].getAttribute("value");s==n||r===n?(t.options[e].setAttribute("selected",(!0).toString()),t.options[e].selected=!0,t.setAttribute("value",n),t.value=n):(t.options[e].removeAttribute("selected"),t.options[e].selected=!1)}});else{e=document.querySelectorAll('input[name="attribute_'+i+'"],input[name="'+i+'"],input[name="attribute_'+t+'"],input[name="'+t+'"]');const a=["color","date","datetime-local","email","month","number","tel","text","time","url","week"];e&&0<e.length&&e.forEach(e=>{-1<a.indexOf(e.getAttribute("type").toLowerCase())&&e.setAttribute("value",s)})}}},onAddToBasket:(t,n)=>{if("admin"===f.editorMode)w(t,n);else{let e=null;if(v.designId&&((e=e||{}).designId=v.designId),v.designName&&((e=e||{}).designName=v.designName),l(t,n,v.designId?.toString()??"",e),"buyer"===f.editorMode&&f.addToCartAfterCustomization){var s=document.querySelector(p),r=s.querySelector("[name=add-to-cart]"),i=h(g.product);const o=b(i,g.product),d=new URLSearchParams(window.location.search);o&&document.getElementsByName("variation_id").forEach(e=>e.setAttribute("value",o.id.toString())),r.hasAttribute("disabled")&&r.removeAttribute("disabled"),s&&f.cartUrl&&(void 0!==g.basketItemId&&g.basketItemId||(d.has("design_id")||d.has("design_name"))&&(d.get("design_id")||d.get("design_name")))?(s.setAttribute("action",f.cartUrl),(i=document.createElement("input")).setAttribute("id","printess_ignore_redirect"),i.setAttribute("name","printess_ignore_redirect"),i.value="true",s.appendChild(i)):(i=document.getElementById("printess_ignore_redirect"))&&i.remove();try{var a=y();a&&"function"==typeof a.onAddToBasket&&a.onAddToBasket(t,n)}catch(e){console.error(e)}"submit"===r.type?r.click():s.submit();return{executeBeforeClosing:()=>{if(!0===g.product.ajaxEnabled){let e="";g.product&&g.product.redirectUrl&&(e=g.product.redirectUrl),f.cartUrl&&void 0!==g.basketItemId&&g.basketItemId&&(e=f.cartUrl),(e=f.cartUrl&&(d.has("design_id")||d.has("design_name"))&&(d.get("design_id")||d.get("design_name"))?f.cartUrl:e)&&setTimeout(function(){window.location.href=e},200)}},waitUntilClosingMS:1e3}}}},getCurrentFormFieldValues:()=>h(g.product),getPriceForFormFields:e=>{e=b(e,g.product);return e?parseFloat(e.price):g.product.price},getFormFieldMappings:()=>{let e={};if(g.optionValueMappings&&"string"==typeof g.optionValueMappings)try{e=JSON.parse(g.optionValueMappings)}catch(e){console.error("Unable to parse form field mappings: "+e)}return e},onRenderFirstPageImage:e=>{if(v.cameFromSave&&v.lastSaveSaveToken){try{v.onSave(v.lastSaveSaveToken,e,!0)}catch(e){console.error(e)}v.cameFromSave=!1,v.lastSaveSaveToken=""}},onSave:(d,l,e=!1)=>{v.cameFromSave=!0,v.lastSaveSaveToken=d;const o=h(g.product),c=b(o,g.product);if(e){if("admin"===f.editorMode)return void w(d,l);const u=()=>{},m=e=>{var t,n,s,r,i,a,o;e&&e.trim()?(n=f.userMessages&&f.userMessages.savingDesign?f.userMessages.savingDesign:"Saving design to your list of saved designs",(s=document.getElementById("printess_information_overlay_background"))&&((t=document.getElementById("printess_information_overlay_text"))&&(t.innerHTML=n),s.classList.add("visible"),s.getAttribute("data-initialized")||(s.setAttribute("data-initialized","true"),document.body.appendChild(s))),t=d,n=l,s=g.product.id,r=e,e=v.designId,i=h(g.product,!1),a=(e,t)=>{E(),v.designName=e,v.designId=t;try{var n=y();n&&"function"==typeof n.onSave&&n.onSave(d,l)}catch(e){console.error(e)}},o=e=>{E(),alert(e),_(v.designName,f.userIsLoggedIn?m:p,u)},t={saveToken:t,thumbnailUrl:n,productId:s,displayName:r,options:JSON.stringify(i)},"string"==typeof e&&e?(n=parseInt(e),!isNaN(n)&&0<n&&(t.designId=n)):"number"==typeof e&&e&&!isNaN(e)&&0<e&&(t.designId=e),fetch("/index.php/wp-json/printess/v1/design/add",{method:"POST",mode:"cors",cache:"no-cache",credentials:"same-origin",headers:{"Content-Type":"application/json","X-WP-Nonce":f.nonce},redirect:"follow",referrerPolicy:"no-referrer",body:JSON.stringify(t)}).then(e=>(e.ok?e.json().then(e=>{"function"==typeof a&&a(r,e)}):(console.error(e.statusText),"function"==typeof o&&o(f.userMessages&&f.userMessages.saveError?f.userMessages.saveError:"There was an error while trying to save your design")),e)).catch(function(e){console.log(e),"function"==typeof o&&o(f.userMessages&&f.userMessages.saveError?f.userMessages.saveError:"There was an error while trying to save your design")})):(alert(f.userMessages&&f.userMessages.noDisplayName?f.userMessages.noDisplayName:"Please provide a display name."),_(v.designName,f.userIsLoggedIn?m:p,u))},p=e=>{var t,n,s,r,i,a;[t,n,s,r,i,a=null]=[e,g.product.id,c?c.id:null,d,l,o],t&&t.trim()&&f.accountPageUrl?(n=f.accountPageUrl.replace("__ProductId__",""+n.toString()).replace("__SaveToken__",""+r).replace("__ThumbnailUrl__",encodeURIComponent(i)).replace("__VariantId__",""+s).replace("__Options__",encodeURIComponent(JSON.stringify(a??{}))).replace("__Token__",encodeURIComponent(f.urlToken||"")).replace("__DisplayName__",""+t.trim()),window.location.href=n):(alert(f.userMessages&&f.userMessages.noDisplayName?f.userMessages.noDisplayName:"Please provide a display name."),_(e,f.userIsLoggedIn?m:p,u))};_(v.designName,f.userIsLoggedIn?m:p,u)}else{var t="renderFirstPageImage";var n=null;const s=document.getElementById("printess");s&&setTimeout(function(){s.contentWindow.postMessage({cmd:t,properties:n||{}},"*")},0)}},getBasketId:()=>g.basketId,getUserId:()=>g.userId,editorClosed:e=>{var t;r.hide(),v.designId=null,v.designName=null,e&&l("","","",null),"buyer"===f.editorMode?"undefined"!=typeof URLSearchParams&&(t=new URLSearchParams(window.location.search),e&&t.has("design_id")||t.has("design_name")||t.has("printess-save-token"))&&(t.delete("design_id"),t.delete("design_name"),t.delete("printess-save-token"),window.location.search=t.toString()):(e=f.userMessages&&f.userMessages.closeWindow?f.userMessages.closeWindow:"Please close this window or tab.",alert(e))}};var e=h(g.product);(e=b(e,g.product))&&e.templateName&&(v.templateNameOrSaveToken=e.templateName);var t=(e=new URLSearchParams(window.location.search)).get("printess-save-token")||e.get("printess_save_token"),n=e.get("design_name"),e=e.get("design_id");return t&&(v.templateNameOrSaveToken=t),n&&(v.designName=n),e&&(v.designId=parseInt(e)),v}function g(e){let t="";var n=b(h(e),e),s=!(!e.variants||void 0===e.variants.find(e=>e.templateName));(t=null!=n&&n.templateName?n.templateName:t)||s||(t=e.templateName),I(t&&0<t.length)}function v(n){window.jQuery?window.jQuery("form").on("found_variation",(e,t)=>{g(n)}):setTimeout(v,100)}const y=()=>window&&window.printessGlobalConfig?window.printessGlobalConfig:{},h=function(t,n=!0){var s={},e={"add-to-cart":!0,product_id:!0,quantity:!0,variation_id:!0},r=y();if(r&&r.formFields)for(const c in r.formFields)r.hasOwnProperty(c)&&(s[c]=r.formFields[c]);function i(e){return n&&0===e.indexOf("attribute_")&&(e=e.substring(10,e.length)),e=t.attributes&&t.attributes[e]?t.attributes[e].name:e}var a=document.querySelector(p);if(a){for(const u of new FormData(a).entries()){var o=i(u[0]);0<o.length&&"_"!==o[0]&&!e[o]&&0!==o.indexOf("printess-")&&(s[o]=u[1].toString())}var d,l=a.querySelectorAll('input[type="checkbox"]');if(l&&0<l.length)for(let e=0;e<l.length;++e)void 0!==l[e].checked&&!0===l[e].checked&&0<(d=i(l[e].name)).length&&"_"!==d[0]&&(s[d]="true")}return s},o=e=>{var t={};if(e&&e.attributes)for(const n in e.attributes)e.attributes.hasOwnProperty(n)&&(t[e.attributes[n].name]=e.attributes[n]);return t},b=function(e,t){let n=t.variants?t.variants[0]:null;var s=o(t),r=[];for(const i in e)e.hasOwnProperty(i)&&s[i]&&r.push({key:s[i].key,value:e[i]});if(t.variants){let e=t.variants;r.forEach(t=>{e=e.filter(e=>e.attributes[t.key]===t.value)}),0<e.length&&(n=e[0])}return n},c=()=>{var e=document.getElementById("printess_overlay_background");e&&e.classList.remove("visible")},_=(e,n,t)=>{var s=document.getElementById("printess_show_if_not_logged_in");const r=document.getElementById("printess_overlay_background");let i=()=>{};const a=e=>{e.srcElement&&("input"===e.srcElement.nodeName.toLowerCase()||null!=e.srcElement.closest("div.printess_overlay_background"))||(e.preventDefault(),e.stopPropagation())},o=()=>{if(c(),i(),"function"==typeof n){let e="";var t=document.getElementById("printess_designnameedit");t&&(e=t.value),n(e)}},d=()=>{c(),i(),"function"==typeof t&&t()};i=()=>{var e=document.getElementById("printess_save_design_button"),e=(e&&e.removeEventListener("click",o),document.getElementById("printess_cancel_button"));e&&e.removeEventListener("click",d),r&&(r.removeEventListener("mousedown",a),r.removeEventListener("mouseup",a),r.removeEventListener("mousemove",a))},s&&(f.userIsLoggedIn?s.classList.add("logged_in"):s.classList.remove("logged_in"));var s=document.getElementById("printess_show_if_no_design_name"),l=document.getElementById("printess_show_if_design_name"),s=(s&&l&&(e?(s.classList.remove("visible"),l.classList.add("visible")):(s.classList.add("visible"),l.classList.remove("visible"))),document.getElementById("printess_designnameedit")),l=(s&&(s.value=e||""),r&&(r.addEventListener("mousedown",a),r.addEventListener("mouseup",a),r.addEventListener("mousemove",a),r.getAttribute("data-initialized")||(document.body.appendChild(r),r.setAttribute("data-initialized","true")),r.classList.add("visible")),document.getElementById("printess_save_design_button")),s=(l&&l.addEventListener("click",o),document.getElementById("printess_cancel_button"));s&&s.addEventListener("click",d)},E=()=>{var e=document.getElementById("printess_information_overlay_background");e&&e.classList.remove("visible")},w=(e,t)=>{var n=document.getElementById("printess-admin-save"),s=document.getElementById("printess-loading-message"),r=document.getElementById("printess-saving-message");s?.style.setProperty("display","none"),r?.style.setProperty("display","block"),n?(n.href+="&pst="+e,n.href+="&ptu="+encodeURI(t),n.click()):alert("Error: Redirect link not found. Unable to save changes")},I=function(t){var e=document.getElementsByName("printess-customize-button"),n=document.querySelector(p+" button.single_add_to_cart_button");e&&0!==e.length&&(n&&(t?n.setAttribute("disabled","disabled"):n.removeAttribute("disabled"),n.style.display=t?"none":"inline-block"),e.forEach(e=>e.style.display=t?"inline-block":"none"))},r={show:function(e){if(!(e=>{var t=o(e),n=[],s=h(e);for(const r in s)s.hasOwnProperty(r)&&t[r]&&n.push({key:t[r].key,value:s[r]});for(const i in n)if(n.hasOwnProperty(i)&&!n[i].value)return!0;return!1})(e.product)){var e=s(e),t=(f.idsToHide&&f.idsToHide.forEach(e=>{e=document.getElementById(e);e&&e.classList.add("printess-hide")}),f.classesToHide&&f.classesToHide.forEach(e=>{e=document.getElementsByClassName(e);if(e&&e.length)for(const t of e)t.classList.add("printess-hide")}),y());if(t&&t.attachParams)for(const n in t.attachParams)t.attachParams.hasOwnProperty(n)&&(f.attachParams||(f.attachParams={}),f.attachParams[n]=t.attachParams[n]);"function"==typeof window.initPrintessEditor&&window.initPrintessEditor(f).show(e)}},hide:function(){f.idsToHide.forEach(e=>{e=document.getElementById(e);e&&e.classList.remove("printess-hide")}),f.classesToHide.forEach(e=>{e=document.getElementsByClassName(e);if(e&&e.length)for(const t of e)t.classList.remove("printess-hide")})},initProductPage:function(e,t,n,s="Customize",r,i=p){i=document.querySelector(i||p);if(i){{var a=t;var o=document.createElement("input"),d=document.createElement("input"),l=document.createElement("input"),c=document.createElement("input"),u=document.createElement("input");const m=document.createElement("button");o.setAttribute("id","printess-save-token"),o.setAttribute("name","printess-save-token"),o.setAttribute("type","hidden"),u.setAttribute("id","printess-additional-settings"),u.setAttribute("name","printess-additional-settings"),u.setAttribute("type","hidden"),d.setAttribute("id","printess-save-token-to-remove-from-cart"),d.setAttribute("name","printess-save-token-to-remove-from-cart"),d.setAttribute("type","hidden"),d.setAttribute("value",a||""),l.setAttribute("id","printess-thumbnail-url"),l.setAttribute("name","printess-thumbnail-url"),l.setAttribute("type","hidden"),c.setAttribute("id","printess-design-id"),c.setAttribute("name","printess-design-id"),c.setAttribute("type","hidden"),m.setAttribute("id","printess-customize-button"),m.setAttribute("name","printess-customize-button"),m.setAttribute("type","button"),m.setAttribute("onclick","showPrintessEditor();"),m.classList.add("wp-element-button","single_add_to_cart_button","button","alt"),f.customizeButtonClasses&&f.customizeButtonClasses.split(" ").forEach(e=>{(e=(e||"").trim())&&m.classList.add(e)}),m.appendChild(document.createTextNode(s||"Customize")),n&&m.classList.add(n);a=document.querySelector(p+" button.single_add_to_cart_button");(a&&a.parentElement?a.parentElement:i).appendChild(m),i.appendChild(o),i.appendChild(d),i.appendChild(l),i.appendChild(c),i.appendChild(u)}t&&I(!0)}v(e),g(e);s=new URLSearchParams(window.location.search).get("printess-save-token");s&&"function"==typeof r&&r(s)}};return window.printessWooEditor=r};
+﻿;
+;
+const initPrintessWCEditor = function (printessSettings) {
+    const CART_FORM_SELECTOR = "form.cart";
+    if (typeof window["printessWooEditor"] !== "undefined") {
+        return window["printessWooEditor"];
+    }
+    const getGlobalConfig = () => {
+        return (window && window["printessGlobalConfig"] ? window["printessGlobalConfig"] : {});
+    };
+    const getCurrentProductOptionValues = function (product, $remove_attribute_prefix = true) {
+        const ret = {};
+        const blackList = { "add-to-cart": true, "product_id": true, "quantity": true, "variation_id": true };
+        const globalConfig = getGlobalConfig();
+        if (globalConfig && globalConfig.formFields) {
+            for (const property in globalConfig.formFields) {
+                if (globalConfig.hasOwnProperty(property)) {
+                    ret[property] = globalConfig.formFields[property];
+                }
+            }
+        }
+        const form = document.querySelector(CART_FORM_SELECTOR);
+        const parseName = function (name) {
+            if ($remove_attribute_prefix && name.indexOf("attribute_") === 0) {
+                name = name.substring(10, name.length);
+            }
+            if (product.attributes && product.attributes[name]) {
+                name = product.attributes[name].name;
+            }
+            return name;
+        };
+        if (form) {
+            const formData = new FormData(form);
+            for (const pair of formData.entries()) {
+                const name = parseName(pair[0]);
+                if (name.length > 0 && name[0] !== "_" && !blackList[name] && name.indexOf("printess-") !== 0) {
+                    ret[name] = pair[1].toString();
+                }
+            }
+            //Get all checkboxes that are checked
+            const checkBoxes = form.querySelectorAll('input[type="checkbox"]');
+            if (checkBoxes && checkBoxes.length > 0) {
+                for (let i = 0; i < checkBoxes.length; ++i) {
+                    if (typeof checkBoxes[i].checked !== "undefined" && checkBoxes[i].checked === true) {
+                        const name = parseName(checkBoxes[i].name);
+                        if (name.length > 0 && name[0] !== "_") {
+                            ret[name] = "true";
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    };
+    const getAttributeLookup = (product) => {
+        const ret = {};
+        if (product && product.attributes) {
+            for (const attributeKey in product.attributes) {
+                if (product.attributes.hasOwnProperty(attributeKey)) {
+                    ret[product.attributes[attributeKey].name] = product.attributes[attributeKey];
+                }
+            }
+        }
+        return ret;
+    };
+    const getCurrentVariant = function (productOptionValues, product) {
+        let ret = product.variants ? product.variants[0] : null;
+        const attributeLookup = getAttributeLookup(product);
+        const variantSpecificValues = [];
+        for (const name in productOptionValues) {
+            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name]) {
+                variantSpecificValues.push({ key: attributeLookup[name].key, value: productOptionValues[name] });
+            }
+        }
+        if (product.variants) {
+            let variants = product.variants;
+            variantSpecificValues.forEach((vSv) => {
+                variants = variants.filter((variant) => {
+                    return variant.attributes[vSv.key] === vSv.value;
+                });
+            });
+            if (variants.length > 0) {
+                ret = variants[0];
+            }
+        }
+        return ret;
+    };
+    const updatePrintessValues = function (saveToken, thumbnailUrl, designId, designName) {
+        const updateInput = function (id, value) {
+            const input = document.getElementById(id);
+            if (input) {
+                input.value = value;
+            }
+        };
+        updateInput("printess-save-token", saveToken);
+        if (thumbnailUrl) {
+            updateInput("printess-thumbnail-url", thumbnailUrl);
+        }
+        if (designId) {
+            updateInput("printess-design-id", designId);
+        }
+        if (designName) {
+            updateInput("printess-design-name", designName);
+        }
+    };
+    const hideSaveDialog = () => {
+        const dialog = document.getElementById("printess_overlay_background");
+        if (dialog) {
+            dialog.classList.remove("visible");
+        }
+    };
+    const showSaveDialog = (designName, saveCallback, cancelCallback) => {
+        const loggedInBlock = document.getElementById("printess_show_if_not_logged_in");
+        const dialog = document.getElementById("printess_overlay_background");
+        let removeEventHandlers = () => { };
+        const cancelMouse = (e) => {
+            if (!e.srcElement || e.srcElement.nodeName.toLowerCase() !== "input" && e.srcElement.closest("div.printess_overlay_background") == null) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+        const internalSaveCallback = () => {
+            hideSaveDialog();
+            removeEventHandlers();
+            if (typeof saveCallback === "function") {
+                let dName = "";
+                const designNameEdit = document.getElementById("printess_designnameedit");
+                if (designNameEdit) {
+                    dName = designNameEdit.value;
+                }
+                saveCallback(dName);
+            }
+        };
+        const internalCancelCallback = () => {
+            hideSaveDialog();
+            removeEventHandlers();
+            if (typeof cancelCallback === "function") {
+                cancelCallback();
+            }
+        };
+        removeEventHandlers = () => {
+            const saveButton = document.getElementById("printess_save_design_button");
+            if (saveButton) {
+                saveButton.removeEventListener("click", internalSaveCallback);
+            }
+            const cancelButton = document.getElementById("printess_cancel_button");
+            if (cancelButton) {
+                cancelButton.removeEventListener("click", internalCancelCallback);
+            }
+            if (dialog) {
+                dialog.removeEventListener("mousedown", cancelMouse);
+                dialog.removeEventListener("mouseup", cancelMouse);
+                dialog.removeEventListener("mousemove", cancelMouse);
+            }
+        };
+        if (loggedInBlock) {
+            if (printessSettings.userIsLoggedIn) {
+                loggedInBlock.classList.add("logged_in");
+            }
+            else {
+                loggedInBlock.classList.remove("logged_in");
+            }
+        }
+        let desingNameEditDiv = document.getElementById("printess_show_if_no_design_name");
+        let desingNameEditDiv2 = document.getElementById("printess_show_if_design_name");
+        if (desingNameEditDiv && desingNameEditDiv2) {
+            if (!designName) {
+                desingNameEditDiv.classList.add("visible");
+                desingNameEditDiv2.classList.remove("visible");
+            }
+            else {
+                desingNameEditDiv.classList.remove("visible");
+                desingNameEditDiv2.classList.add("visible");
+            }
+        }
+        const designNameEdit = document.getElementById("printess_designnameedit");
+        if (designNameEdit) {
+            designNameEdit.value = designName || "";
+        }
+        if (dialog) {
+            dialog.addEventListener("mousedown", cancelMouse);
+            dialog.addEventListener("mouseup", cancelMouse);
+            dialog.addEventListener("mousemove", cancelMouse);
+            if (!dialog.getAttribute("data-initialized")) {
+                document.body.appendChild(dialog);
+                dialog.setAttribute("data-initialized", "true");
+            }
+            dialog.classList.add("visible");
+        }
+        const saveButton = document.getElementById("printess_save_design_button");
+        if (saveButton) {
+            saveButton.addEventListener("click", internalSaveCallback);
+        }
+        const cancelButton = document.getElementById("printess_cancel_button");
+        if (cancelButton) {
+            cancelButton.addEventListener("click", internalCancelCallback);
+        }
+    };
+    const postMessage = (cmd, properties) => {
+        const iFrame = document.getElementById("printess");
+        if (iFrame) {
+            setTimeout(function () {
+                iFrame.contentWindow.postMessage({
+                    cmd: cmd,
+                    properties: properties || {}
+                }, "*");
+            }, 0);
+        }
+    };
+    const showInformationOverlay = (text) => {
+        const overlay = document.getElementById("printess_information_overlay_background");
+        if (overlay) {
+            const content = document.getElementById("printess_information_overlay_text");
+            if (content) {
+                content.innerHTML = text;
+            }
+            overlay.classList.add("visible");
+            if (!overlay.getAttribute("data-initialized")) {
+                overlay.setAttribute("data-initialized", "true");
+                document.body.appendChild(overlay);
+            }
+        }
+    };
+    const hideInformationOverlay = () => {
+        const overlay = document.getElementById("printess_information_overlay_background");
+        if (overlay) {
+            overlay.classList.remove("visible");
+        }
+    };
+    const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError) => {
+        const body = {
+            "saveToken": saveToken,
+            "thumbnailUrl": thumbnailUrl,
+            "productId": productId,
+            "displayName": designName,
+            "options": JSON.stringify(options)
+        };
+        if (typeof designId === "string" && designId) {
+            const id = parseInt(designId);
+            if (!isNaN(id) && id > 0) {
+                body["designId"] = id;
+            }
+        }
+        else if (typeof designId === "number" && designId) {
+            if (!isNaN(designId) && designId > 0) {
+                body["designId"] = designId;
+            }
+        }
+        const response = fetch("/index.php/wp-json/printess/v1/design/add", {
+            method: "POST",
+            mode: "cors",
+            cache: "no-cache",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+                "X-WP-Nonce": printessSettings.nonce
+            },
+            redirect: "follow",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify(body),
+        }).then((result) => {
+            if (!result.ok) {
+                console.error(result.statusText);
+                if (typeof onError === "function") {
+                    onError(printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design");
+                }
+            }
+            else {
+                result.json().then((json) => {
+                    if (typeof onOk === "function") {
+                        onOk(designName, json);
+                    }
+                });
+            }
+            return result;
+        }).catch(function (error) {
+            console.log(error);
+            if (typeof onError === "function") {
+                onError(printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design");
+            }
+        });
+    };
+    const loginAndSave = (displayName, productId, variantId, saveToken, thumbnailUrl, options = null) => {
+        if (!displayName || !displayName.trim()) {
+            return false;
+        }
+        if (!printessSettings.accountPageUrl) {
+            return false;
+        }
+        const url = printessSettings.accountPageUrl.replace("__ProductId__", "" + productId.toString())
+            .replace("__SaveToken__", "" + saveToken)
+            .replace("__ThumbnailUrl__", encodeURIComponent(thumbnailUrl))
+            .replace("__VariantId__", "" + variantId)
+            .replace("__Options__", encodeURIComponent(JSON.stringify(options ?? {})))
+            .replace("__Token__", encodeURIComponent(printessSettings.urlToken || ""))
+            .replace("__DisplayName__", "" + displayName.trim());
+        window.location.href = url;
+        return true;
+    };
+    const saveAdminSaveToken = (saveToken, thumbnail) => {
+        const redirectLink = document.getElementById("printess-admin-save");
+        const loadingMessage = document.getElementById("printess-loading-message");
+        const savingMessage = document.getElementById("printess-saving-message");
+        loadingMessage?.style.setProperty("display", "none");
+        savingMessage?.style.setProperty("display", "block");
+        if (redirectLink) {
+            redirectLink.href += "&pst=" + saveToken;
+            redirectLink.href += "&ptu=" + encodeURI(thumbnail);
+            redirectLink.click();
+        }
+        else {
+            alert("Error: Redirect link not found. Unable to save changes");
+        }
+    };
+    const numberFormat = (number, decimals, decimalSeperator, thousandsSeperator) => {
+        //Src: http://phpjs.org/functions/number_format/
+        // Strip all characters but numerical ones.
+        number = (number + '').replace(/[^0-9+\-Ee.]/g, '');
+        var n = !isFinite(+number) ? 0 : +number, prec = !isFinite(+decimals) ? 0 : Math.abs(decimals), sep = (typeof thousandsSeperator === 'undefined') ? ',' : thousandsSeperator, dec = (typeof decimalSeperator === 'undefined') ? '.' : decimalSeperator, s, toFixedFix = function (n, prec) {
+            var k = Math.pow(10, prec);
+            return '' + Math.round(n * k) / k;
+        };
+        // Fix for IE parseFloat(0.55).toFixed(0) = 0;
+        s = (prec ? toFixedFix(n, prec) : '' + Math.round(n)).split('.');
+        if (s[0].length > 3) {
+            s[0] = s[0].replace(/\B(?=(?:\d{3})+(?!\d))/g, sep);
+        }
+        if ((s[1] || '').length < prec) {
+            s[1] = s[1] || '';
+            s[1] += new Array(prec - s[1].length + 1).join('0');
+        }
+        return s.join(dec);
+    };
+    const createShopContext = function (settings) {
+        const context = {
+            templateNameOrSaveToken: settings.templateNameOrSaveToken || settings.product.templateName,
+            stickers: [],
+            legalText: settings.legalText || "",
+            legalTextUrl: settings.legalUrl || "",
+            snippetPrices: [],
+            chargeEachStickerUsage: false,
+            hidePricesInEditor: typeof printessSettings.showPricesInEditor !== "undefined" && printessSettings.showPricesInEditor === false,
+            getProductName: () => {
+                if (typeof printessSettings.showProductName !== "undefined" && printessSettings.showProductName === false) {
+                    return "";
+                }
+                return settings.product ? settings.product.name || "" : "";
+            },
+            getPriceInfo: () => { return null; /*IPriceInfo*/ },
+            getMergeTemplates: () => {
+                let ret = [];
+                if (settings.mergeTemplates) {
+                    if (typeof settings.mergeTemplates === "string") {
+                        try {
+                            const merge = JSON.parse(settings.mergeTemplates);
+                            if (Array.isArray(merge)) {
+                                ret = [...ret, ...merge.map((x) => {
+                                        if (typeof x === "string") {
+                                            return {
+                                                templateName: x
+                                            };
+                                        }
+                                        else {
+                                            return x;
+                                        }
+                                    })];
+                            }
+                            else {
+                                return [];
+                            }
+                        }
+                        catch (e) {
+                            return [];
+                        }
+                    }
+                    else {
+                        ret = [...ret, ...settings.mergeTemplates.map((x) => {
+                                if (typeof x === "string") {
+                                    return {
+                                        templateName: x
+                                    };
+                                }
+                                else {
+                                    return x;
+                                }
+                            })];
+                    }
+                }
+                if (settings.product.mergeTemplates) {
+                    ret = [...ret, ...settings.product.mergeTemplates.map((x) => {
+                            if (typeof x === "string") {
+                                return {
+                                    templateName: x
+                                };
+                            }
+                            else {
+                                return x;
+                            }
+                        })];
+                }
+                return ret;
+            },
+            formatMoney: (price) => {
+                if (printessSettings.priceFormatOptions) {
+                    return (printessSettings.priceFormatOptions.currencySymbolOnLeftSide === true ? printessSettings.priceFormatOptions.currencySymbol : "")
+                        + numberFormat('' + price, 2, printessSettings.priceFormatOptions.decimalSeperator, printessSettings.priceFormatOptions.thousandsSeperator)
+                        + (printessSettings.priceFormatOptions.currencySymbolOnLeftSide !== true ? printessSettings.priceFormatOptions.currencySymbol : "");
+                }
+                else {
+                    return parseFloat("" + price).toFixed(2);
+                }
+            },
+            onFormFieldChanged: (formFieldName, formFieldValue, formFieldLabel, valueLabel) => {
+                const attributeLookup = getAttributeLookup(settings.product);
+                let transformedName = formFieldName;
+                if (attributeLookup[formFieldName]) {
+                    transformedName = attributeLookup[formFieldName].key;
+                }
+                else if (attributeLookup[formFieldLabel]) {
+                    transformedName = attributeLookup[formFieldLabel].key;
+                }
+                const radios = document.querySelectorAll(`input[type="radio"][name="attribute_` + transformedName + `"], input[type="radio"][name="` + transformedName + `"],input[type="radio"][name="attribute_` + formFieldLabel + `"], input[type="radio"][name="` + formFieldLabel + `"]`);
+                if (radios && radios.length > 0) {
+                    radios.forEach((el) => {
+                        if (el.getAttribute("value") === formFieldValue || el.getAttribute("value") === valueLabel) {
+                            el.setAttribute('checked', true.toString());
+                            el.checked = true;
+                        }
+                        else {
+                            el.removeAttribute('checked');
+                            el.checked = false;
+                        }
+                    });
+                    return;
+                }
+                const selects = document.querySelectorAll(`select[name="attribute_` + transformedName + `"],select[name="` + transformedName + `"],select[name="attribute_` + formFieldLabel + `"],select[name="` + formFieldLabel + `"]`);
+                if (selects && selects.length > 0) {
+                    selects.forEach((el) => {
+                        if (el.options) {
+                            for (let i = 0; i < el.options.length; ++i) {
+                                const value = el.options[i].getAttribute('value');
+                                if (formFieldValue == value || valueLabel === value) {
+                                    el.options[i].setAttribute('selected', true.toString());
+                                    el.options[i].selected = true;
+                                    el.setAttribute('value', value);
+                                    el.value = value;
+                                }
+                                else {
+                                    el.options[i].removeAttribute('selected');
+                                    el.options[i].selected = false;
+                                }
+                            }
+                        }
+                    });
+                    return;
+                }
+                //Text inputs
+                const inputs = document.querySelectorAll(`input[name="attribute_` + transformedName + `"],input[name="` + transformedName + `"],input[name="attribute_` + formFieldLabel + `"],input[name="` + formFieldLabel + `"]`);
+                const textInputs = ["color", "date", "datetime-local", "email", "month", "number", "tel", "text", "time", "url", "week"];
+                if (inputs && inputs.length > 0) {
+                    inputs.forEach((el) => {
+                        if (textInputs.indexOf(el.getAttribute("type").toLowerCase()) > -1) {
+                            el.setAttribute("value", formFieldValue);
+                        }
+                    });
+                }
+            },
+            onAddToBasket: (saveToken, thumbnailUrl) => {
+                if (printessSettings.editorMode === "admin") {
+                    saveAdminSaveToken(saveToken, thumbnailUrl);
+                    return;
+                }
+                updatePrintessValues(saveToken, thumbnailUrl, context.designId?.toString() ?? "", context.designName?.toString() ?? "");
+                if (printessSettings.editorMode === "buyer" && printessSettings.addToCartAfterCustomization) {
+                    const cartForm = document.querySelector(CART_FORM_SELECTOR);
+                    const addToCartElement = cartForm.querySelector("[name=add-to-cart]");
+                    const currentFormFieldValues = getCurrentProductOptionValues(settings.product);
+                    const selectedVariant = getCurrentVariant(currentFormFieldValues, settings.product);
+                    const params = new URLSearchParams(window.location.search);
+                    //printess_show_information_overlay("<?php echo esc_html__( 'Adding item to cart.', 'printess-editor' ); ?>");
+                    if (selectedVariant) {
+                        document.getElementsByName("variation_id").forEach((el) => el.setAttribute("value", selectedVariant.id.toString()));
+                    }
+                    //remove the disabled attribute from the add to cart button
+                    if (addToCartElement.hasAttribute("disabled")) {
+                        addToCartElement.removeAttribute("disabled");
+                    }
+                    //in case this is editing of a cart item or a saved design forward to the cart
+                    if (cartForm && printessSettings.cartUrl && ((typeof settings.basketItemId != "undefined" && settings.basketItemId) || ((params.has("design_id") || params.has("design_name")) && (params.get("design_id") || params.get("design_name"))))) {
+                        cartForm.setAttribute("action", printessSettings.cartUrl);
+                        //we have to tell the backend to ignore redirects
+                        const ignoreInput = document.createElement("input");
+                        ignoreInput.setAttribute("id", "printess_ignore_redirect");
+                        ignoreInput.setAttribute("name", "printess_ignore_redirect");
+                        ignoreInput.value = "true";
+                        cartForm.appendChild(ignoreInput);
+                    }
+                    else {
+                        const ignoreInput = document.getElementById("printess_ignore_redirect");
+                        if (ignoreInput) {
+                            ignoreInput.remove();
+                        }
+                    }
+                    try {
+                        const globalConfig = getGlobalConfig();
+                        if (globalConfig && typeof globalConfig.onAddToBasket === "function") {
+                            globalConfig.onAddToBasket(saveToken, thumbnailUrl);
+                        }
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                    if (addToCartElement.type === "submit") {
+                        addToCartElement.click();
+                    }
+                    else {
+                        cartForm.submit();
+                    }
+                    const changePageAfterSubmit = () => {
+                        //Redirect to url in case ajax is enabled
+                        if (settings.product.ajaxEnabled === true) {
+                            let redirectUrl = "";
+                            //In case the product has a redirect url set, go to there
+                            if (settings.product && settings.product.redirectUrl) {
+                                redirectUrl = settings.product.redirectUrl;
+                            }
+                            //In case we are editing a cart item, go to the cart
+                            if (printessSettings.cartUrl && typeof settings.basketItemId !== "undefined" && settings.basketItemId) {
+                                redirectUrl = printessSettings.cartUrl;
+                            }
+                            //In case we are adding a saved design to the cart, got to the cart. (We can determine if this is a saved design from the saved design area by checkking the url)
+                            if (printessSettings.cartUrl && ((params.has("design_id") || params.has("design_name")) && (params.get("design_id") || params.get("design_name")))) {
+                                redirectUrl = printessSettings.cartUrl;
+                            }
+                            if (redirectUrl) {
+                                setTimeout(function () {
+                                    window.location.href = redirectUrl;
+                                }, 200);
+                            }
+                        }
+                    };
+                    return {
+                        "executeBeforeClosing": changePageAfterSubmit,
+                        "waitUntilClosingMS": 1000
+                    };
+                }
+            },
+            getCurrentFormFieldValues: () => {
+                return getCurrentProductOptionValues(settings.product);
+            },
+            getPriceForFormFields: (formFields) => {
+                const variant = getCurrentVariant(formFields, settings.product);
+                if (variant) {
+                    return parseFloat(variant.price);
+                }
+                else {
+                    return settings.product.price;
+                }
+            },
+            getFormFieldMappings: () => {
+                let ret = {};
+                if (settings.optionValueMappings && typeof settings.optionValueMappings === "string") {
+                    try {
+                        ret = JSON.parse(settings.optionValueMappings);
+                    }
+                    catch (e) {
+                        console.error("Unable to parse form field mappings: " + e);
+                    }
+                }
+                return ret;
+            },
+            onRenderFirstPageImage: (thumbnailUrl) => {
+                if (context.cameFromSave && context.lastSaveSaveToken) {
+                    try {
+                        context.onSave(context.lastSaveSaveToken, thumbnailUrl, true);
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                    context.cameFromSave = false;
+                    context.lastSaveSaveToken = "";
+                }
+            },
+            onSave: (saveToken, thumbnailUrl, cameFromRenderFirstPageImage = false) => {
+                context.cameFromSave = true;
+                context.lastSaveSaveToken = saveToken;
+                const productValues = getCurrentProductOptionValues(settings.product);
+                const variant = getCurrentVariant(productValues, settings.product);
+                if (!cameFromRenderFirstPageImage) {
+                    postMessage("renderFirstPageImage", null);
+                }
+                else {
+                    if (printessSettings.editorMode === "admin") {
+                        saveAdminSaveToken(saveToken, thumbnailUrl);
+                        return;
+                    }
+                    const cancelCallback = () => {
+                    };
+                    const saveDesignCallback = (designName) => {
+                        if (!designName || !designName.trim()) {
+                            alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
+                            showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                            return;
+                        }
+                        showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
+                        saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, getCurrentProductOptionValues(settings.product, false), (savedDesignName, savedDesignId) => {
+                            hideInformationOverlay();
+                            context.designName = savedDesignName;
+                            context.designId = savedDesignId;
+                            try {
+                                const globalConfig = getGlobalConfig();
+                                if (globalConfig && typeof globalConfig.onSave === "function") {
+                                    globalConfig.onSave(saveToken, thumbnailUrl);
+                                }
+                            }
+                            catch (e) {
+                                console.error(e);
+                            }
+                        }, (message) => {
+                            hideInformationOverlay();
+                            alert(message);
+                            showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                        });
+                    };
+                    const loginCallback = (designName) => {
+                        if (!loginAndSave(designName, settings.product.id, variant ? variant.id : null, saveToken, thumbnailUrl, productValues)) {
+                            alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
+                            showSaveDialog(designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                        }
+                    };
+                    showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                }
+            },
+            getBasketId: () => { return settings.basketId; },
+            getUserId: () => { return settings.userId; },
+            editorClosed: (closeButtonClicked) => {
+                editor.hide();
+                context.designId = null;
+                context.designName = null;
+                if (closeButtonClicked) {
+                    updatePrintessValues("", "", "", "");
+                }
+                if ('buyer' === printessSettings.editorMode) { // Only buyer mode sets the token. The admin edit doesn't do anything!
+                    //Remove saved design info
+                    if (typeof URLSearchParams !== 'undefined') {
+                        const params = new URLSearchParams(window.location.search);
+                        if (closeButtonClicked && params.has("design_id") || params.has("design_name") || params.has("printess-save-token")) {
+                            params.delete('design_id');
+                            params.delete('design_name');
+                            params.delete('printess-save-token');
+                            window.location.search = params.toString();
+                        }
+                    }
+                }
+                else {
+                    const msg = printessSettings.userMessages && printessSettings.userMessages["closeWindow"] ? printessSettings.userMessages["closeWindow"] : "Please close this window or tab.";
+                    alert(msg);
+                }
+            }
+        };
+        //Try to find out the correct template name (selected variant & url params)
+        const currentProductOptions = getCurrentProductOptionValues(settings.product);
+        const currentVariant = getCurrentVariant(currentProductOptions, settings.product);
+        if (currentVariant && currentVariant.templateName) {
+            context.templateNameOrSaveToken = currentVariant.templateName;
+        }
+        //parse url settings and apply these
+        const urlParams = new URLSearchParams(window.location.search);
+        const urlSaveToken = urlParams.get('printess-save-token') || urlParams.get('printess_save_token');
+        const designName = urlParams.get('design_name');
+        const designId = urlParams.get("design_id");
+        if (urlSaveToken) {
+            context.templateNameOrSaveToken = urlSaveToken;
+        }
+        if (designName) {
+            context.designName = designName;
+        }
+        if (designId) {
+            context.designId = parseInt(designId);
+        }
+        return context;
+    };
+    const addPrintessInputs = function (parent, saveToken, customizeButtonClass, customizeButtonLabel) {
+        const saveTokenInput = document.createElement("input");
+        const saveTokenToRemoveFromCartInput = document.createElement("input");
+        const thumbnailUrlInput = document.createElement("input");
+        const designIdInput = document.createElement("input");
+        const designNameInput = document.createElement("input");
+        const customizeButton = document.createElement("button");
+        saveTokenInput.setAttribute("id", "printess-save-token");
+        saveTokenInput.setAttribute("name", "printess-save-token");
+        saveTokenInput.setAttribute("type", "hidden");
+        saveTokenToRemoveFromCartInput.setAttribute("id", "printess-save-token-to-remove-from-cart");
+        saveTokenToRemoveFromCartInput.setAttribute("name", "printess-save-token-to-remove-from-cart");
+        saveTokenToRemoveFromCartInput.setAttribute("type", "hidden");
+        saveTokenToRemoveFromCartInput.setAttribute("value", saveToken || "");
+        thumbnailUrlInput.setAttribute("id", "printess-thumbnail-url");
+        thumbnailUrlInput.setAttribute("name", "printess-thumbnail-url");
+        thumbnailUrlInput.setAttribute("type", "hidden");
+        designIdInput.setAttribute("id", "printess-design-id");
+        designIdInput.setAttribute("name", "printess-design-id");
+        designIdInput.setAttribute("type", "hidden");
+        designNameInput.setAttribute("id", "printess-design-name");
+        designNameInput.setAttribute("name", "printess-design-name");
+        designNameInput.setAttribute("type", "hidden");
+        customizeButton.setAttribute("id", "printess-customize-button");
+        customizeButton.setAttribute("name", "printess-customize-button");
+        customizeButton.setAttribute("type", "button");
+        customizeButton.setAttribute("onclick", "showPrintessEditor();");
+        customizeButton.classList.add("wp-element-button", "single_add_to_cart_button", "button", "alt");
+        if (printessSettings.customizeButtonClasses) {
+            printessSettings.customizeButtonClasses.split(" ").forEach((x) => {
+                x = (x || "").trim();
+                if (x) {
+                    customizeButton.classList.add(x);
+                }
+            });
+        }
+        customizeButton.appendChild(document.createTextNode(customizeButtonLabel || "Customize"));
+        if (customizeButtonClass) {
+            customizeButton.classList.add(customizeButtonClass);
+        }
+        //Try to move the customize button into the same parent as the add to basket button...
+        const addToCartButton = document.querySelector(CART_FORM_SELECTOR + " button.single_add_to_cart_button");
+        if (addToCartButton && addToCartButton.parentElement) {
+            addToCartButton.parentElement.appendChild(customizeButton);
+        }
+        else {
+            parent.appendChild(customizeButton);
+        }
+        parent.appendChild(saveTokenInput);
+        parent.appendChild(saveTokenToRemoveFromCartInput);
+        parent.appendChild(thumbnailUrlInput);
+        parent.appendChild(designIdInput);
+        parent.appendChild(designNameInput);
+    };
+    const showCustomizeButton = function (show) {
+        const customizeButton = document.getElementsByName("printess-customize-button");
+        const addToCartButton = document.querySelector(CART_FORM_SELECTOR + " button.single_add_to_cart_button");
+        if (!customizeButton || customizeButton.length === 0) {
+            return;
+        }
+        if (addToCartButton) {
+            if (!show) {
+                addToCartButton.removeAttribute("disabled");
+            }
+            else {
+                addToCartButton.setAttribute("disabled", "disabled");
+            }
+            addToCartButton.style.display = show ? "none" : "inline-block";
+        }
+        customizeButton.forEach((x) => (x).style.display = show ? "inline-block" : "none");
+    };
+    const variantChangedHandler = function (product) {
+        let templateName = "";
+        const selectedVariant = getCurrentVariant(getCurrentProductOptionValues(product), product);
+        const variantsHaveTemplateNames = product.variants && typeof product.variants.find((x) => x.templateName) !== "undefined" ? true : false;
+        if (selectedVariant != null && selectedVariant.templateName) {
+            templateName = selectedVariant.templateName;
+        }
+        if (!templateName && !variantsHaveTemplateNames) {
+            templateName = product.templateName;
+        }
+        showCustomizeButton(templateName && templateName.length > 0);
+    };
+    const addVariantChangedHandler = function (product) {
+        if (window["jQuery"]) {
+            window["jQuery"]("form").on("found_variation", (e, variation) => {
+                variantChangedHandler(product);
+            });
+        }
+        else {
+            setTimeout(addVariantChangedHandler, 100);
+        }
+    };
+    const hasUnconfiguredProductOptions = (product) => {
+        const attributeLookup = getAttributeLookup(product);
+        const variantSpecificValues = [];
+        const productOptionValues = getCurrentProductOptionValues(product);
+        for (const name in productOptionValues) {
+            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name]) {
+                variantSpecificValues.push({ key: attributeLookup[name].key, value: productOptionValues[name] });
+            }
+        }
+        for (const optionName in variantSpecificValues) {
+            if (variantSpecificValues.hasOwnProperty(optionName) && !variantSpecificValues[optionName].value) {
+                return true;
+            }
+        }
+        return false;
+    };
+    const editor = {
+        show: function (settings) {
+            //Make sure all variant options are selected
+            if (hasUnconfiguredProductOptions(settings.product)) {
+                //alert("Please select some product options before adding this product to your cart.");
+                return;
+            }
+            const shopContext = createShopContext(settings);
+            //Hide shop items
+            if (printessSettings.idsToHide) {
+                printessSettings.idsToHide.forEach((x) => {
+                    const e = document.getElementById(x);
+                    if (e) {
+                        e.classList.add("printess-hide");
+                    }
+                });
+            }
+            if (printessSettings.classesToHide) {
+                printessSettings.classesToHide.forEach((x) => {
+                    const e = document.getElementsByClassName(x);
+                    if (e && e.length) {
+                        for (const ele of e) {
+                            ele.classList.add("printess-hide");
+                        }
+                    }
+                });
+            }
+            const globalConfig = getGlobalConfig();
+            if (globalConfig && globalConfig.attachParams) {
+                for (const property in globalConfig.attachParams) {
+                    if (globalConfig.attachParams.hasOwnProperty(property)) {
+                        if (!printessSettings.attachParams) {
+                            printessSettings.attachParams = {};
+                        }
+                        printessSettings.attachParams[property] = globalConfig.attachParams[property];
+                    }
+                }
+            }
+            if (typeof window["initPrintessEditor"] === "function") {
+                const editor = window["initPrintessEditor"](printessSettings);
+                editor.show(shopContext);
+            }
+        },
+        hide: function () {
+            printessSettings.idsToHide.forEach((x) => {
+                const e = document.getElementById(x);
+                if (e) {
+                    e.classList.remove("printess-hide");
+                }
+            });
+            printessSettings.classesToHide.forEach((x) => {
+                const e = document.getElementsByClassName(x);
+                if (e && e.length) {
+                    for (const ele of e) {
+                        ele.classList.remove("printess-hide");
+                    }
+                }
+            });
+        },
+        initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR) {
+            const productForm = document.querySelector(formSelector || CART_FORM_SELECTOR);
+            if (productForm) {
+                addPrintessInputs(productForm, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel);
+                if (templateNameOrSaveToken) {
+                    showCustomizeButton(true);
+                }
+            }
+            addVariantChangedHandler(product);
+            variantChangedHandler(product);
+            //Open the editor on page load in case the url contains a save token or template name
+            const urlParams = new URLSearchParams(window.location.search);
+            const urlSaveToken = urlParams.get('printess-save-token');
+            if (urlSaveToken) {
+                if (typeof openEditorCallback === "function") {
+                    openEditorCallback(urlSaveToken);
+                }
+            }
+        }
+    };
+    window["printessWooEditor"] = editor;
+    document.addEventListener('DOMContentLoaded', () => {
+        const { registerCheckoutFilters } = window["wc"].blocksCheckout;
+        debugger;
+    });
+    return editor;
+};
+if (window["wc"]) {
+    const { registerCheckoutFilters } = window["wc"].blocksCheckout;
+    const getOrAddElement = (parent, className, tagType) => {
+        let ret = (parent || document).querySelector("." + className);
+        if (!ret) {
+            ret = document.createElement(tagType);
+            ret.classList.add(className);
+            parent.appendChild(ret);
+        }
+        return ret;
+    };
+    registerCheckoutFilters('printess-editor', {
+        cartItemClass: (defaultValue, extensions, args) => {
+            let ret = defaultValue || "";
+            if (extensions && extensions["printess-editor"] && extensions["printess-editor"]["saveToken"] && args["cartItem"]) {
+                const className = "printess_cart_item_" + args["cartItem"]["key"];
+                ret += " " + className + " ";
+                //Modify item display
+                setTimeout(function () {
+                    const cartItem = document.querySelector("." + className);
+                    //Display design name
+                    if (extensions["printess-editor"]["designName"]) {
+                        let detailBlocks = cartItem ? cartItem.querySelector("ul.wc-block-components-product-details") : null;
+                        if (!detailBlocks) {
+                            const wrapper = cartItem.querySelector(".wc-block-cart-item__wrap");
+                            if (wrapper) {
+                                const metaData = getOrAddElement(wrapper, "wc-block-components-product-metadata", "div");
+                                detailBlocks = getOrAddElement(metaData, "wc-block-components-product-details", "ul");
+                            }
+                        }
+                        if (detailBlocks) {
+                            const li = document.createElement("li");
+                            li.classList.add("wc-block-components-product-details__designName");
+                            const name = getOrAddElement(li, "wc-block-components-product-details__name", "span");
+                            const value = getOrAddElement(li, "wc-block-components-product-details__value", "span");
+                            name.innerText = "Design name: ";
+                            value.innerText = extensions["printess-editor"]["designName"];
+                            detailBlocks.appendChild(li);
+                        }
+                    }
+                    //Change thumbnail
+                    const imageElement = cartItem?.querySelector(".wc-block-cart-item__image img");
+                    if (imageElement) {
+                        imageElement.setAttribute("src", extensions["printess-editor"]["thumbnailUrl"]);
+                    }
+                    if (extensions["printess-editor"]["thumbnailUrl"]) {
+                        //Add edit link
+                        const thumbnailLink = cartItem?.querySelector("wc-block-cart-item__image a");
+                        if (thumbnailLink) {
+                            thumbnailLink.setAttribute("href", extensions["printess-editor"]["editLink"]);
+                        }
+                        const quantityElement = cartItem?.querySelector(".wc-block-cart-item__quantity");
+                        if (quantityElement) {
+                            const link = document.createElement("a");
+                            link.classList.add("wc-block-cart-item__remove-link");
+                            link.setAttribute("href", extensions["printess-editor"]["editLink"]);
+                            link.innerText = "Edit";
+                            const linkWrapper = document.createElement("div");
+                            linkWrapper.appendChild(link);
+                            quantityElement.appendChild(linkWrapper);
+                        }
+                    }
+                }, 0);
+            }
+            return ret;
+        },
+        itemName: (defaultValue, extensions, args) => {
+            return defaultValue;
+        }
+    });
+}

@@ -209,3 +209,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.27 =
 * Fixed: Fixed broken variant handling during saving of designs while not being logged in (variant settings got lost during the login process when saving a design)
+
+= 1.6.28 =
+* Added: Added support for the new theme blocks inside the shopping basket
