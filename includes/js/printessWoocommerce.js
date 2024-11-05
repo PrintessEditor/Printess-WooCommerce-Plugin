@@ -2,6 +2,7 @@
 ;
 const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";
+    let itemUsage = null;
     if (typeof window["printessWooEditor"] !== "undefined") {
         return window["printessWooEditor"];
     }
@@ -419,6 +420,43 @@ const initPrintessWCEditor = function (printessSettings) {
                 else if (attributeLookup[formFieldLabel]) {
                     transformedName = attributeLookup[formFieldLabel].key;
                 }
+                //Take care of item usage
+                const globalSettings = getGlobalConfig();
+                if (globalSettings && globalSettings.pricePerUsageFields) {
+                    if (Array.isArray(globalSettings.pricePerUsageFields)) {
+                        const usageItem = globalSettings.pricePerUsageFields.filter(x => x.formFieldName === formFieldName);
+                        if (usageItem && usageItem.length > 0) {
+                            const amount = parseInt(formFieldValue);
+                            if (amount > 0) {
+                                if (!itemUsage) {
+                                    itemUsage = {};
+                                }
+                                itemUsage[usageItem[0].formFieldName] = amount;
+                            }
+                            else {
+                                if (itemUsage[usageItem[0].formFieldName]) {
+                                    delete itemUsage[usageItem[0].formFieldName];
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (globalSettings.pricePerUsageFields[formFieldName]) {
+                            const amount = parseInt(formFieldValue);
+                            if (amount > 0) {
+                                if (!itemUsage) {
+                                    itemUsage = {};
+                                }
+                                itemUsage[formFieldName] = amount;
+                            }
+                            else {
+                                if (itemUsage[formFieldName]) {
+                                    delete itemUsage[formFieldName];
+                                }
+                            }
+                        }
+                    }
+                }
                 const radios = document.querySelectorAll(`input[type="radio"][name="attribute_` + transformedName + `"], input[type="radio"][name="` + transformedName + `"],input[type="radio"][name="attribute_` + formFieldLabel + `"], input[type="radio"][name="` + formFieldLabel + `"]`);
                 if (radios && radios.length > 0) {
                     radios.forEach((el) => {
@@ -501,6 +539,14 @@ const initPrintessWCEditor = function (printessSettings) {
                             ignoreInput.remove();
                         }
                     }
+                    //Add item usage form field
+                    if (cartForm && itemUsage) {
+                        const usageInput = document.createElement("input");
+                        usageInput.setAttribute("id", "printess_item_usage");
+                        usageInput.setAttribute("name", "printess_item_usage");
+                        usageInput.value = JSON.stringify(itemUsage);
+                        cartForm.appendChild(usageInput);
+                    }
                     try {
                         const globalConfig = getGlobalConfig();
                         if (globalConfig && typeof globalConfig.onAddToBasket === "function") {
@@ -550,12 +596,27 @@ const initPrintessWCEditor = function (printessSettings) {
             },
             getPriceForFormFields: (formFields) => {
                 const variant = getCurrentVariant(formFields, settings.product);
-                if (variant) {
-                    return parseFloat(variant.price);
+                let ret = variant ? parseFloat(variant.price) : settings.product.price;
+                const globalSetting = getGlobalConfig();
+                if (itemUsage && globalSetting && globalSetting.pricePerUsageFields) {
+                    let lookup = {};
+                    if (Array.isArray(globalSetting.pricePerUsageFields)) {
+                        for (let i = 0; i < globalSetting.pricePerUsageFields.length; ++i) {
+                            lookup[globalSetting.pricePerUsageFields[i].formFieldName] = globalSetting.pricePerUsageFields[i].pricePerUsage;
+                        }
+                    }
+                    else {
+                        lookup = globalSetting.pricePerUsageFields;
+                    }
+                    for (const property in itemUsage) {
+                        if (itemUsage.hasOwnProperty(property)) {
+                            if (lookup[property]) {
+                                ret += itemUsage[property] * lookup[property];
+                            }
+                        }
+                    }
                 }
-                else {
-                    return settings.product.price;
-                }
+                return ret;
             },
             getFormFieldMappings: () => {
                 let ret = {};
@@ -791,6 +852,8 @@ const initPrintessWCEditor = function (printessSettings) {
     };
     const editor = {
         show: function (settings) {
+            //Clear item usage
+            itemUsage = null;
             //Make sure all variant options are selected
             if (hasUnconfiguredProductOptions(settings.product)) {
                 //alert("Please select some product options before adding this product to your cart.");
@@ -871,11 +934,9 @@ const initPrintessWCEditor = function (printessSettings) {
     window["printessWooEditor"] = editor;
     return editor;
 };
-if (window["wc"] && window["wc"]["mini-cart"]) {
-    const { registerCheckoutFilters } = window["wc"]["mini-cart"];
-
-    debugger;
-}
+// if (window["wc"] && window["wc"].miniCart) {
+//   const { ... } = window["wc"]["mini-cart"];
+// }
 if (window["wc"] && window["wc"].blocksCheckout) {
     const { registerCheckoutFilters } = window["wc"].blocksCheckout;
     const { xyd } = window["wc"].miniCart;

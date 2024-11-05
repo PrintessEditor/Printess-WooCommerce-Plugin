@@ -252,6 +252,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$design_id                      = filter_input( INPUT_POST, 'printess-design-id', FILTER_SANITIZE_SPECIAL_CHARS );
 	$design_name                    = filter_input( INPUT_POST, 'printess-design-name', FILTER_SANITIZE_SPECIAL_CHARS );
 	$additionalSettings             = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
+	$item_usage						= filter_input( INPUT_POST, 'printess_item_usage', FILTER_UNSAFE_RAW );
 
 	if ( empty( $save_token ) || strlen( $save_token ) !== 89 ) {
 		return $cart_item_data;
@@ -277,6 +278,10 @@ function printess_add_cart_item_data( $cart_item_data ) {
 
 	if ( ! empty( $design_name ) ) {
 		$cart_item_data['printess-design-name'] = $design_name;
+	}
+
+	if ( ! empty( $item_usage ) ) {
+		$cart_item_data['printess-item-usage'] = $item_usage;
 	}
 
 	$cart_item_data['printess_date_added'] = ( new DateTime() )->format( 'Y-m-d H:i:s' );
@@ -465,9 +470,25 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 		if(!isset($printess_ui_version) || empty($printess_ui_version)) {
 			$printess_ui_version = "classical";
 		}
-		?>
+
+		$itemUsage = $product->get_meta( 'printess_item_usage', true );
+
+		if(null === $itemUsage) {
+			$itemUsage = "";
+		}
+?>
 
 		<script id="printess-integration">
+			var printessGlobalConfig = {};
+			let itemUsage = <?php echo(!empty($itemUsage) ? wp_json_encode($itemUsage) : "\"\""); ?>;
+
+			try {
+				printessGlobalConfig.pricePerUsageFields = JSON.parse(itemUsage);
+			} catch(ex) {
+
+			}
+
+
 			let showPrintessEditor = function() {};
 			const userMessages = {
 				"noDisplayName": <?php echo wp_json_encode( __( 'Please provide a display name.', 'printess-editor' ) ); ?>,
@@ -3599,6 +3620,19 @@ function printess_product_data_panels() {
 			),
 		)
 	);
+
+	woocommerce_wp_text_input(
+		array(
+			'id'                => 'printess_item_usage',
+			'value'             => get_post_meta( get_the_ID(), 'printess_item_usage', true ),
+			'label'             => __( 'Item Usage', 'printess-editor' ),
+			'description'       => __( 'Json configuration for item based usage pricing', 'printess-editor' ),
+			'custom_attributes' => array(
+				'min' => '0',
+				'max' => '100',
+			),
+		)
+	);
 	?>
 
 <hr />
@@ -3736,7 +3770,7 @@ function printess_product_data_panels() {
  * @param mixed $post_id The product id.
  */
 function printess_process_product_meta( $post_id ) {
-	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files" );
+	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files", "printess_item_usage" );
 	$number_keys = array( 'printess_dpi' );
 
 	foreach ( $keys as $key ) {
@@ -4556,6 +4590,67 @@ function printess_insert_helper_script_before_minibasket() {
 }
 
 /**
+ * WooCommerce callback for price recalculations in case of itemUsage params
+ */
+function printess_recalculate_basketitem_price($cart_object) {
+	foreach ( $cart_object->get_cart() as $id => $basket_item ) {
+		if(array_key_exists("printess-item-usage", $basket_item) && !empty($basket_item["printess-item-usage"])) {
+			try {
+				$used_items = json_decode($basket_item["printess-item-usage"], true);
+
+				if(null === $used_items || !is_array($used_items)) {
+					continue;
+				}
+				$product = wc_get_product($basket_item["product_id"] );
+				$variant = null;
+				$price = 0;
+
+				if(null === $product) {
+					continue;
+				}
+
+				if(0 < $basket_item["variant_id"]) {
+					$variant = wc_get_product($basket_item["variant_id"]);
+					$price = $variant->get_price();
+				} else {
+					$price = $product->get_price();
+				}
+
+				$configuration = $product->get_meta( 'printess_item_usage', true );
+
+				if(null !== $configuration && !empty($configuration)) {
+					$configuration = json_decode($configuration, true);
+
+					if(null === $used_items || !is_array($used_items)) {
+						continue;
+					}
+				}
+
+				$priceLookup = array();
+				foreach($configuration as $key => $value) {
+					if(is_array($value) && array_key_exists("formFieldName", $value) && array_key_exists("pricePerUsage", $value)) {
+						$priceLookup[$value["formFieldName"]] = $value["pricePerUsage"];
+					} else if (is_numeric($value)) {
+						$priceLookup[$key] = $value;
+					}
+				}
+
+				foreach($used_items as $key => $value) {
+					if(array_key_exists($key, $priceLookup)) {
+						$price = $price + (intval($value) * $priceLookup[$key]);
+					}
+				}
+
+				$basket_item["data"]->set_price($price);
+			}
+			catch(\Exception $ex) {
+
+			}
+		}
+	}
+}
+
+/**
  * Enqueues external javascripts
  */
 function printess_load_externalscripts() {
@@ -4635,6 +4730,9 @@ function printess_register_hooks() {
 	// Woodmart Mini Basket.
 	add_filter( 'woocommerce_widget_cart_item_quantity', 'printess_render_edit_button_before_mini_basket_buttons', 10, 2 );
 	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
+
+	//Recalculate basket item prices
+	add_action( 'woocommerce_before_calculate_totals', 'printess_recalculate_basketitem_price' );
 
 	//New theme block supports
 	include_once('includes/printessBlockIntegrations.php');
