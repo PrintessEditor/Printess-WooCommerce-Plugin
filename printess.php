@@ -4563,6 +4563,22 @@ function printess_load_externalscripts() {
 	wp_enqueue_script( 'printess_editor_woo', plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ ), array(), 1, array( 'in_footer' => true ) );
 }
 
+// function printess_modify_template_code($template, $templateName) {
+// 	if($template["blockName"] == "woocommerce/filled-mini-cart-contents-block") {
+// 		$debug = 10;
+// 	}
+
+// 	return $template;
+// }
+
+// function printess_modify_template_code_1($content, $block) {
+// 	if($$block["blockName"] == "woocommerce/filled-mini-cart-contents-block") {
+// 		$debug = 10;
+// 	}
+
+// 	return $content;
+// }
+
 /**
  * Registers the plugin hooks used for the Printess integration.
  */
@@ -4621,8 +4637,12 @@ function printess_register_hooks() {
 	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
 
 	//New theme block supports
-	include_once('includes/printessBlockintegrations.php');
+	include_once('includes/printessBlockIntegrations.php');
 	printess_register_block_hooks();
+
+	// //Loading of template parts (Required for mini cart template :( )
+	// add_filter("render_block_data", "printess_modify_template_code", 10, 2);
+	// add_filter("render_block", "printess_modify_template_code_1", 10, 2);
 
 	// CALLBACKS.
 	add_action(

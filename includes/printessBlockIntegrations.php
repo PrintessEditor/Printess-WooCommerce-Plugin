@@ -1,7 +1,9 @@
 <?php
 //https://www.nomar.dev/extending-the-woocommerce-checkout-block-with-jquery-and-php/
+//https://woocommerce.com/document/woocommerce-store-editing/customizing-cart-and-checkout/
+//https://www.liip.ch/en/blog/how-to-extend-existing-gutenberg-blocks-in-wordpress
 
-use \Automattic\WooCommerce\StoreApi\Schemas\V1\CartItemSchema;
+use \Automattic\WooCommerce\Blocks\StoreApi\Schemas\CartItemSchema;
 
 function printess_on_add_printess_cart_item_data($cart_item)
 {

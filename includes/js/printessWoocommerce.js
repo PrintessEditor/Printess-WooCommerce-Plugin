@@ -869,24 +869,33 @@ const initPrintessWCEditor = function (printessSettings) {
         }
     };
     window["printessWooEditor"] = editor;
-    document.addEventListener('DOMContentLoaded', () => {
-        const { registerCheckoutFilters } = window["wc"].blocksCheckout;
-        debugger;
-    });
     return editor;
 };
-if (window["wc"]) {
+if (window["wc"] && window["wc"]["mini-cart"]) {
+    const { registerCheckoutFilters } = window["wc"]["mini-cart"];
+
+    debugger;
+}
+if (window["wc"] && window["wc"].blocksCheckout) {
     const { registerCheckoutFilters } = window["wc"].blocksCheckout;
-    const getOrAddElement = (parent, className, tagType) => {
+    const { xyd } = window["wc"].miniCart;
+    const getOrAddElement = (parent, className, tagType, additionalClass) => {
         let ret = (parent || document).querySelector("." + className);
         if (!ret) {
             ret = document.createElement(tagType);
             ret.classList.add(className);
+            if (additionalClass) {
+                ret.classList.add(additionalClass);
+            }
             parent.appendChild(ret);
         }
         return ret;
     };
     registerCheckoutFilters('printess-editor', {
+        // additionalCartCheckoutInnerBlockTypes: (defaultValue, extensions, args) => {
+        //   debugger;
+        //   return defaultValue;
+        // },
         cartItemClass: (defaultValue, extensions, args) => {
             let ret = defaultValue || "";
             if (extensions && extensions["printess-editor"] && extensions["printess-editor"]["saveToken"] && args["cartItem"]) {
@@ -906,43 +915,56 @@ if (window["wc"]) {
                             }
                         }
                         if (detailBlocks) {
-                            const li = document.createElement("li");
-                            li.classList.add("wc-block-components-product-details__designName");
-                            const name = getOrAddElement(li, "wc-block-components-product-details__name", "span");
-                            const value = getOrAddElement(li, "wc-block-components-product-details__value", "span");
-                            name.innerText = "Design name: ";
-                            value.innerText = extensions["printess-editor"]["designName"];
-                            detailBlocks.appendChild(li);
+                            const nameElement = detailBlocks.querySelector(".printess-product-detail-name");
+                            if (nameElement) {
+                                nameElement.innerText = "Design name: ";
+                                const valueEleement = detailBlocks.querySelector("printess-product-detail-name");
+                                if (valueEleement) {
+                                    valueEleement.innerText = extensions["printess-editor"]["designName"];
+                                }
+                            }
+                            else {
+                                const li = document.createElement("li");
+                                li.classList.add("wc-block-components-product-details__designName");
+                                li.classList.add("printess-product-details-item");
+                                const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
+                                const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
+                                name.innerText = "Design name: ";
+                                value.innerText = extensions["printess-editor"]["designName"];
+                                detailBlocks.appendChild(li);
+                            }
                         }
                     }
                     //Change thumbnail
                     const imageElement = cartItem?.querySelector(".wc-block-cart-item__image img");
                     if (imageElement) {
+                        imageElement.classList.add("printess-thumbnail-image");
                         imageElement.setAttribute("src", extensions["printess-editor"]["thumbnailUrl"]);
                     }
                     if (extensions["printess-editor"]["thumbnailUrl"]) {
                         //Add edit link
-                        const thumbnailLink = cartItem?.querySelector("wc-block-cart-item__image a");
+                        const thumbnailLink = cartItem?.querySelector(".wc-block-cart-item__image a");
                         if (thumbnailLink) {
                             thumbnailLink.setAttribute("href", extensions["printess-editor"]["editLink"]);
                         }
                         const quantityElement = cartItem?.querySelector(".wc-block-cart-item__quantity");
                         if (quantityElement) {
-                            const link = document.createElement("a");
-                            link.classList.add("wc-block-cart-item__remove-link");
+                            let link = quantityElement.querySelector(".printess-edit-link");
+                            if (!link) {
+                                link = document.createElement("a");
+                                link.classList.add("wc-block-cart-item__remove-link");
+                                link.classList.add("printess-edit-link");
+                                link.innerText = "Edit";
+                                const linkWrapper = document.createElement("div");
+                                linkWrapper.appendChild(link);
+                                quantityElement.appendChild(linkWrapper);
+                            }
                             link.setAttribute("href", extensions["printess-editor"]["editLink"]);
-                            link.innerText = "Edit";
-                            const linkWrapper = document.createElement("div");
-                            linkWrapper.appendChild(link);
-                            quantityElement.appendChild(linkWrapper);
                         }
                     }
                 }, 0);
             }
             return ret;
-        },
-        itemName: (defaultValue, extensions, args) => {
-            return defaultValue;
         }
     });
 }
