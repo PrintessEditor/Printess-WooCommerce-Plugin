@@ -212,3 +212,7 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.28 =
 * Added: Added support for the new theme blocks inside the shopping basket
+
+= 1.6.29 =
+* Fixed issues with keyboard inputs in case the keyboard input focus is required without having the user to click on input elements within the editor before.
+* Added: Added support for item usage (Different pricing depending on numeric form field values)
