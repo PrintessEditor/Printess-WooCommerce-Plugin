@@ -3,7 +3,7 @@ Contributors: printess
 Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
 Requires at least: 5.6
 Tested up to: 9.3.3
-Stable tag: 1.6.26
+Stable tag: 1.6.30
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -216,3 +216,6 @@ Please check https://printess.com/pricing.html for more details.
 = 1.6.29 =
 * Fixed issues with keyboard inputs in case the keyboard input focus is required without having the user to click on input elements within the editor before.
 * Added: Added support for item usage (Different pricing depending on numeric form field values)
+
+= 1.6.30 =
+* Changed: Removed experimental text from panel ui
