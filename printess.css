@@ -1,6 +1,6 @@
 /* embedded iframe */
 /* Counter act the Safari viewport-height bug */
-html.printessEditorOpen {
+html.printess-editor-open {
   height: -webkit-fill-available;
   margin-top: 0 !important;
 }
@@ -207,7 +207,7 @@ form[name="printess_search_form"] {
     height: -webkit-fill-available;
   }
   
-  body.hideAll>*:not(#printess-container) {
+  html.printess-editor-open > body > :not(.printess-owned) {
     display: none !important;
   }
   
