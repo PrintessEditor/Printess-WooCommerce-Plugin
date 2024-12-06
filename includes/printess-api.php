@@ -123,6 +123,21 @@ class PrintessApi
 
         return $dropshippers;
     }
+
+    /**
+     * Creates a new drop shipping address via the printess api
+     *
+     * @param mixed $data The Address data that should be used.
+     */
+    function printess_create_dropshipping_address( $data ) {
+        $printess_host = PrintessAdminSettings::get_host();
+
+        return PrintessApi::send_post_request(
+            "$printess_host/dropshipData/save",
+            PrintessAdminSettings::get_service_token(),
+            $data
+        );
+    }
 }
 
 

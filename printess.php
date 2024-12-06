@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.32
+ * Version: 1.6.33
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923993dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923994dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -3429,8 +3429,8 @@ function printess_recalculate_basketitem_price($cart_object) {
 					continue;
 				}
 
-				if(0 < $basket_item["variant_id"]) {
-					$variant = wc_get_product($basket_item["variant_id"]);
+				if(0 < $basket_item["variation_id"]) {
+					$variant = wc_get_product($basket_item["variation_id"]);
 					$price = $variant->get_price();
 				} else {
 					$price = $product->get_price();
