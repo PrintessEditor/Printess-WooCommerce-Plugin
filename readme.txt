@@ -3,7 +3,7 @@ Contributors: printess
 Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
 Requires at least: 5.6
 Tested up to: 9.3.3
-Stable tag: 1.6.33
+Stable tag: 1.6.34
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -228,3 +228,7 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.33 =
 * Fixed: Fixed broken variant handling in item usage pricing
+
+= 1.6.34 =
+* Fixed: Fixed broken legal text
+* Fixed broken price display when using Panel UI

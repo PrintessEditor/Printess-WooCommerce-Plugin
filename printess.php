@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.33
+ * Version: 1.6.34
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923994dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923995dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -438,7 +438,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 						basektId: <?php echo wp_json_encode( $cart_id ); ?>,
 						userId: <?php echo wp_json_encode( get_current_user_id() ); ?>,
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
-						legalText: <?php echo wp_json_encode( get_option( 'printess_legal_notice', '' ) || '' ); ?>
+						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>
 					};
 
 					editor.show(settings);
@@ -2754,7 +2754,7 @@ function printess_edit_order_line_item() {
 						basektId: <?php echo wp_json_encode( uniqid( '', true ) ); ?>,
 						userId: <?php echo wp_json_encode( $order->get_user_id() ); ?>,
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
-						legalText: <?php echo wp_json_encode( get_option( 'printess_legal_notice', '' ) || '' ); ?>
+						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text() ); ?>
 					};
 
 					editor.show(settings);

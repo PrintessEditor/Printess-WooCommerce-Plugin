@@ -176,6 +176,15 @@ class PrintessAdminSettings
     }
 
     /**
+     * Retrieves the configured legal text
+     */
+    static function get_legal_text() {
+        $setting = get_option( 'printess_legal_notice', '' );
+
+        return null !== $setting && !empty($setting) ? $setting : "";
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -482,7 +491,7 @@ class PrintessAdminSettings
             'printess_legal_notice',
             __( 'Display legal info in case prices are displayed inside editor', 'printess-editor' ),
             function() {
-                $setting = get_option( 'printess_legal_notice', '' );
+                $setting = PrintessAdminSettings::get_legal_text();
 
                 ?>
 
