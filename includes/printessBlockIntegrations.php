@@ -16,9 +16,17 @@ function printess_on_add_printess_cart_item_data($cart_item)
         if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item["key"] ) ) {
             $product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item["key"] );
             $editLink = add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink );
+
+            if(array_key_exists("key", $cart_item)) {
+                $id = $cart_item["key"];
+
+                if(null !== $id && !empty($id)) {
+                    $editLink = add_query_arg( 'printess_item_key', $id, $editLink );
+                }
+            }
         }
 
-        return array(
+        $ret = array(
             "saveToken" => $cart_item["printess-save-token"],
             "thumbnailUrl" => $cart_item["printess-thumbnail-url"],
             "dateAdded" => $cart_item["printess_date_added"],
@@ -26,6 +34,8 @@ function printess_on_add_printess_cart_item_data($cart_item)
             "designId" => $cart_item["printess-design-id"],
             "editLink" => $editLink
         );
+
+        return $ret;
     }
 
 

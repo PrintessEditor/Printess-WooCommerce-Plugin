@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.34
+ * Version: 1.6.35
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,7 +12,7 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  *
- * Woo: 10000:923995dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:923996dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.3.3
  */
@@ -134,10 +134,44 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$design_name                    = filter_input( INPUT_POST, 'printess-design-name', FILTER_SANITIZE_SPECIAL_CHARS );
 	$additionalSettings             = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
 	$item_usage						= filter_input( INPUT_POST, 'printess_item_usage', FILTER_UNSAFE_RAW );
+	$remove_items_from_cart    = false;
+	$remove_option_value       = get_option( 'printess_show_original_product_in_basket', true );
+
+	if ( isset( $remove_option_value ) && ( empty( $remove_option_value ) || 'off' === $remove_option_value ) ) {
+		$remove_items_from_cart = true;
+	}
 
 	if ( empty( $save_token ) || strlen( $save_token ) !== 89 ) {
 		return $cart_item_data;
 	}
+
+	//In case we have a save token to delete, remove it from the basket
+	if(null !== $save_token_to_remove_from_cart && !empty($save_token_to_remove_from_cart)) {
+		//Get all cart items and check the ones with save tokens if it can be found
+		$cart_contents = $items = WC()->cart->get_cart();
+
+		foreach($cart_contents as $item_key => &$item) {
+			if(array_key_exists("printess-save-token", $item)) {
+				$item_save_token = $item["printess-save-token"];
+
+				if($item_save_token === $save_token_to_remove_from_cart) {
+					// $items_to_remove_from_cart = WC()->cart->find_product_in_cart( $cart_item_id );
+
+					if(true === $remove_items_from_cart) {
+						WC()->cart->remove_cart_item( $item_key );
+					} else {
+						$item['printess-was-edited'] = 1;
+						$cart_item_data['printess-was-edited'] = 1;
+					}
+
+					WC()->cart->set_session();
+
+					break;
+				}
+			}
+		}
+	}
+
 
 	$cart_item_data['printess-save-token'] = $save_token;
 
@@ -315,12 +349,14 @@ function printess_get_product_json( $product ) {
  */
 function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 	$printess_attribute = '';
-	$cart_id            = WC()->session->get( 'printess-cart-id' );
+	$cart_id = WC()->session->get( 'printess-cart-id' );
 	$attachParams = array();
 	$theme = PrintessAdminSettings::get_default_theme();
 
 	if ( empty( $cart_id ) ) {
-		WC()->session->set( 'printess-cart-id', uniqid( '', true ) );
+		$cart_id = uniqid( '', true );
+
+		WC()->session->set( 'printess-cart-id', $cart_id);
 	}
 
 	wp_enqueue_style( 'printess-editor' );
@@ -431,10 +467,13 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 
 				const buttonLabelHtml = <?php echo wp_json_encode( esc_html__( 'Customize', 'printess-editor' ) ); ?>;
 
-				showPrintessEditor = function(saveToken = null) {
+				showPrintessEditor = function(saveToken = null, basketItemId = null) {
+					basketItemId = basketItemId || null;
+
 					const settings = {
 						templateNameOrSaveToken: saveToken || product.templateName,
 						product: product,
+						basketItemId: basketItemId,
 						basektId: <?php echo wp_json_encode( $cart_id ); ?>,
 						userId: <?php echo wp_json_encode( get_current_user_id() ); ?>,
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
@@ -1878,24 +1917,18 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 	}
 }
 
-	/**
-	 * Sets the marker for an edited Printess product in the cart.
-	 *
-	 * @param mixed $cart The cart.
-	 */
+/**
+	* Sets the marker for an edited Printess product in the cart.
+	*
+	* @param mixed $cart The cart.
+*/
 function printess_cart_loaded_from_session( $cart ) {
 	$cart_contents             = $cart->cart_contents;
 	$edited_save_tokens        = array();
 	$needle                    = 'printess-save-token-to-remove-from-cart';
 	$update_cart               = false;
-	$remove_items_from_cart    = false;
-	$items_to_remove_from_cart = array();
 	$remove_option_value       = get_option( 'printess_show_original_product_in_basket', true );
 	$sort_order                = array();
-
-	if ( isset( $remove_option_value ) && ( empty( $remove_option_value ) || 'off' === $remove_option_value ) ) {
-		$remove_items_from_cart = true;
-	}
 
 	$index = 0;
 	foreach ( $cart_contents as $key => &$value ) {
@@ -1912,10 +1945,6 @@ function printess_cart_loaded_from_session( $cart ) {
 			$cart_item['printess-was-edited']          = 1;
 			WC()->cart->cart_contents[ $cart_item_id ] = $cart_item;
 			$update_cart                               = true;
-		}
-
-		if ( true === $remove_items_from_cart && isset( $cart_item['printess-was-edited'] ) && 1 === $cart_item['printess-was-edited'] ) {
-			$items_to_remove_from_cart[] = WC()->cart->find_product_in_cart( $cart_item_id );
 		}
 	}
 
@@ -1956,11 +1985,6 @@ function printess_cart_loaded_from_session( $cart ) {
 		}
 
 		$cart->cart_contents = $cart_contents;
-	}
-
-	foreach ( $items_to_remove_from_cart as $cart_item_key ) {
-		WC()->cart->remove_cart_item( $cart_item_key );
-		$update_cart = true;
 	}
 
 	if ( $update_cart ) {
