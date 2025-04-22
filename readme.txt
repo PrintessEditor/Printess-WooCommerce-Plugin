@@ -2,8 +2,9 @@
 Contributors: printess
 Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
 Requires at least: 5.6
-Tested up to: 9.3.3
-Stable tag: 1.6.35
+Tested up to: 6.8
+WC Tested up to: 9.8.2
+Stable tag: 1.6.39
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -236,3 +237,12 @@ Please check https://printess.com/pricing.html for more details.
 = 1.6.35 =
 * Fixed: Fixed broken cart redirect back to the cart page after editing a cart item.
 * Fixed: Fixed broken deletion of the original cart item after editing an item which resulted always in 2 cart items with each edit.
+
+= 1.6.36 =
+* Fixed: fixed timing issues when trying to add saved designs into the basket
+
+= 1.6.37 =
+* Added Price callback to manually control the prices displayed inside the editor.
+
+= 1.6.38 =
+* Added support for pushing in user values and user acf fields as form field values automatically

@@ -4,17 +4,18 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.35
+ * Version: 1.6.39
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
  * Domain Path: /languages
  * Requires at least: 5.9
  * Requires PHP: 8.1
+ * Tested up to: 6.8
  *
- * Woo: 10000:923996dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:924000dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
- * WC tested up to: 9.3.3
+ * WC tested up to: 9.8.2
  */
 
 include_once("includes/printess-admin-settings.php");
@@ -342,6 +343,81 @@ function printess_get_product_json( $product ) {
 }
 
 /**
+ * Renders a list of key value pairs that should be pulled in as form fields automatically
+ *
+ * @param mixed  $user_id The user id of the current logged in user
+ */
+function printess_get_custom_formfields($user_id) {
+	$form_fields = array();
+	$filter_lookup = array();
+	$user_field_filter = PrintessAdminSettings::get_user_fields();
+
+	if(null !== $user_field_filter && !empty($user_field_filter)) {
+		foreach(explode(",", str_replace("\r", ",", str_replace("\n", ",", str_replace("\r\n", ",", $user_field_filter)))) as $value) {//, seperator or new line supported
+			$value = strtolower(trim($value));
+
+			if(!empty($value)) {
+				$filter_lookup[] = $value;
+			}
+		}
+	}
+
+	//add user details
+	if($user_id > 0) {
+		$current_user = wp_get_current_user();
+
+		$customer = new WC_Customer( $user_id );
+
+		if(in_array("all", $filter_lookup) || in_array("email", $filter_lookup))$form_fields["eMail"] = $customer->email;
+		if(in_array("all", $filter_lookup) || in_array("displayname", $filter_lookup))$form_fields["Displayname"] = $customer->display_name;
+		if(in_array("all", $filter_lookup) || in_array("firstname", $filter_lookup))$form_fields["Firstname"] = $customer->__get('first_name');
+		if(in_array("all", $filter_lookup) || in_array("lastname", $filter_lookup))$form_fields["Lastname"] = $customer->__get('last_name');
+		if(in_array("all", $filter_lookup) || in_array("description", $filter_lookup))$form_fields["Description"] = get_user_meta($user_id, 'description', true);
+
+
+
+
+		if(in_array("all", $filter_lookup) || in_array("billingfirstname", $filter_lookup))$form_fields["BillingFirstname"] = $customer->billing["first_name"];
+		if(in_array("all", $filter_lookup) || in_array("billinglastname", $filter_lookup))$form_fields["BillingLastname"] = $customer->billing["last_name"];
+		if(in_array("all", $filter_lookup) || in_array("billingcompany", $filter_lookup))$form_fields["BillingCompany"] = $customer->billing["company"];
+		if(in_array("all", $filter_lookup) || in_array("billingemail", $filter_lookup))$form_fields["BillingEmail"] = $customer->billing["email"];
+		if(in_array("all", $filter_lookup) || in_array("billingphone", $filter_lookup))$form_fields["BillingPhone"] = $customer->billing["phone"];
+		if(in_array("all", $filter_lookup) || in_array("billingcity", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
+		if(in_array("all", $filter_lookup) || in_array("billingstate", $filter_lookup))$form_fields["BillingState"] = $customer->billing["state"];
+		if(in_array("all", $filter_lookup) || in_array("billingpostcode", $filter_lookup))$form_fields["BillingPostcode"] = $customer->billing["postcode"];
+		if(in_array("all", $filter_lookup) || in_array("billingcountry", $filter_lookup))$form_fields["BillingCountry"] = $customer->billing["country"];
+		if(in_array("all", $filter_lookup) || in_array("billingaddress1", $filter_lookup))$form_fields["BillingAddress1"] = $customer->billing["address_1"];
+		if(in_array("all", $filter_lookup) || in_array("billingaddress2", $filter_lookup))$form_fields["BillingAddress2"] = $customer->billing["address_2"];
+
+		if(in_array("all", $filter_lookup) || in_array("shippingfirstname", $filter_lookup))$form_fields["ShippingFirstname"] = $customer->shipping["first_name"];
+		if(in_array("all", $filter_lookup) || in_array("shippinglastname", $filter_lookup))$form_fields["ShippingLastname"] = $customer->shipping["last_name"];
+		if(in_array("all", $filter_lookup) || in_array("shippingcompany", $filter_lookup))$form_fields["ShippingCompany"] = $customer->shipping["company"];
+		if(in_array("all", $filter_lookup) || in_array("shippingphone", $filter_lookup))$form_fields["ShippingPhone"] = $customer->shipping["phone"];
+		if(in_array("all", $filter_lookup) || in_array("shippingcity", $filter_lookup))$form_fields["ShippingCity"] = $customer->shipping["city"];
+		if(in_array("all", $filter_lookup) || in_array("shippingstate", $filter_lookup))$form_fields["ShippingState"] = $customer->shipping["state"];
+		if(in_array("all", $filter_lookup) || in_array("shippingpostcode", $filter_lookup))$form_fields["ShippingPostcode"] = $customer->shipping["postcode"];
+		if(in_array("all", $filter_lookup) || in_array("shippingcountry", $filter_lookup))$form_fields["ShippingCountry"] = $customer->shipping["country"];
+		if(in_array("all", $filter_lookup) || in_array("shippingaddress1", $filter_lookup))$form_fields["ShippingAddress1"] = $customer->shipping["address_1"];
+		if(in_array("all", $filter_lookup) || in_array("shippingaddress2", $filter_lookup))$form_fields["ShippingAddress2"] = $customer->shipping["address_2"];
+	}
+
+	//add acf field values
+	if($user_id > 0 && function_exists("get_field_objects")) {
+		$acf_fields = get_field_objects("user_" . $user_id);
+
+		if(null !== $acf_fields && false !== $acf_fields && is_array($acf_fields)) {
+			foreach($acf_fields as $key => &$field) {
+				if(is_array($field) && array_key_exists("label", $field) && array_key_exists("value", $field) && (in_array("all", $filter_lookup) || in_array(strtolower($field["label"]), $filter_lookup))) {
+					$form_fields[$field["label"]] = $field["value"];
+				}
+			}
+		}
+	}
+
+	return $form_fields;
+}
+
+/**
  * Renders all the required html + javascript required for the editor integration inside the product page
  *
  * @param mixed  $product The product for which the editor should be used.
@@ -400,6 +476,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 		if(null === $itemUsage) {
 			$itemUsage = "";
 		}
+
+		$form_fields = printess_get_custom_formfields(get_current_user_id());
 ?>
 
 		<script id="printess-integration">
@@ -411,6 +489,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 			} catch(ex) {
 
 			}
+
+			<?php if(count($form_fields) > 0) ?>printessGlobalConfig.formFields = <?php echo wp_json_encode($form_fields); ?>;
 
 
 			let showPrintessEditor = function() {};
@@ -2729,7 +2809,6 @@ function printess_edit_order_line_item() {
 		if(!isset($printess_ui_version) || empty($printess_ui_version)) {
 			$printess_ui_version = "classical";
 		}
-
 		?>
 	<html>
 		<head>

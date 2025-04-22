@@ -134,6 +134,13 @@ class PrintessAdminSettings
     }
 
     /**
+     * Gets all user fields that should be pulled in as form fields
+     */
+    static function get_user_fields() {
+        return get_option('printess_user_fields', "");
+    }
+
+    /**
      * Retrieves a valid setting for thumbnail width
      */
     static function get_thumbnail_width() {
@@ -984,6 +991,33 @@ class PrintessAdminSettings
                 ?>
 
                 <input type="text" style="min-width: 50%;" name="printess_default_theme" value="<?php echo esc_attr( $setting ); ?>">
+
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_user_fields',
+            array(
+                'type'    => 'string',
+                'default' => '',
+            )
+        );
+    
+        add_settings_field(
+            'printess_user_fields',
+            __( 'Push user fields', 'printess-editor' ),
+            function() {
+                $setting = PrintessAdminSettings::get_user_fields();
+
+                $setting = null !== $setting && !empty($setting) ? $setting : "";
+
+                ?>
+
+                <textarea style="min-width: 50%; min-height: 200px:" name="printess_user_fields" ?><?php echo esc_attr( $setting ); ?></textarea>
 
                 <?php
             },
