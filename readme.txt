@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.8
 WC Tested up to: 9.8.2
-Stable tag: 1.6.39
+Stable tag: 1.6.40
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -246,3 +246,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.38 =
 * Added support for pushing in user values and user acf fields as form field values automatically
+
+= 1.6.40 =
+* Added support for auto importing image url form field values

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.39
+ * Version: 1.6.40
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924000dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:924001dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -490,7 +490,13 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 
 			}
 
-			<?php if(count($form_fields) > 0) ?>printessGlobalConfig.formFields = <?php echo wp_json_encode($form_fields); ?>;
+			<?php
+				if(count($form_fields) > 0) {
+					?>
+						printessGlobalConfig.formFields = <?php echo wp_json_encode($form_fields); ?>;
+					<?php
+				}
+			?>
 
 
 			let showPrintessEditor = function() {};
@@ -513,6 +519,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 																										"uiVersion": <?php echo wp_json_encode( $printess_ui_version ); ?>,
 																										"theme": <?php echo wp_json_encode( $theme ); ?>
 																									},
+																									"autoImportImageUrlsInFormFields": true,
 																									"editorUrl": <?php echo wp_json_encode( PrintessAdminSettings::get_embed_html_url() ); ?>,
 																									"shopToken": <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
 																									"hidePricesInEditor": false,

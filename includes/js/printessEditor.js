@@ -1,1 +1,841 @@
-﻿class PrintessEditor{constructor(e){if(this.calculateCurrentPrices=async(e,t)=>{var i=await this.getPriceCategories(t);let n=i.basePrice;return e.snippetPriceCategories&&e.snippetPriceCategories.forEach(e=>{e&&0<e.amount&&t.snippetPrices[e.priceCategory-1]&&(n+=t.snippetPrices[e.priceCategory-1].priceInCent)}),i.price=t.formatMoney(n),i},!e||!e.shopToken)throw"No shop token provided";this.Settings={...e};e={};null!=this.Settings.uiSettings&&(e.showAnimation=!0===this.Settings.uiSettings.showStartupAnimation||"true"==this.Settings.uiSettings.showStartupAnimation,this.Settings.uiSettings.startupLogoUrl&&(e.imageUrl=this.Settings.uiSettings.startupLogoUrl),this.Settings.uiSettings.startupBackgroundColor)&&(e.background=this.Settings.uiSettings.startupBackgroundColor),this.ClassicEditorUrl=this.getClassicEditorUrl(this.Settings.editorUrl,this.Settings.editorVersion,e)+"#"+encodeURIComponent(JSON.stringify(e))}stripEditorVersion(e){if(void 0!==(e=(e||"").trim())&&null!=e)if(e){for(;0==e.indexOf("/");)e=e.substring(1);for(;0<e.length&&"/"===e[e.length-1];)e=e.substring(0,e.length-1)}else e="";return e}sanitizeHost(e){return e?(e=e.trim()).endsWith("/")?e:e+"/":e||""}getClassicEditorUrl(e,t,i){var n=(e=e||"https://editor.printess.com/").indexOf("#");if(0<n){var s=e.substring(n+1);if(s)try{var o=JSON.parse(decodeURIComponent(s));if(o)for(var a in o)o.hasOwnProperty(a)&&(i[a]=o[a])}catch(e){}e=e.substring(0,n)}return e.toLowerCase().endsWith(".html")||(e=this.sanitizeHost(e),t&&(e+=(t=this.stripEditorVersion(t))+(t?"/":"")),e+="printess-editor/embed.html"),e=0!==e.toLowerCase().indexOf("https://")&&0!==e.toLowerCase().indexOf("http://")?"https://"+e:e}getLoaderUrl(e,t,i){var n=(e=e||"https://editor.printess.com/").indexOf("#");if(0<n){var s=e.substring(n+1);if(s)try{var o=JSON.parse(decodeURIComponent(s));if(o)for(var a in o)o.hasOwnProperty(a)&&(i[a]=o[a])}catch(e){}e=e.substring(0,n)}return(e=e.toLocaleLowerCase().endsWith("embed.html")?e.substring(0,e.length-"embed.html".length):e).toLowerCase().endsWith(".html")||(e=this.sanitizeHost(e),t&&(e+=(t=this.stripEditorVersion(t))+(t?"/":"")),e.toLowerCase().endsWith("printess-editor/")||(e+="printess-editor/"),e+="loader.js"),e=0!==e.toLowerCase().indexOf("https://")&&0!==e.toLowerCase().indexOf("http://")?"https://"+e:e}getPrintessComponent(){return document.querySelector("printess-component")||null}applyFormFieldMappings(t,i){var n=[];if(!i)for(var e in t)t.hasOwnProperty(e)&&n.push({name:e,value:t[e]});if(t)for(var s in t)if(t.hasOwnProperty(s)){var o=t[s],a=void 0!==i[s]&&void 0!==i[s].formField?i[s].formField:s;let e=o;void 0!==i[s]&&void 0!==i[s].values&&void 0!==i[s].values[e]&&(e=i[s].values[o]),n.push({name:a,value:e})}return n}reverseFormFieldMapping(e,t,i){let n=e||"",s=t||"";if(i)for(var o in i)if(i.hasOwnProperty(o)&&i[o].formField===e){if(i[n=o].values)for(var a in i[o].values)if(i[o].values.hasOwnProperty(a)&&i[o].values[a]===t){s=a;break}break}return{name:n,value:s}}setViewportMeta(){var i=document.getElementsByTagName("head");if(i&&0<i.length){let e=i[0].querySelector("meta[name=viewport]"),t=(e||((e=document.createElement("meta")).setAttribute("name","viewport"),i[0].appendChild(e)),e.getAttribute("content"));t?t.indexOf("interactive-widget")<0&&(t=t+(t?", ":"")+"interactive-widget=resizes-content",e.setAttribute("content",t)):e.setAttribute("content","interactive-widget=resizes-content")}}async initializeIFrame(t,i,n){let s=this,o=document.getElementById("printess"),a=e=>{t&&"function"==typeof t.onCloseTab&&t.onCloseTab(e)},r=e=>{switch(e.data.cmd){case"back":window.removeEventListener("message",r),window.removeEventListener("beforeunload",a),window.removeEventListener("unload",a),o.setAttribute("printessHasListener","false"),t&&"function"==typeof t.onBack&&t.onBack();break;case"basket":window.removeEventListener("message",r),window.removeEventListener("beforeunload",a),window.removeEventListener("unload",a),o.setAttribute("printessHasListener","false"),t&&"function"==typeof t.onAddToBasketAsync&&t.onAddToBasketAsync(e.data.token,e.data.thumbnailUrl).then(()=>{});break;case"formFieldChanged":t&&"function"==typeof t.onFormFieldChangedAsync&&t.onFormFieldChangedAsync(e.data.n||e.data.name,e.data.v||e.data.value,e.data.ffCaption||"",e.data.l||e.data.label).then(()=>{});break;case"priceChanged":t&&"function"==typeof t.onPriceChangedAsync&&t.onPriceChangedAsync(e.data.priceInfo).then(()=>{});break;case"renderFirstPageImage":t&&"function"==typeof t.onRenderedFirstPageImageAsync&&t.onRenderedFirstPageImageAsync(e.data.result);break;case"save":t&&"function"==typeof t.onSaveAsync&&t.onSaveAsync(e.data.token);case"load":t&&"function"==typeof t.onLoadAsync&&t.onLoadAsync(i.templateNameOrSaveToken)}};return new Promise(e=>{var t;o?("true"!==o.getAttribute("printessHasListener")&&(window.addEventListener("message",r),!0===n.showAlertOnTabClose&&(window.addEventListener("beforeunload",a),window.addEventListener("unload",a)),o.setAttribute("printessHasListener","true")),e(o)):((t=document.createElement("div")).setAttribute("id","printess-container"),t.setAttribute("style","display: none; position: absolute; top: 0; bottom: 0; right: 0; left: 0; width: 100%; height: 100%; z-index: 100000;"),(o=document.createElement("iframe")).setAttribute("src",this.ClassicEditorUrl),o.setAttribute("id","printess"),o.setAttribute("style","width:100%; heigth:100%;"),o.setAttribute("data-attached","false"),o.setAttribute("allow","xr-spatial-tracking; clipboard-read; clipboard-write;"),o.setAttribute("allowfullscreen","true"),o.classList.add("printess-owned"),t.appendChild(o),o.onload=()=>{e(o)},window.addEventListener("message",r),!0===n.showAlertOnTabClose&&(window.addEventListener("beforeunload",a),window.addEventListener("unload",a)),o.setAttribute("printessHasListener","true"),window.visualViewport&&window.visualViewport.addEventListener("scroll",()=>{o.contentWindow?.postMessage({cmd:"viewportScroll",height:window.visualViewport?.height,offsetTop:window.visualViewport?.offsetTop},"*")},{passive:!0}),s.setViewportMeta(),document.body.append(t))})}async getPriceCategories(e,t=null){let i=0;return t=t||e.getCurrentFormFieldValues(),"function"==typeof e.getPriceForFormFieldsAsync?i=await e.getPriceForFormFieldsAsync(t):"function"==typeof e.getPriceForFormFields&&(i=e.getPriceForFormFields(t)),{snippetPrices:e.snippetPrices.map(e=>e?e.label:null),priceCategories:{},price:e.formatMoney(i),basePrice:i,productName:e.getProductName(),legalNotice:e.legalText,infoUrl:e.legalTextUrl}}async onPriceChanged(i,n){try{let e=null;try{i.snippetPriceCategories&&0<i.snippetPriceCategories.length?n.stickers=i.snippetPriceCategories.filter(e=>n.snippetPrices&&n.snippetPrices.length>=e.priceCategory).map(e=>({productVariantId:n.snippetPrices[e.priceCategory-1].variantId,quantity:e.amount})):n.stickers=[],e=await this.calculateCurrentPrices(i,n)}catch(e){console.error(e)}let t=document.getElementById("printess");t&&!n.hidePricesInEditor&&setTimeout(()=>{t.contentWindow.postMessage({cmd:"refreshPriceDisplay",priceDisplay:e},"*")},0);var s=this.getPrintessComponent();s&&s.editor&&s.editor.ui.refreshPriceDisplay(e)}catch(e){}}hideBcUiVersion(e,t){var i=this.getPrintessComponent();i&&i.editor&&i.editor.ui.hide(),"function"==typeof e.editorClosed&&e.editorClosed(!0===t)}async showBcUiVersion(i,o){let n=this;var e=i.getPriceInfo();let s=null,a=null;i&&i.templateNameOrSaveToken&&0===i.templateNameOrSaveToken.indexOf("st:")||(s=n.applyFormFieldMappings(i.getCurrentFormFieldValues(),i.getFormFieldMappings()),a=i.getMergeTemplates());var r=n.getLoaderUrl(this.Settings.editorUrl,this.Settings.editorVersion,{}),r=await import(r);let d=n.getPrintessComponent();if(d&&d.editor)d.style.display="block",i.renderFirstPageImageAsync=async(e,t)=>{e=await d.editor.api.renderFirstPageImage("thumbnail.png",void 0,e,t);i&&"function"==typeof i.onRenderFirstPageImageAsync?await i.onRenderFirstPageImageAsync(e):i&&"function"==typeof i.onRenderFirstPageImage&&i.onRenderFirstPageImage(e)},await d.editor.api.loadTemplateAndFormFields(i.templateNameOrSaveToken,a,s,null),d.editor.ui.show();else{let t={domain:n.Settings.apiDomain,mergeTemplates:a,formFields:s,token:n.Settings.shopToken,templateName:i.templateNameOrSaveToken,translationKey:"",basketId:"function"==typeof i.getBasketId&&i.getBasketId()||"Some-Unique-Basket-Or-Session-Id",shopUserId:"function"==typeof i.getUserId?i.getUserId()||"Some-Unique-Basket-Or-Session-Id":"Some-Unique-Shop-User-Id",snippetPriceCategoryLabels:e&&e.snippetPrices?e.snippetPrices:null,theme:n.Settings.uiSettings&&n.Settings.uiSettings.theme||"",addToBasketCallback:(e,t)=>{o&&"function"==typeof o.onAddToBasketAsync&&o.onAddToBasketAsync(e,t).then(()=>{})},formFieldChangedCallback:(e,t,i,n,s)=>{o&&"function"==typeof o.onFormFieldChangedAsync&&o.onFormFieldChangedAsync(e,t,s,n).then(()=>{})},priceChangeCallback:e=>{o&&"function"==typeof o.onPriceChangedAsync&&o.onPriceChangedAsync(e).then(()=>{})},backButtonCallback:e=>{n.hideBcUiVersion(i,!0)},saveTemplateCallback:(e,t)=>{"function"==typeof o.onSaveAsync&&o.onSaveAsync(e)},loadTemplateCallback:e=>{o.onLoadAsync(t.templateName)}};e=await r.load(t);(d=n.getPrintessComponent())&&(d.editor=e)}}async show(s){let o=this;var n=s&&s.templateNameOrSaveToken&&0===s.templateNameOrSaveToken.indexOf("st:"),a={onBack:()=>{o.hide(s,!0)},onAddToBasketAsync:async(e,t)=>{let i=null;(i="function"==typeof s.onAddToBasketAsync?await s.onAddToBasketAsync(e,t):s.onAddToBasket(e,t))&&i.waitUntilClosingMS?setTimeout(function(){"function"==typeof i.executeBeforeClosing&&i.executeBeforeClosing(),o.hide(s,!1)},i.waitUntilClosingMS):(i&&"function"==typeof i.executeBeforeClosing&&i.executeBeforeClosing(),o.hide(s,!1))},onFormFieldChangedAsync:async(e,t,i,n)=>{e=o.reverseFormFieldMapping(e,t,s.getFormFieldMappings());"function"==typeof s.onFormFieldChangedAsync?await s.onFormFieldChanged(e.name,e.value,i,n):"function"==typeof s.onFormFieldChanged&&s.onFormFieldChanged(e.name,e.value,i,n)},onPriceChangedAsync:async e=>{await o.onPriceChanged(e,s)},onRenderedFirstPageImageAsync:async e=>{"function"==typeof s.onRenderFirstPageImageAsync?await s.onRenderFirstPageImageAsync(e):"function"==typeof s.onRenderFirstPageImage&&s.onRenderFirstPageImage(e)},onSaveAsync:async e=>{"function"==typeof s.onSaveAsync?await s.onSaveAsync(e,""):"function"==typeof s.onSave&&s.onSave(e,"")},onLoadAsync:async e=>{"function"==typeof s.onLoadAsync?await s.onLoadAsync(e):"function"==typeof s.onLoad&&s.onLoad(e)},onCloseTab:e=>{e.preventDefault(),e.returnValue=""}};if(this.Settings.uiSettings&&"bcui"===this.Settings.uiSettings.uiVersion)o.showBcUiVersion(s,a);else{var r=s.getPriceInfo();let e=null,t=null,i=(n||(e=this.applyFormFieldMappings(s.getCurrentFormFieldValues(),s.getFormFieldMappings()),t=s.getMergeTemplates()),await this.initializeIFrame(a,s,this.Settings));if(s.renderFirstPageImageAsync=(e,t)=>(setTimeout(function(){i.contentWindow.postMessage({cmd:"renderFirstPageImage",properties:{}},"*")},0),Promise.resolve()),"false"===i.getAttribute("data-attached"))try{var d={domain:o.Settings.apiDomain,token:this.Settings.shopToken||"",templateName:s.templateNameOrSaveToken,showBuyerSide:!0,templateUserId:"",basketId:"function"==typeof s.getBasketId&&s.getBasketId()||"Some-Unique-Basket-Or-Session-Id",shopUserId:"function"==typeof s.getUserId?s.getUserId()||"Some-Unique-Basket-Or-Session-Id":"Some-Unique-Shop-User-Id",formFields:e,snippetPriceCategoryLabels:r&&r.snippetPrices?r.snippetPrices:null,mergeTemplates:t};if(null!=s.showSplitterGridSizeButton&&(d.showSplitterGridSizeButton=!0===s.showSplitterGridSizeButton||"true"===s.showSplitterGridSizeButton),this.Settings.uiSettings&&this.Settings.uiSettings.theme&&(d.theme=this.Settings.uiSettings.theme),this.Settings.attachParams)for(var l in this.Settings.attachParams)this.Settings.attachParams.hasOwnProperty(l)&&(d[l]=this.Settings.attachParams[l]);if(void 0!==s.additionalAttachParams||null!==s.additionalAttachParams)for(var c in s.additionalAttachParams)s.additionalAttachParams.hasOwnProperty(c)&&(d[c]=s.additionalAttachParams[c]);i.contentWindow.postMessage({cmd:"attach",properties:d},"*"),i.setAttribute("data-attached","true"),setTimeout(function(){i.contentWindow.focus()},0)}catch(e){console.error(e)}else{n={templateNameOrToken:s.templateNameOrSaveToken,mergeTemplates:t,formFields:e,snippetPriceCategoryLabels:r&&r.snippetPrices?r.snippetPrices:null,formFieldProperties:void 0,clearExchangeCaches:!0};this.Settings.attachParams&&(this.Settings.attachParams.formFieldProperties&&(n.formFieldProperties=this.Settings.attachParams.formFieldProperties),void 0!==this.Settings.attachParams.clearExchangeCaches)&&(n.clearExchangeCaches=!1!==this.Settings.attachParams.clearExchangeCaches),s&&s.additionalAttachParams&&(s.additionalAttachParams.formFieldProperties&&(n.formFieldProperties=s.additionalAttachParams.formFieldProperties),void 0!==s.additionalAttachParams.clearExchangeCaches)&&(n.clearExchangeCaches=!1!==s.additionalAttachParams.clearExchangeCaches),i.contentWindow.postMessage({cmd:"loadTemplateAndFormFields",parameters:[n.templateNameOrToken,n.mergeTemplates,n.formFields,n.snippetPriceCategoryLabels,n.formFieldProperties,n.clearExchangeCaches]},"*"),setTimeout(function(){i.contentWindow.focus()},0)}}document.body.classList.add("hideAll");a=document.getElementsByTagName("html"),a&&0<a.length&&a[0].classList.add("printess-editor-open"),r=document.getElementById("printess-container");r&&r.style.setProperty("display","block","important")}hide(e,t){this.Settings.uiSettings&&"bcui"===this.Settings.uiSettings.uiVersion?(i=this.getPrintessComponent())&&i.editor&&i.editor.ui.hide():(i=document.getElementById("printess-container"))&&(i.style.display="none"),document.body.classList.remove("hideAll");var i=document.getElementsByTagName("html");i&&0<i.length&&i[0].classList.remove("printess-editor-open"),"function"==typeof e.editorClosed&&e.editorClosed(!0===t)}static getGlobalShopSettings(){return window&&window.printessGlobalConfig?window.printessGlobalConfig:{}}static getGlobalFormFields(){var e=PrintessEditor.getGlobalShopSettings();let t;if(null!=typeof e.formFields&&e.formFields)if("function"==typeof e.formFields)try{t=e.formFields()}catch(e){console.error(e)}else t=e.formFields;return t||{}}}function initPrintessEditor(e,t,i,n,s,o,a=""){let r;return r=e&&"string"!=typeof e?{apiDomain:e.apiDomain||null,shopToken:e.shopToken||"",editorUrl:e.editorUrl||"",editorVersion:e.editorVersion||"",attachParams:e.attachParams||"",showAlertOnTabClose:null!=e.showTabClosingAlert&&!0===e.showTabClosingAlert,uiSettings:{showStartupAnimation:null==e.showStartupAnimation||!0===e.showStartupAnimation,startupBackgroundColor:e.startupBackgroundColor||"#ffffff",theme:e.theme||"",startupLogoUrl:e.startupLogoUrl||"",uiVersion:e.uiVersion||""},...e}:{apiDomain:null,shopToken:e||"",editorUrl:t,editorVersion:i,uiSettings:{showStartupAnimation:s,startupBackgroundColor:a,startupLogoUrl:n,theme:o}},new PrintessEditor(r)};
+﻿class PrintessEditor {
+    constructor(settings) {
+        this.calculateCurrentPrices = async (priceInfo, context) => {
+            const r = await this.getPriceCategories(context);
+            let basePrice = r.basePrice;
+            if (priceInfo.snippetPriceCategories) {
+                priceInfo.snippetPriceCategories.forEach((x) => {
+                    if (x && x.amount > 0 && context.snippetPrices[x.priceCategory - 1]) {
+                        basePrice += context.snippetPrices[x.priceCategory - 1].priceInCent; // * x.amount;
+                    }
+                });
+            }
+            r.price = context.formatMoney(basePrice);
+            return r;
+        };
+        if (!settings || !settings.shopToken) {
+            throw "No shop token provided";
+        }
+        this.Settings = {
+            ...settings
+        };
+        const hasUiSettings = typeof this.Settings.uiSettings !== "undefined" && this.Settings.uiSettings !== null;
+        const startupSettings = {};
+        if (hasUiSettings) {
+            startupSettings["showAnimation"] = this.Settings.uiSettings.showStartupAnimation === true || this.Settings.uiSettings.showStartupAnimation == "true";
+            if (this.Settings.uiSettings.startupLogoUrl) {
+                startupSettings["imageUrl"] = this.Settings.uiSettings.startupLogoUrl;
+            }
+            if (this.Settings.uiSettings.startupBackgroundColor) {
+                startupSettings["background"] = this.Settings.uiSettings.startupBackgroundColor;
+            }
+        }
+        this.ClassicEditorUrl = this.getClassicEditorUrl(this.Settings.editorUrl, this.Settings.editorVersion, startupSettings) + "#" + encodeURIComponent(JSON.stringify(startupSettings));
+    }
+    stripEditorVersion(editorVersion) {
+        editorVersion = (editorVersion ? editorVersion : "").trim();
+        if (typeof editorVersion !== "undefined" && editorVersion != null) {
+            if (!editorVersion) {
+                editorVersion = "";
+            }
+            else {
+                while (editorVersion.indexOf("/") == 0) {
+                    editorVersion = editorVersion.substring(1);
+                }
+                while (editorVersion.length > 0 && editorVersion[editorVersion.length - 1] === "/") {
+                    editorVersion = editorVersion.substring(0, editorVersion.length - 1);
+                }
+            }
+        }
+        return editorVersion;
+    }
+    sanitizeHost(host) {
+        if (host) {
+            host = host.trim();
+            if (host.endsWith("/")) {
+                return host;
+            }
+            return host + "/";
+        }
+        return host || "";
+    }
+    getClassicEditorUrl(editorDomain, editorVersion, startupSettings) {
+        editorDomain = editorDomain || "https://editor.printess.com/";
+        const hashIndex = editorDomain.indexOf("#");
+        if (hashIndex > 0) {
+            let json = editorDomain.substring(hashIndex + 1);
+            if (json) {
+                try {
+                    const decodedJson = JSON.parse(decodeURIComponent(json));
+                    if (decodedJson) {
+                        for (let propertyName in decodedJson) {
+                            if (decodedJson.hasOwnProperty(propertyName)) {
+                                startupSettings[propertyName] = decodedJson[propertyName];
+                            }
+                        }
+                    }
+                }
+                catch (e) {
+                }
+            }
+            editorDomain = editorDomain.substring(0, hashIndex);
+        }
+        if (!editorDomain.toLowerCase().endsWith(".html")) {
+            editorDomain = this.sanitizeHost(editorDomain);
+            if (editorVersion) {
+                editorVersion = this.stripEditorVersion(editorVersion);
+                editorDomain += editorVersion + (editorVersion ? "/" : "");
+            }
+            editorDomain += 'printess-editor/embed.html';
+        }
+        if (editorDomain.toLowerCase().indexOf("https://") !== 0 && editorDomain.toLowerCase().indexOf("http://") !== 0) {
+            editorDomain = "https://" + editorDomain;
+        }
+        return editorDomain;
+    }
+    getLoaderUrl(editorDomain, editorVersion, urlSettings) {
+        editorDomain = editorDomain || "https://editor.printess.com/";
+        const hashIndex = editorDomain.indexOf("#");
+        if (hashIndex > 0) {
+            let json = editorDomain.substring(hashIndex + 1);
+            if (json) {
+                try {
+                    const decodedJson = JSON.parse(decodeURIComponent(json));
+                    if (decodedJson) {
+                        for (let propertyName in decodedJson) {
+                            if (decodedJson.hasOwnProperty(propertyName)) {
+                                urlSettings[propertyName] = decodedJson[propertyName];
+                            }
+                        }
+                    }
+                }
+                catch (e) {
+                }
+            }
+            editorDomain = editorDomain.substring(0, hashIndex);
+        }
+        if (editorDomain.toLocaleLowerCase().endsWith("embed.html")) {
+            editorDomain = editorDomain.substring(0, editorDomain.length - "embed.html".length);
+        }
+        if (!editorDomain.toLowerCase().endsWith(".html")) {
+            editorDomain = this.sanitizeHost(editorDomain);
+            if (editorVersion) {
+                editorVersion = this.stripEditorVersion(editorVersion);
+                editorDomain += editorVersion + (editorVersion ? "/" : "");
+            }
+            if (!editorDomain.toLowerCase().endsWith("printess-editor/")) {
+                editorDomain += "printess-editor/";
+            }
+            editorDomain += 'loader.js';
+        }
+        if (editorDomain.toLowerCase().indexOf("https://") !== 0 && editorDomain.toLowerCase().indexOf("http://") !== 0) {
+            editorDomain = "https://" + editorDomain;
+        }
+        return editorDomain;
+    }
+    getPrintessComponent() {
+        return document.querySelector("printess-component") || null;
+    }
+    applyFormFieldMappings(formFields, mappings) {
+        const ret = [];
+        if (!mappings) {
+            for (const ffName in formFields) {
+                if (formFields.hasOwnProperty(ffName)) {
+                    ret.push({
+                        name: ffName,
+                        value: formFields[ffName]
+                    });
+                }
+            }
+        }
+        if (formFields) {
+            for (const property in formFields) {
+                if (formFields.hasOwnProperty(property)) {
+                    const ff = formFields[property];
+                    const ffName = typeof mappings[property] !== "undefined" && typeof mappings[property].formField !== "undefined" ? mappings[property].formField : property;
+                    let ffValue = ff;
+                    if (typeof mappings[property] !== "undefined" && typeof mappings[property].values !== "undefined" && typeof mappings[property].values[ffValue] !== "undefined") {
+                        ffValue = mappings[property].values[ff];
+                    }
+                    ret.push({
+                        name: ffName,
+                        value: ffValue
+                    });
+                }
+            }
+        }
+        return ret;
+    }
+    reverseFormFieldMapping(formFieldName, formFieldValue, mappings) {
+        let name = formFieldName || "";
+        let value = formFieldValue || "";
+        if (mappings) {
+            for (let optionName in mappings) {
+                if (mappings.hasOwnProperty(optionName)) {
+                    if (mappings[optionName].formField === formFieldName) {
+                        name = optionName;
+                        if (mappings[optionName].values) {
+                            for (let optionValue in mappings[optionName].values) {
+                                if (mappings[optionName].values.hasOwnProperty(optionValue)) {
+                                    if (mappings[optionName].values[optionValue] === formFieldValue) {
+                                        value = optionValue;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+            }
+        }
+        return {
+            name: name,
+            value: value
+        };
+    }
+    setViewportMeta() {
+        const headElements = document.getElementsByTagName("head");
+        if (headElements && headElements.length > 0) {
+            let metaTag = headElements[0].querySelector('meta[name=viewport]');
+            if (!metaTag) {
+                metaTag = document.createElement("meta");
+                metaTag.setAttribute("name", "viewport");
+                headElements[0].appendChild(metaTag);
+            }
+            let content = metaTag.getAttribute("content");
+            if (content) {
+                if (content.indexOf("interactive-widget") < 0) {
+                    content += content ? ", " : "";
+                    content += "interactive-widget=resizes-content";
+                    metaTag.setAttribute("content", content);
+                }
+            }
+            else {
+                metaTag.setAttribute("content", "interactive-widget=resizes-content");
+            }
+        }
+    }
+    async initializeIFrame(callbacks, context, settings) {
+        const that = this;
+        let iFrame = document.getElementById("printess");
+        const closeTabListener = (evt) => {
+            if (callbacks && typeof callbacks.onCloseTab === "function") {
+                callbacks.onCloseTab(evt);
+            }
+        };
+        const eventListener = (evt) => {
+            switch (evt.data.cmd) {
+                case 'back':
+                    window.removeEventListener('message', eventListener);
+                    window.removeEventListener('beforeunload', closeTabListener);
+                    window.removeEventListener('unload', closeTabListener);
+                    iFrame.setAttribute("printessHasListener", "false");
+                    if (callbacks && typeof callbacks.onBack === "function") {
+                        callbacks.onBack();
+                    }
+                    break;
+                case 'basket':
+                    window.removeEventListener('message', eventListener);
+                    window.removeEventListener('beforeunload', closeTabListener);
+                    window.removeEventListener('unload', closeTabListener);
+                    iFrame.setAttribute("printessHasListener", "false");
+                    if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
+                        callbacks.onAddToBasketAsync(evt.data.token, evt.data.thumbnailUrl).then(() => { });
+                    }
+                    break;
+                case 'formFieldChanged':
+                    if (callbacks && typeof callbacks.onFormFieldChangedAsync === "function") {
+                        callbacks.onFormFieldChangedAsync(evt.data.n || evt.data.name, evt.data.v || evt.data.value, evt.data.ffCaption || "", evt.data.l || evt.data.label).then(() => { });
+                    }
+                    break;
+                case 'priceChanged': {
+                    if (callbacks && typeof callbacks.onPriceChangedAsync === "function") {
+                        callbacks.onPriceChangedAsync(evt.data.priceInfo).then(() => { });
+                    }
+                    break;
+                }
+                case 'renderFirstPageImage': {
+                    if (callbacks && typeof callbacks.onRenderedFirstPageImageAsync === "function") {
+                        callbacks.onRenderedFirstPageImageAsync(evt.data.result);
+                    }
+                    break;
+                }
+                case 'save': {
+                    if (callbacks && typeof callbacks.onSaveAsync === "function") {
+                        callbacks.onSaveAsync(evt.data.token);
+                    }
+                    break;
+                }
+                case 'loaded': {
+                    if (this.Settings.autoImportImageUrlsInFormFields === true) {
+                        try {
+                            this.downloadImages(this.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
+                                if (!this.tempUploadImages) {
+                                    this.tempUploadImages = images;
+                                }
+                                else {
+                                    this.tempUploadImages = [
+                                        ...this.tempUploadImages,
+                                        ...images
+                                    ];
+                                }
+                                if (images.length > 0) {
+                                    this.uploadImageToClassicEditor(iFrame, images[0].data, images[0].name);
+                                }
+                            });
+                        }
+                        catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    if (callbacks && typeof callbacks.onLoadAsync === "function") {
+                        callbacks.onLoadAsync(context.templateNameOrSaveToken);
+                    }
+                    break;
+                }
+                case "uploadImage": {
+                    if (this.tempUploadImages && evt.data.result) {
+                        const images = this.tempUploadImages;
+                        if (images && images.length > 0) {
+                            const currentImage = images[0];
+                            const imageName = evt.data.result.name;
+                            images.shift();
+                            iFrame.contentWindow?.postMessage({ cmd: "setFormFieldValue", parameters: [currentImage.name, imageName] }, "*");
+                            if (images.length > 0) {
+                                this.uploadImageToClassicEditor(iFrame, images[0].data, images[0].name);
+                            }
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
+            }
+        };
+        return new Promise((resolve) => {
+            if (!iFrame) {
+                const container = document.createElement('div');
+                container.setAttribute('id', 'printess-container');
+                container.setAttribute('style', 'display: none; position: absolute; top: 0; bottom: 0; right: 0; left: 0; width: 100%; height: 100%; z-index: 100000;');
+                iFrame = document.createElement('iframe');
+                iFrame.setAttribute('src', this.ClassicEditorUrl);
+                iFrame.setAttribute('id', 'printess');
+                iFrame.setAttribute('style', 'width:100%; heigth:100%;');
+                iFrame.setAttribute('data-attached', 'false');
+                iFrame.setAttribute('allow', 'xr-spatial-tracking; clipboard-read; clipboard-write;');
+                iFrame.setAttribute('allowfullscreen', 'true');
+                iFrame.classList.add("printess-owned");
+                container.appendChild(iFrame);
+                iFrame.onload = () => {
+                    resolve(iFrame);
+                };
+                window.addEventListener('message', eventListener);
+                if (settings.showAlertOnTabClose === true) {
+                    window.addEventListener('beforeunload', closeTabListener);
+                    window.addEventListener('unload', closeTabListener);
+                }
+                iFrame.setAttribute("printessHasListener", "true");
+                if (window.visualViewport) {
+                    window.visualViewport.addEventListener("scroll", () => {
+                        // unfortunately an iframe on iOS is not able to receive the correct visual-viewport, so we forward it. 
+                        iFrame.contentWindow?.postMessage({ cmd: "viewportScroll", height: window.visualViewport?.height, offsetTop: window.visualViewport?.offsetTop }, "*");
+                    }, { passive: true });
+                }
+                that.setViewportMeta();
+                document.body.append(container);
+            }
+            else {
+                if (iFrame.getAttribute("printessHasListener") !== "true") {
+                    window.addEventListener('message', eventListener);
+                    if (settings.showAlertOnTabClose === true) {
+                        window.addEventListener('beforeunload', closeTabListener);
+                        window.addEventListener('unload', closeTabListener);
+                    }
+                    iFrame.setAttribute("printessHasListener", "true");
+                }
+                resolve(iFrame);
+            }
+        });
+    }
+    getFileNameFromUrl(fileName) {
+        return (fileName || "").split('#')[0].split('?')[0].split('/').pop();
+    }
+    getImagesInFormFields(formFields) {
+        const ret = [];
+        const supportedExtensions = ["png", "jpg", "gif", "webp", "svg", "heic"];
+        formFields.forEach((ff) => {
+            if (ff.value) {
+                const lowerValue = ff.value.toLowerCase();
+                if (lowerValue.startsWith("http://") || lowerValue.startsWith("https://")) {
+                    const fileName = this.getFileNameFromUrl(lowerValue);
+                    const fileParts = fileName.split(".");
+                    if (fileParts.length > 0 && supportedExtensions.includes(fileParts[1])) {
+                        ret.push(ff);
+                    }
+                }
+            }
+        });
+        return ret;
+    }
+    async getPriceCategories(context, formFieldValues = null) {
+        let price = 0;
+        if (!formFieldValues) {
+            formFieldValues = context.getCurrentFormFieldValues();
+        }
+        if (typeof context.getPriceForFormFieldsAsync === "function") {
+            price = await context.getPriceForFormFieldsAsync(formFieldValues);
+        }
+        else if (typeof context.getPriceForFormFields === "function") {
+            price = context.getPriceForFormFields(formFieldValues);
+        }
+        const r = {
+            snippetPrices: context.snippetPrices.map((x) => x ? x.label : null),
+            priceCategories: {},
+            price: context.formatMoney(price),
+            basePrice: price,
+            productName: context.getProductName(),
+            legalNotice: context.legalText,
+            infoUrl: context.legalTextUrl
+        };
+        return r;
+    }
+    ;
+    usePanelUi() {
+        const loweruiVersion = this.Settings.uiSettings && this.Settings.uiSettings.uiVersion ? this.Settings.uiSettings.uiVersion.toLowerCase().trim() : "";
+        return loweruiVersion === "bcui" || loweruiVersion === "panelui";
+    }
+    async onPriceChanged(priceChangedInfo, context) {
+        try {
+            let priceInfo = null;
+            try {
+                if (priceChangedInfo.snippetPriceCategories && priceChangedInfo.snippetPriceCategories.length > 0) {
+                    context.stickers = priceChangedInfo.snippetPriceCategories.filter((x) => context.snippetPrices && context.snippetPrices.length >= x.priceCategory).map((x) => {
+                        return {
+                            productVariantId: context.snippetPrices[x.priceCategory - 1].variantId,
+                            quantity: x.amount
+                        };
+                    });
+                }
+                else {
+                    context.stickers = [];
+                }
+                priceInfo = await this.calculateCurrentPrices(priceChangedInfo, context);
+            }
+            catch (e) {
+                console.error(e);
+            }
+            const iframe = document.getElementById("printess");
+            if (iframe && !context.hidePricesInEditor) {
+                setTimeout(() => {
+                    iframe.contentWindow.postMessage({
+                        cmd: "refreshPriceDisplay",
+                        priceDisplay: priceInfo
+                    }, "*");
+                }, 0);
+            }
+            //BcUI
+            const component = this.getPrintessComponent();
+            if (component && component.editor) {
+                component.editor.ui.refreshPriceDisplay(priceInfo);
+            }
+        }
+        catch (e) {
+        }
+    }
+    ;
+    hideBcUiVersion(context, closeButtonClicked) {
+        const editor = this.getPrintessComponent();
+        if (editor && editor.editor) {
+            editor.editor.ui.hide();
+        }
+        if (typeof context.editorClosed === "function") {
+            context.editorClosed(closeButtonClicked === true);
+        }
+        //Hide the web page scrolling
+        document.body.classList.remove('hideAll');
+    }
+    async downloadImages(images) {
+        const ret = [];
+        for (let i = 0; i < images.length; ++i) {
+            const response = await fetch(images[i].value);
+            if (response.ok) {
+                const blob = await response.blob();
+                ret.push({
+                    name: images[0].name,
+                    data: new File([blob], this.getFileNameFromUrl(images[i].value), { type: blob.type })
+                });
+            }
+            else {
+                console.error("Unable to download image " + images[i].value + "; [" + response.status.toString() + "] " + response.statusText + ": " + await response.text());
+            }
+        }
+        return ret;
+    }
+    async uploadImagesToBcUiEditor(files, editor) {
+        if (files) {
+            for (let i = 0; i < files.length; ++i) {
+                const result = await editor.api.uploadImage(files[i].data, null, false);
+                if (result) {
+                    await editor.api.setFormFieldValue(files[i].name, result.name);
+                }
+            }
+        }
+    }
+    uploadImageToClassicEditor(iframe, file, formFieldName) {
+        if (file) {
+            iframe.contentWindow?.postMessage({ cmd: "uploadImage", parameters: [file, null, false, "ff_" + formFieldName] }, "*");
+        }
+    }
+    async showBcUiVersion(context, callbacks) {
+        const that = this;
+        const priceInfo = context.getPriceInfo();
+        let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
+        let formFields = null;
+        let mergeTemplates = null;
+        if (!isSaveToken) {
+            formFields = that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
+            mergeTemplates = context.getMergeTemplates();
+        }
+        const startupParams = {};
+        const loaderUrl = that.getLoaderUrl(this.Settings.editorUrl, this.Settings.editorVersion, startupParams);
+        const printessLoader = await import(/* webpackIgnore: true */ loaderUrl);
+        let printessComponent = that.getPrintessComponent();
+        if (printessComponent && printessComponent.editor) {
+            printessComponent.style.display = "block";
+            context.renderFirstPageImageAsync = async (maxThumbnailWidth, maxThumbnailHeight) => {
+                const url = await printessComponent.editor.api.renderFirstPageImage("thumbnail.png", undefined, maxThumbnailWidth, maxThumbnailHeight);
+                if (context && typeof context.onRenderFirstPageImageAsync === "function") {
+                    await context.onRenderFirstPageImageAsync(url);
+                }
+                else if (context && typeof context.onRenderFirstPageImage === "function") {
+                    context.onRenderFirstPageImage(url);
+                }
+            };
+            await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null);
+            printessComponent.editor.ui.show();
+        }
+        else {
+            const attachParams = {
+                domain: that.Settings.apiDomain,
+                mergeTemplates: mergeTemplates,
+                formFields: formFields,
+                token: that.Settings.shopToken,
+                templateName: context.templateNameOrSaveToken,
+                //templateVersion: "publish",//"draft"
+                translationKey: "",
+                basketId: typeof context.getBasketId === "function" ? context.getBasketId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Basket-Or-Session-Id',
+                shopUserId: typeof context.getUserId === "function" ? context.getUserId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Shop-User-Id',
+                // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
+                // allowZoomAndPan: false,
+                snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
+                theme: that.Settings.uiSettings ? (that.Settings.uiSettings.theme || "") : "",
+                addToBasketCallback: (token, thumbnailUrl) => {
+                    if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
+                        callbacks.onAddToBasketAsync(token, thumbnailUrl).then(() => { });
+                    }
+                },
+                formFieldChangedCallback: (name, value, tag, label, ffLabel) => {
+                    if (callbacks && typeof callbacks.onFormFieldChangedAsync === "function") {
+                        callbacks.onFormFieldChangedAsync(name, value, ffLabel, label).then(() => { });
+                    }
+                },
+                priceChangeCallback: (priceInfo) => {
+                    if (callbacks && typeof callbacks.onPriceChangedAsync === "function") {
+                        callbacks.onPriceChangedAsync(priceInfo).then(() => { });
+                    }
+                },
+                backButtonCallback: (saveToken) => {
+                    that.hideBcUiVersion(context, true);
+                },
+                saveTemplateCallback: (saveToken, type) => {
+                    if (typeof callbacks.onSaveAsync === "function") {
+                        callbacks.onSaveAsync(saveToken);
+                    }
+                    if (type && type === "close") {
+                        that.hideBcUiVersion(context, true);
+                    }
+                },
+                loadTemplateCallback: (param) => {
+                    if (this.Settings.autoImportImageUrlsInFormFields === true) {
+                        try {
+                            this.downloadImages(this.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
+                                this.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
+                                });
+                            });
+                        }
+                        catch (e) {
+                            console.error(e);
+                        }
+                    }
+                    callbacks.onLoadAsync(attachParams.templateName);
+                }
+            };
+            const printess = await printessLoader.load(attachParams);
+            printessComponent = that.getPrintessComponent();
+            if (printessComponent) {
+                printessComponent.editor = printess;
+            }
+        }
+    }
+    async show(context) {
+        const that = this;
+        let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
+        const callbacks = {
+            onBack: () => {
+                that.hide(context, true);
+            },
+            onAddToBasketAsync: async (saveToken, thumbnailUrl) => {
+                let result = null;
+                if (typeof context.onAddToBasketAsync === "function") {
+                    result = await context.onAddToBasketAsync(saveToken, thumbnailUrl);
+                }
+                else {
+                    result = context.onAddToBasket(saveToken, thumbnailUrl);
+                }
+                if (result && result.waitUntilClosingMS) {
+                    setTimeout(function () {
+                        if (typeof result.executeBeforeClosing === "function") {
+                            result.executeBeforeClosing();
+                        }
+                        that.hide(context, false);
+                    }, result.waitUntilClosingMS);
+                }
+                else {
+                    if (result && typeof result.executeBeforeClosing === "function") {
+                        result.executeBeforeClosing();
+                    }
+                    that.hide(context, false);
+                }
+            },
+            onFormFieldChangedAsync: async (formFieldName, formFieldValue, formFieldLabel, formFieldValueLabel) => {
+                const formField = that.reverseFormFieldMapping(formFieldName, formFieldValue, context.getFormFieldMappings());
+                if (typeof context.onFormFieldChangedAsync === "function") {
+                    await context.onFormFieldChanged(formField.name, formField.value, formFieldLabel, formFieldValueLabel);
+                }
+                else if (typeof context.onFormFieldChanged === "function") {
+                    context.onFormFieldChanged(formField.name, formField.value, formFieldLabel, formFieldValueLabel);
+                }
+            },
+            onPriceChangedAsync: async (priceInfo) => {
+                await that.onPriceChanged(priceInfo, context);
+            },
+            onRenderedFirstPageImageAsync: async (result) => {
+                if (typeof context.onRenderFirstPageImageAsync === "function") {
+                    await context.onRenderFirstPageImageAsync(result);
+                }
+                else if (typeof context.onRenderFirstPageImage === "function") {
+                    context.onRenderFirstPageImage(result);
+                }
+            },
+            onSaveAsync: async (saveToken) => {
+                if (typeof context.onSaveAsync === "function") {
+                    await context.onSaveAsync(saveToken, "");
+                }
+                else if (typeof context.onSave === "function") {
+                    context.onSave(saveToken, "");
+                }
+            },
+            onLoadAsync: async (currentTemplateNameOrSaveToken) => {
+                if (typeof context.onLoadAsync === "function") {
+                    await context.onLoadAsync(currentTemplateNameOrSaveToken);
+                }
+                else if (typeof context.onLoad === "function") {
+                    context.onLoad(currentTemplateNameOrSaveToken);
+                }
+            },
+            onCloseTab: (evt) => {
+                evt.preventDefault();
+                evt.returnValue = '';
+            }
+        };
+        if (this.usePanelUi()) {
+            that.showBcUiVersion(context, callbacks);
+        }
+        else {
+            const priceInfo = context.getPriceInfo();
+            let formFields = null;
+            let mergeTemplates = null;
+            if (!isSaveToken) {
+                formFields = this.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
+                mergeTemplates = context.getMergeTemplates();
+            }
+            const iFrame = await this.initializeIFrame(callbacks, context, this.Settings);
+            context.renderFirstPageImageAsync = (maxThumbnailWidth, maxThumbnailHeight) => {
+                setTimeout(function () {
+                    iFrame.contentWindow.postMessage({
+                        cmd: "renderFirstPageImage",
+                        properties: {}
+                    }, "*");
+                }, 0);
+                return Promise.resolve();
+            };
+            if (iFrame.getAttribute('data-attached') === "false") {
+                try {
+                    const attachParams = {
+                        domain: that.Settings.apiDomain,
+                        token: this.Settings.shopToken || "",
+                        templateName: context.templateNameOrSaveToken,
+                        showBuyerSide: true,
+                        templateUserId: '',
+                        basketId: typeof context.getBasketId === "function" ? context.getBasketId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Basket-Or-Session-Id',
+                        shopUserId: typeof context.getUserId === "function" ? context.getUserId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Shop-User-Id',
+                        formFields: formFields,
+                        snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
+                        mergeTemplates: mergeTemplates
+                    };
+                    if (typeof context.showSplitterGridSizeButton !== "undefined" && context.showSplitterGridSizeButton !== null) {
+                        attachParams["showSplitterGridSizeButton"] = context.showSplitterGridSizeButton === true || context.showSplitterGridSizeButton === "true";
+                    }
+                    if (this.Settings.uiSettings && this.Settings.uiSettings.theme) {
+                        attachParams["theme"] = this.Settings.uiSettings.theme;
+                    }
+                    if (this.Settings.attachParams) {
+                        for (const paramName in this.Settings.attachParams) {
+                            if (this.Settings.attachParams.hasOwnProperty(paramName)) {
+                                attachParams[paramName] = this.Settings.attachParams[paramName];
+                            }
+                        }
+                    }
+                    if (typeof context.additionalAttachParams !== "undefined" || context.additionalAttachParams !== null) {
+                        for (const prop in context.additionalAttachParams) {
+                            if (context.additionalAttachParams.hasOwnProperty(prop)) {
+                                attachParams[prop] = context.additionalAttachParams[prop];
+                            }
+                        }
+                    }
+                    iFrame.contentWindow.postMessage({
+                        cmd: 'attach',
+                        properties: attachParams
+                    }, '*');
+                    iFrame.setAttribute('data-attached', "true");
+                    setTimeout(function () { iFrame.contentWindow.focus(); }, 0);
+                }
+                catch (e) {
+                    console.error(e);
+                }
+            }
+            else {
+                let undef;
+                const loadParams = {
+                    templateNameOrToken: context.templateNameOrSaveToken,
+                    mergeTemplates: mergeTemplates,
+                    formFields: formFields,
+                    snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
+                    formFieldProperties: undef,
+                    clearExchangeCaches: true
+                };
+                if (this.Settings.attachParams) {
+                    if (this.Settings.attachParams.formFieldProperties) {
+                        loadParams.formFieldProperties = this.Settings.attachParams.formFieldProperties;
+                    }
+                    if (typeof this.Settings.attachParams.clearExchangeCaches !== "undefined") {
+                        loadParams.clearExchangeCaches = this.Settings.attachParams.clearExchangeCaches === false ? false : true;
+                    }
+                }
+                if (context && context.additionalAttachParams) {
+                    if (context.additionalAttachParams.formFieldProperties) {
+                        loadParams.formFieldProperties = context.additionalAttachParams.formFieldProperties;
+                    }
+                    if (typeof context.additionalAttachParams.clearExchangeCaches !== "undefined") {
+                        loadParams.clearExchangeCaches = context.additionalAttachParams.clearExchangeCaches === false ? false : true;
+                    }
+                }
+                iFrame.contentWindow.postMessage({
+                    cmd: "loadTemplateAndFormFields",
+                    parameters: [loadParams.templateNameOrToken, loadParams.mergeTemplates, loadParams.formFields, loadParams.snippetPriceCategoryLabels, loadParams.formFieldProperties, loadParams.clearExchangeCaches]
+                }, '*');
+                setTimeout(function () { iFrame.contentWindow.focus(); }, 0);
+            }
+        }
+        //Hide the web page scrolling
+        document.body.classList.add('hideAll');
+        var root = document.getElementsByTagName('html');
+        if (root && root.length > 0) {
+            root[0].classList.add('printess-editor-open');
+        }
+        const iframeWrapper = document.getElementById("printess-container");
+        if (iframeWrapper) {
+            // iframeWrapper.style.display = "block !important";
+            iframeWrapper.style.setProperty('display', 'block', 'important');
+        }
+    }
+    hide(context, closeButtonClicked) {
+        if (this.usePanelUi()) {
+            const editor = this.getPrintessComponent();
+            if (editor && editor.editor) {
+                editor.editor.ui.hide();
+            }
+        }
+        else {
+            const iframeWrapper = document.getElementById("printess-container");
+            if (iframeWrapper) {
+                iframeWrapper.style.display = "none";
+            }
+        }
+        document.body.classList.remove('hideAll');
+        var root = document.getElementsByTagName('html');
+        if (root && root.length > 0) {
+            root[0].classList.remove('printess-editor-open');
+        }
+        if (typeof context.editorClosed === "function") {
+            context.editorClosed(closeButtonClicked === true);
+        }
+    }
+    static getGlobalShopSettings() {
+        return (window && window["printessGlobalConfig"] ? window["printessGlobalConfig"] : {});
+    }
+    static getGlobalFormFields() {
+        const settings = PrintessEditor.getGlobalShopSettings();
+        let formFields;
+        if (typeof settings.formFields != undefined && settings.formFields) {
+            if (typeof settings.formFields == "function") {
+                try {
+                    formFields = settings.formFields();
+                }
+                catch (e) {
+                    console.error(e);
+                }
+            }
+            else {
+                formFields = settings.formFields;
+            }
+        }
+        return formFields || {};
+    }
+}function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
+    let editorSettings;
+    if (shopToken && typeof shopToken !== "string") {
+        editorSettings = {
+            apiDomain: shopToken["apiDomain"] ? shopToken["apiDomain"] : null,
+            shopToken: shopToken["shopToken"] ? shopToken["shopToken"] : "",
+            editorUrl: shopToken["editorUrl"] ? shopToken["editorUrl"] : "",
+            editorVersion: shopToken["editorVersion"] ? shopToken["editorVersion"] : "",
+            attachParams: shopToken["attachParams"] ? shopToken["attachParams"] : "",
+            showAlertOnTabClose: typeof shopToken["showTabClosingAlert"] !== "undefined" && shopToken["showTabClosingAlert"] !== null ? shopToken["showTabClosingAlert"] === true : false,
+            uiSettings: {
+                showStartupAnimation: typeof shopToken["showStartupAnimation"] !== "undefined" && shopToken["showStartupAnimation"] !== null ? shopToken["showStartupAnimation"] === true : true,
+                startupBackgroundColor: shopToken["startupBackgroundColor"] || "#ffffff",
+                theme: shopToken["theme"] || "",
+                startupLogoUrl: shopToken["startupLogoUrl"] || "",
+                uiVersion: shopToken["uiVersion"] || ""
+            },
+            ...shopToken,
+        };
+    }
+    else {
+        editorSettings = {
+            apiDomain: null,
+            shopToken: shopToken || "",
+            editorUrl: editorUrl,
+            editorVersion: editorVersion,
+            uiSettings: {
+                showStartupAnimation: showStartupAnimation,
+                startupBackgroundColor: startupBackgroundColor,
+                startupLogoUrl: startupLogoUrl,
+                theme: theme
+            }
+        };
+    }
+    return new PrintessEditor(editorSettings);
+}
