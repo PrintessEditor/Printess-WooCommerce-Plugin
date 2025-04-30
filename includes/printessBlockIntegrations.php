@@ -27,11 +27,11 @@ function printess_on_add_printess_cart_item_data($cart_item)
         }
 
         $ret = array(
-            "saveToken" => $cart_item["printess-save-token"],
-            "thumbnailUrl" => $cart_item["printess-thumbnail-url"],
-            "dateAdded" => $cart_item["printess_date_added"],
-            "designName" => $cart_item["printess-design-name"],
-            "designId" => $cart_item["printess-design-id"],
+            "saveToken" => array_key_exists("printess-save-token", $cart_item) ? $cart_item["printess-save-token"] : "",
+            "thumbnailUrl" => array_key_exists("printess-thumbnail-url", $cart_item) ? $cart_item["printess-thumbnail-url"] : "",
+            "dateAdded" => array_key_exists("printess_date_added", $cart_item) ? $cart_item["printess_date_added"] : "",
+            "designName" => array_key_exists("printess-design-name", $cart_item) ? $cart_item["printess-design-name"] : "",
+            "designId" => array_key_exists("printess-design-id", $cart_item) ? $cart_item["printess-design-id"] : "",
             "editLink" => $editLink
         );
 
