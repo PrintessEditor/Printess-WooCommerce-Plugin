@@ -249,3 +249,9 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.40 =
 * Added support for auto importing image url form field values
+
+= 1.6.41 =
+* Fixed php warning with missing array keys in printessBlockIntegrations.php
+
+= 1.6.42 =
+* Fixed basket integration on "slow" rendering themes
