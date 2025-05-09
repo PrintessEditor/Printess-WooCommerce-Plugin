@@ -21,6 +21,7 @@
 include_once("includes/printess-admin-settings.php");
 include_once("includes/printess-api.php");
 include_once("includes/printess-html-helpers.php");
+include_once("includes/printess-product-helpers.php");
 
 $printess_global_plugin_path = trailingslashit( WP_PLUGIN_DIR ) . 'woocommerce/woocommerce.php';
 
@@ -428,6 +429,9 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 	$cart_id = WC()->session->get( 'printess-cart-id' );
 	$attachParams = array();
 	$theme = PrintessAdminSettings::get_default_theme();
+	$printess_helpers = new PrintessProductHelpers($product->get_id());
+	$page_count_formField = $printess_helpers->get_page_count_option();
+
 
 	if ( empty( $cart_id ) ) {
 		$cart_id = uniqid( '', true );
@@ -449,6 +453,10 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 
 	$attachParams["basketThumbnailMaxWidth"] = PrintessAdminSettings::get_thumbnail_width();
 	$attachParams["basketThumbnailMaxHeight"] = PrintessAdminSettings::get_thumbnail_height();
+
+	if(!empty($page_count_formField)) {
+		$attachParams["pageCountFormField"] = $page_count_formField;
+	}
 
 	if ( ! empty( $printess_attribute ) ) {
 		$prod_id     = $product->get_id();
@@ -555,6 +563,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 				const buttonLabelHtml = <?php echo wp_json_encode( esc_html__( 'Customize', 'printess-editor' ) ); ?>;
 
 				showPrintessEditor = function(saveToken = null, basketItemId = null) {
+					const pageCountFormFieldOption = <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>;
 					basketItemId = basketItemId || null;
 
 					const settings = {
@@ -2410,281 +2419,7 @@ function printess_render_form_field_mappings() {
 	 * and allow searching for one to set it.
 	 */
 function printess_product_data_panels() {
-	$dropshipping = PrintessApi::get_dropshipping_info();
-
-	echo '<div id="printess_product_data" class="panel woocommerce_options_panel wc-metaboxes-wrapper hidden">';
-
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_template',
-			'value'       => get_post_meta( get_the_ID(), 'printess_template', true ),
-			'label'       => 'Template',
-			'description' => 'The name of the template within Printess',
-		)
-	);
-
-	$selected_dropshipping_id = get_post_meta( get_the_ID(), 'printess_dropshipping', true );
-
-	PrintessHtmlHelpers::render_select_with_option_groups( 'printess_dropshipping', __( 'Dropshipping', 'printess-editor' ), $dropshipping, $selected_dropshipping_id );
-
-	woocommerce_wp_textarea_input(
-		array(
-			'id'          => 'printess_custom_formfield_mappings',
-			'value'       => get_post_meta( get_the_ID(), 'printess_custom_formfield_mappings', true ),
-			'label'       => 'Formfield mappings',
-			'description' => 'Map variant attributes to Printess form fields',
-		)
-	);
-
-	$printess_load_user_templates_url = 'https://' . PrintessAdminSettings::get_domain() . '/templates/user/load';
-	$printess_authorization           = 'Bearer ' . PrintessAdminSettings::get_service_token();
-
-	?>
-	<hr />
-	<h2>Merge templates</h2>
-	<?php
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_merge_template_1',
-			'value'       => get_post_meta( get_the_ID(), 'printess_merge_template_1', true ),
-			'label'       => __( 'Merge Template 1', 'printess-editor' ),
-			'description' => __( 'The name of the optional 1st merge template within Printess', 'printess-editor' ),
-		)
-	);
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_merge_template_2',
-			'value'       => get_post_meta( get_the_ID(), 'printess_merge_template_2', true ),
-			'label'       => __( 'Merge Template 2', 'printess-editor' ),
-			'description' => __( 'The name of the optional 2nd merge template within Printess', 'printess-editor' ),
-		)
-	);
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_merge_template_3',
-			'value'       => get_post_meta( get_the_ID(), 'printess_merge_template_3', true ),
-			'label'       => __( 'Merge Template 3', 'printess-editor' ),
-			'description' => __( 'The name of the optional 3rd merge template within Printess', 'printess-editor' ),
-		)
-	);
-	?>
-
-	<hr />
-	<?php
-	woocommerce_wp_select(
-		array(
-			'id'          => 'printess_output_type',
-			'value'       => get_post_meta( get_the_ID(), 'printess_output_type', true ),
-			'label'       => __( 'Output Type', 'printess-editor' ),
-			'description' => __( 'The output file type. Defaults to output a pdf file.', 'printess-editor' ),
-			'options'     => array(
-				''    => 'Use global setting',
-				'pdf' => 'Pdf File',
-				'png' => 'Png File',
-				'jpg' => 'Jpg File',
-				'tif' => 'Tif File',
-			),
-		)
-	);
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_dpi',
-			'value'       => get_post_meta( get_the_ID(), 'printess_dpi', true ),
-			'label'       => __( 'Output DPI', 'printess-editor' ),
-			'description' => __( 'The used output dpi. Defaults to 300', 'printess-editor' ),
-		)
-	);
-
-	$compression_ratio = get_post_meta( get_the_ID(), 'printess_jpg_compression', true );
-
-	if ( ! isset( $compression_ratio ) || empty( $compression_ratio ) ) {
-		$compression_ratio = '0';
-	}
-
-	woocommerce_wp_text_input(
-		array(
-			'id'                => 'printess_jpg_compression',
-			'value'             => $compression_ratio,
-			'label'             => __( 'JPG compression', 'printess-editor' ),
-			'description'       => __( 'The jpg compression ratio. Defaults to 90. 0 = Use system setting', 'printess-editor' ),
-			'type'              => 'number',
-			'custom_attributes' => array(
-				'min' => '0',
-				'max' => '100',
-			),
-		)
-	);
-
-
-	$printess_output_files = get_post_meta( get_the_ID(), 'printess_output_files', true );
-
-	if ( ! isset( $printess_output_files ) || empty( $printess_output_files ) ) {
-		$printess_output_files = "";
-	}
-
-	woocommerce_wp_text_input(
-		array(
-			'id'                => 'printess_output_files',
-			'value'             => $printess_output_files,
-			'label'             => __( 'Document based output settings', 'printess-editor' ),
-			'description'       => __( 'Document specific output settings (e.g. different file format for different documents)', 'printess-editor' ),
-			'custom_attributes' => array(
-				'min' => '0',
-				'max' => '100',
-			),
-		)
-	);
-
-	woocommerce_wp_text_input(
-		array(
-			'id'                => 'printess_item_usage',
-			'value'             => get_post_meta( get_the_ID(), 'printess_item_usage', true ),
-			'label'             => __( 'Item Usage', 'printess-editor' ),
-			'description'       => __( 'Json configuration for item based usage pricing', 'printess-editor' ),
-			'custom_attributes' => array(
-				'min' => '0',
-				'max' => '100',
-			),
-		)
-	);
-	?>
-
-<hr />
-	<?php
-	woocommerce_wp_select(
-		array(
-			'id'          => 'printess_cart_redirect_page',
-			'value'       => get_post_meta( get_the_ID(), 'printess_cart_redirect_page', true ),
-			'label'       => __( 'Redirect page', 'printess-editor' ),
-			'description' => __( 'The page that should be opened after the product has been added to the cart.', 'printess-editor' ),
-			'options'     => array_merge( array( '' => __( 'Default', 'printess-editor' ) ), printess_get_available_pages() ),
-		)
-	);
-	?>
-
-	<hr />
-	<h2>Search for published templates</h2>
-	<p class="form-field">
-		<label for="printess-template-name">Template Name</label>
-		<input type="text" id="printess-template-name" />
-	</p>
-
-	<div class="toolbar">
-		<button type="button" id="printess-load-templates" class="button button-primary">Search</button>
-	</div>
-
-	<p class="form-field">
-		<label for="printess-templates">Available Templates</label>
-		<select id="printess-templates">
-		</select>
-	</p>
-	<div class="toolbar">
-		<button type="button" style="display:none;" id="printess-use-as-template-name" class="button button-primary">Use as template name</button>
-		<button type="button" style="display:none;" id="printess-use-as-merge-template-name-1" class="button button-primary">Use as merge template 1</button>
-		<button type="button" style="display:none;" id="printess-use-as-merge-template-name-2" class="button button-primary">Use as merge template 2</button>
-		<button type="button" style="display:none;" id="printess-use-as-merge-template-name-3" class="button button-primary">Use as merge template 3</button>
-	</div>
-
-	<hr />
-	<?php
-	woocommerce_wp_select(
-		array(
-			'id'          => 'printess_ui_version',
-			'value'       => get_post_meta( get_the_ID(), 'printess_ui_version', true ),
-			'label'       => __( 'Buyer side user interface', 'printess-editor' ),
-			'description' => __( 'Classical or the new PanelUi (Beta!).', 'printess-editor' ),
-			'options'     => array(
-				'classical'    => 'Classical',
-				'bcui' => 'PanelUi (Beta)',
-			),
-		)
-	);
-
-	woocommerce_wp_text_input(
-		array(
-			'id'          => 'printess_editor_theme',
-			'value'       => get_post_meta( get_the_ID(), 'printess_editor_theme', true ),
-			'label'       => 'Editor Theme',
-			'description' => 'The name of the theme that should be used for this product',
-		)
-	);
-	?>
-	<script>
-	document.getElementById("printess-load-templates").addEventListener("click", () => {
-		loadTemplates();
-	});
-
-	document.getElementById("printess-use-as-template-name").addEventListener("click", () => {
-		document.getElementById("printess_template").value = document.getElementById("printess-templates").value;
-	});
-
-	for (let n = 1; n <= 3; n++) {
-		document.getElementById("printess-use-as-merge-template-name-" + n).addEventListener("click", () => {
-			document.getElementById("printess_merge_template_" + n).value = document.getElementById("printess-templates").value;
-		});
-	}
-
-	/* document.getElementById("printess-templates").addEventListener("change", () => {
-		document.getElementById("printess_template").value = document.getElementById("printess-templates").value;
-	}); */
-
-	async function loadTemplates() {
-		const body = JSON.stringify({
-		templateName: document.getElementById("printess-template-name").value,
-		publishedOnly: true
-		});
-
-		const response = await fetch(<?php echo wp_json_encode( $printess_load_user_templates_url ); ?>, {
-			method: "POST",
-			mode: "cors",
-			cache: "no-cache",
-			headers: {
-				"Content-Type": "application/json",
-				"Authorization": <?php echo wp_json_encode( $printess_authorization ); ?>
-			},
-			redirect: "follow",
-			referrerPolicy: "no-referrer",
-			body: body
-		});
-
-		if (response.ok) {
-			const selected = document.getElementById("printess_template").value;
-			const json = await response.json();
-			const select = document.getElementById("printess-templates");
-			const length = select.options.length;
-
-			for (i = length - 1; i >= 0; i--) {
-				select.options[i].remove();
-			}
-
-			const defaultOption = document.createElement("option");
-			defaultOption.text = "Please select a template...";
-			select.options.add(defaultOption)
-
-			json.ts.sort((a, b) => a.n.localeCompare(b.n)).forEach(template => {
-				const option = document.createElement("option");
-				option.text = template.n;
-
-				if (template.n == selected) {
-				option.selected = true;
-				defaultOption.remove();
-				}
-
-				select.options.add(option)
-			});
-
-			document.getElementById("printess-use-as-template-name").style.display = null;
-
-			for (let n = 1; n <= 3; n++) {
-				document.getElementById("printess-use-as-merge-template-name-" + n).style.display = null;
-			}
-		}
-	}
-	</script>
-
-	<?php
-
-	echo '</div>';
+	PrintessProductHelpers::render_product_option_pane();
 }
 
 /**
@@ -2693,7 +2428,7 @@ function printess_product_data_panels() {
  * @param mixed $post_id The product id.
  */
 function printess_process_product_meta( $post_id ) {
-	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files", "printess_item_usage", "printess_editor_theme" );
+	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files", "printess_item_usage", "printess_editor_theme", "printess_page_count_option" );
 	$number_keys = array( 'printess_dpi' );
 
 	foreach ( $keys as $key ) {
