@@ -409,6 +409,29 @@
         try {
             let priceInfo = null;
             try {
+                if (typeof priceChangedInfo.pageCount !== "undefined") {
+                    if (context.currentPageCount !== priceChangedInfo.pageCount) {
+                        context.currentPageCount = priceChangedInfo.pageCount;
+                        if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined") {
+                            if (typeof context.onFormFieldChanged === "function") {
+                                try {
+                                    context.onFormFieldChanged(context.additionalAttachParams["pageCountFormField"], context.currentPageCount.toString(), "", "");
+                                }
+                                catch (ex) {
+                                    console.error(ex);
+                                }
+                            }
+                            if (typeof context.onFormFieldChangedAsync === "function") {
+                                try {
+                                    await context.onFormFieldChangedAsync(context.additionalAttachParams["pageCountFormField"], context.currentPageCount.toString(), "", "");
+                                }
+                                catch (ex) {
+                                    console.error(ex);
+                                }
+                            }
+                        }
+                    }
+                }
                 if (priceChangedInfo.snippetPriceCategories && priceChangedInfo.snippetPriceCategories.length > 0) {
                     context.stickers = priceChangedInfo.snippetPriceCategories.filter((x) => context.snippetPrices && context.snippetPrices.length >= x.priceCategory).map((x) => {
                         return {
@@ -487,15 +510,68 @@
             iframe.contentWindow?.postMessage({ cmd: "uploadImage", parameters: [file, null, false, "ff_" + formFieldName] }, "*");
         }
     }
+    static generateUUID() {
+        var d = new Date().getTime(); //Timestamp
+        var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0; //Time in microseconds since page-load or 0 if unsupported
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16; //random number between 0 and 16
+            if (d > 0) { //Use timestamp until depleted
+                r = (d + r) % 16 | 0;
+                d = Math.floor(d / 16);
+            }
+            else { //Use microseconds since page-load if supported
+                r = (d2 + r) % 16 | 0;
+                d2 = Math.floor(d2 / 16);
+            }
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
+    getOrGenerateBasketId(context) {
+        let ret = typeof context.getBasketId === "function" ? context.getBasketId() : "";
+        if (!ret || ret.toLowerCase() == 'some-unique-basket-or-session-id' || ret.toLowerCase() == 'some-unique-shop-user-id') {
+            if (!ret) {
+                try {
+                    ret = localStorage.getItem("printessUniqueBasketId");
+                }
+                catch (e) {
+                    console.warn("Unable to read user id from local storage.");
+                }
+            }
+            if (!ret) {
+                ret = window["printessUniqueBasketId"];
+            }
+            if (!ret) {
+                ret = PrintessEditor.generateUUID() + "_" + new Date().valueOf().toString();
+                try {
+                    localStorage.setItem("printessUniqueBasketId", ret);
+                }
+                catch (e) {
+                    window["printessUniqueBasketId"] = ret;
+                    console.warn("Unable to write user id to local storage.");
+                }
+            }
+        }
+        return ret || 'Some-Unique-Basket-Or-Session-Id';
+    }
     async showBcUiVersion(context, callbacks) {
         const that = this;
         const priceInfo = context.getPriceInfo();
         let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
+        let pageCount = null;
         let formFields = null;
         let mergeTemplates = null;
         if (!isSaveToken) {
             formFields = that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
             mergeTemplates = context.getMergeTemplates();
+            if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined") {
+                const pageFormField = formFields.filter(x => x.name === context.additionalAttachParams["pageCountFormField"]);
+                if (pageFormField && pageFormField.length > 0) {
+                    let intValue = PrintessEditor.extractNumber(pageFormField[0].value);
+                    if (!isNaN(intValue) && isFinite(intValue)) {
+                        pageCount = intValue;
+                    }
+                }
+            }
         }
         const startupParams = {};
         const loaderUrl = that.getLoaderUrl(this.Settings.editorUrl, this.Settings.editorVersion, startupParams);
@@ -513,6 +589,9 @@
                 }
             };
             await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null);
+            if (!isSaveToken && pageCount !== null && pageCount > 0) {
+                await printessComponent.editor.api.setBookinsidePages(pageCount);
+            }
             printessComponent.editor.ui.show();
         }
         else {
@@ -524,8 +603,8 @@
                 templateName: context.templateNameOrSaveToken,
                 //templateVersion: "publish",//"draft"
                 translationKey: "",
-                basketId: typeof context.getBasketId === "function" ? context.getBasketId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Basket-Or-Session-Id',
-                shopUserId: typeof context.getUserId === "function" ? context.getUserId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Shop-User-Id',
+                basketId: this.getOrGenerateBasketId(context),
+                shopUserId: 'Some-Unique-Shop-User-Id',
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
@@ -571,12 +650,22 @@
                     callbacks.onLoadAsync(attachParams.templateName);
                 }
             };
+            if (!isSaveToken && pageCount !== null && pageCount >= 1) {
+                attachParams["bookInsidePages"] = pageCount;
+            }
             const printess = await printessLoader.load(attachParams);
             printessComponent = that.getPrintessComponent();
             if (printessComponent) {
                 printessComponent.editor = printess;
             }
         }
+    }
+    static extractNumber(inputStr) {
+        let c = "0123456789";
+        function check(x) {
+            return c.includes(x) ? true : false;
+        }
+        return parseInt([...inputStr].reduce((x, y) => (check(y) ? x + y : x), ""));
     }
     async show(context) {
         const that = this;
@@ -654,11 +743,21 @@
         }
         else {
             const priceInfo = context.getPriceInfo();
+            let pageCount = null;
             let formFields = null;
             let mergeTemplates = null;
             if (!isSaveToken) {
                 formFields = this.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
                 mergeTemplates = context.getMergeTemplates();
+                if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined") {
+                    const pageFormField = formFields.filter(x => x.name === context.additionalAttachParams["pageCountFormField"]);
+                    if (pageFormField && pageFormField.length > 0) {
+                        let intValue = PrintessEditor.extractNumber(pageFormField[0].value);
+                        if (!isNaN(intValue) && isFinite(intValue)) {
+                            pageCount = intValue;
+                        }
+                    }
+                }
             }
             const iFrame = await this.initializeIFrame(callbacks, context, this.Settings);
             context.renderFirstPageImageAsync = (maxThumbnailWidth, maxThumbnailHeight) => {
@@ -678,7 +777,7 @@
                         templateName: context.templateNameOrSaveToken,
                         showBuyerSide: true,
                         templateUserId: '',
-                        basketId: typeof context.getBasketId === "function" ? context.getBasketId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Basket-Or-Session-Id',
+                        basketId: this.getOrGenerateBasketId(context),
                         shopUserId: typeof context.getUserId === "function" ? context.getUserId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Shop-User-Id',
                         formFields: formFields,
                         snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
@@ -697,12 +796,15 @@
                             }
                         }
                     }
-                    if (typeof context.additionalAttachParams !== "undefined" || context.additionalAttachParams !== null) {
+                    if (context.additionalAttachParams) {
                         for (const prop in context.additionalAttachParams) {
                             if (context.additionalAttachParams.hasOwnProperty(prop)) {
                                 attachParams[prop] = context.additionalAttachParams[prop];
                             }
                         }
+                    }
+                    if (!isSaveToken && pageCount !== null && pageCount >= 1) {
+                        attachParams["bookInsidePages"] = pageCount;
                     }
                     iFrame.contentWindow.postMessage({
                         cmd: 'attach',
@@ -746,6 +848,14 @@
                     parameters: [loadParams.templateNameOrToken, loadParams.mergeTemplates, loadParams.formFields, loadParams.snippetPriceCategoryLabels, loadParams.formFieldProperties, loadParams.clearExchangeCaches]
                 }, '*');
                 setTimeout(function () { iFrame.contentWindow.focus(); }, 0);
+                if (!isSaveToken && pageCount !== null && pageCount > 0) {
+                    setTimeout(function () {
+                        iFrame.contentWindow.postMessage({
+                            cmd: "setPageInsidePages",
+                            parameters: [pageCount]
+                        }, '*');
+                    }, 0);
+                }
             }
         }
         //Hide the web page scrolling

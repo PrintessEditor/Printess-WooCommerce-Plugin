@@ -428,6 +428,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 	$printess_attribute = '';
 	$cart_id = WC()->session->get( 'printess-cart-id' );
 	$attachParams = array();
+	$additionalAttachParams = array();
 	$theme = PrintessAdminSettings::get_default_theme();
 	$printess_helpers = new PrintessProductHelpers($product->get_id());
 	$page_count_formField = $printess_helpers->get_page_count_option();
@@ -455,7 +456,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 	$attachParams["basketThumbnailMaxHeight"] = PrintessAdminSettings::get_thumbnail_height();
 
 	if(!empty($page_count_formField)) {
-		$attachParams["pageCountFormField"] = $page_count_formField;
+		$additionalAttachParams["pageCountFormField"] = $page_count_formField;
 	}
 
 	if ( ! empty( $printess_attribute ) ) {
@@ -573,7 +574,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 						basektId: <?php echo wp_json_encode( $cart_id ); ?>,
 						userId: <?php echo wp_json_encode( get_current_user_id() ); ?>,
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
-						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>
+						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>,
+						additionalAttachParams: <?php echo wp_json_encode( $additionalAttachParams, JSON_FORCE_OBJECT ); ?>
 					};
 
 					editor.show(settings);
