@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.42
+ * Version: 1.6.43
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924003dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:924004dfsfhsf8429842384wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -235,31 +235,6 @@ function printess_get_price_format_options() {
 }
 
 /**
- * Returns all attributes related to a product (parent product in case of variation)
- */
-function printess_get_product_attributes($product) {
-	$ret = array();
-
-	$parent_id = $product->get_data()["parent_id"];#
-
-	if($parent_id > 0) {
-		$product = wc_get_product( $parent_id );
-	}
-
-	if(isset($product) && false !== $product) {
-		foreach ( $product->get_attributes() as $key => $value ) {
-			$ret[ $key ] = array(
-				'key'    => $key,
-				'name'   => $value['name'],
-				'values' => $value['options'],
-			);
-		}
-	}
-
-	return $ret;
-}
-
-/**
  * Returns an array containing all required product details
  *
  * @param mixed $product The product db object the information is pulled from.
@@ -292,7 +267,7 @@ function printess_get_product_json( $product ) {
 		}
 	);
 
-	$js_product["attributes"] = printess_get_product_attributes($product);
+	$js_product["attributes"] = PrintessProductHelpers::get_product_attributes($product);
 
 	$product_variation_ids = $product->get_children();
 
@@ -727,7 +702,7 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 		return $ret;
 	};
 
-	$productAttributes = printess_get_product_attributes( $product );
+	$productAttributes = PrintessProductHelpers::get_product_attributes( $product );
 
 	foreach ( $product->get_attributes() as $key => $attribute ) {
 		if(is_string($attribute)) {
@@ -2874,7 +2849,7 @@ function printess_get_value_from_array( $arr, $key, $default_value = '' ) {
  * @return array Associative array that can be used as lookup for product option name -> slug
  */
 function printess_get_product_options_and_slugs($product) {
-	$productAttributes = printess_get_product_attributes( $product );
+	$productAttributes = PrintessProductHelpers::get_product_attributes( $product );
 	$ret = array();
 
 	foreach ( $product->get_attributes() as $key => $attribute ) {

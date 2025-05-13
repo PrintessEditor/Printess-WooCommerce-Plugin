@@ -51,12 +51,14 @@
         }
         return ret;
     };
-    const getAttributeLookup = (product) => {
+    const getAttributeLookup = (product, onlyVariantSpecific) => {
         const ret = {};
         if (product && product.attributes) {
             for (const attributeKey in product.attributes) {
                 if (product.attributes.hasOwnProperty(attributeKey)) {
-                    ret[product.attributes[attributeKey].name] = product.attributes[attributeKey];
+                    if (!onlyVariantSpecific || product.attributes[attributeKey].usedForVariants === true) {
+                        ret[product.attributes[attributeKey].name] = product.attributes[attributeKey];
+                    }
                 }
             }
         }
@@ -64,11 +66,56 @@
     };
     const getCurrentVariant = function (productOptionValues, product) {
         let ret = product.variants ? product.variants[0] : null;
-        const attributeLookup = getAttributeLookup(product);
+        const attributeLookup = getAttributeLookup(product, true);
         const variantSpecificValues = [];
+        const attributeValuesUsedInVariants = {};
+        if (product.variants) {
+            product.variants.forEach((variant) => {
+                if (variant.attributes) {
+                    for (const key in variant.attributes) {
+                        if (variant.attributes.hasOwnProperty(key)) {
+                            if (!attributeValuesUsedInVariants[key]) {
+                                attributeValuesUsedInVariants[key] = {};
+                            }
+                            attributeValuesUsedInVariants[key][variant.attributes[key]] = true;
+                        }
+                    }
+                }
+                ;
+            });
+        }
+        const mapValue = (name, value) => {
+            let mappedValue = value;
+            let attribute = null;
+            if (attributeLookup[name]) {
+                attribute = attributeLookup[name];
+            }
+            if (!attribute) {
+                for (const key in attributeLookup) {
+                    if (attributeLookup.hasOwnProperty(key)) {
+                        if (attributeLookup[key].name === key || attributeLookup[key].key === key) {
+                            attribute = attributeLookup[key];
+                            break;
+                        }
+                    }
+                }
+                if (attribute && attribute.valueKeys && attribute.valueKeys.length > 0) {
+                    for (let i = 0; i < attribute.values.length; ++i) {
+                        if (attribute.values[i] === value && attribute.valueKeys.length > i) {
+                            mappedValue = attribute.valueKeys[i];
+                            break;
+                        }
+                    }
+                }
+            }
+            return mappedValue;
+        };
         for (const name in productOptionValues) {
-            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name]) {
-                variantSpecificValues.push({ key: attributeLookup[name].key, value: productOptionValues[name] });
+            const value = mapValue(name, productOptionValues[name]);
+            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name] && attributeLookup[name].usedForVariants && attributeValuesUsedInVariants[attributeLookup[name].key] && attributeValuesUsedInVariants[attributeLookup[name].key][value]) {
+                if (!attributeLookup[name].valueKeys || attributeLookup[name].valueKeys.includes(value)) {
+                    variantSpecificValues.push({ key: attributeLookup[name].key, value: value });
+                }
             }
         }
         if (product.variants) {
@@ -411,24 +458,69 @@
                 }
             },
             onFormFieldChanged: (formFieldName, formFieldValue, formFieldLabel, valueLabel) => {
-                const attributeLookup = getAttributeLookup(settings.product);
+                const attributeLookup = getAttributeLookup(settings.product, false);
                 let transformedName = formFieldName;
-                if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined" && context.additionalAttachParams["pageCountFormField"] === formFieldName) {
-                    if (settings.product.attributes) {
-                        const selectedOption = settings.product.attributes[context.additionalAttachParams["pageCountFormField"]];
-                        if (selectedOption) {
-                            const optionValue = selectedOption.values.filter(x => PrintessEditor.extractNumber(x).toString() === formFieldValue);
-                            if (optionValue && optionValue.length > 0) {
-                                formFieldValue = optionValue[0];
-                            }
-                        }
-                    }
-                }
                 if (attributeLookup[formFieldName]) {
                     transformedName = attributeLookup[formFieldName].key;
                 }
                 else if (attributeLookup[formFieldLabel]) {
                     transformedName = attributeLookup[formFieldLabel].key;
+                }
+                let selectedAttribute = settings.product.attributes[transformedName];
+                if (!selectedAttribute) {
+                    for (const attributeKey in settings.product.attributes) {
+                        if (settings.product.attributes.hasOwnProperty(attributeKey) && settings.product.attributes[attributeKey].name === transformedName) {
+                            selectedAttribute = settings.product.attributes[attributeKey];
+                            break;
+                        }
+                    }
+                }
+                if (selectedAttribute && selectedAttribute.valueKeys && selectedAttribute.valueKeys.length > 0) {
+                    let foundValue = false;
+                    for (let i = 0; i < selectedAttribute.values.length; ++i) {
+                        if (selectedAttribute.values[i] === formFieldValue && selectedAttribute.valueKeys.length > i) {
+                            formFieldValue = selectedAttribute.valueKeys[i];
+                            foundValue = true;
+                            break;
+                        }
+                    }
+                    if (!foundValue) {
+                        for (let i = 0; i < selectedAttribute.values.length; ++i) {
+                            if (selectedAttribute.values[i] === valueLabel && selectedAttribute.valueKeys.length > i) {
+                                formFieldValue = selectedAttribute.valueKeys[i];
+                                break;
+                            }
+                        }
+                    }
+                }
+                if (formFieldName && !formFieldLabel) {
+                    formFieldLabel = formFieldName;
+                }
+                if (formFieldValue && !valueLabel) {
+                    valueLabel = formFieldValue;
+                }
+                if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined" && context.additionalAttachParams["pageCountFormField"] === formFieldName) {
+                    if (settings.product.attributes) {
+                        let selectedOption = settings.product.attributes[context.additionalAttachParams["pageCountFormField"]];
+                        if (!selectedOption) {
+                            for (const attributeKey in settings.product.attributes) {
+                                if (settings.product.attributes.hasOwnProperty(attributeKey) && settings.product.attributes[attributeKey].name === context.additionalAttachParams["pageCountFormField"]) {
+                                    selectedOption = settings.product.attributes[attributeKey];
+                                    break;
+                                }
+                            }
+                        }
+                        if (selectedOption) {
+                            for (let i = 0; i < selectedOption.values.length; ++i) {
+                                if (PrintessEditor.extractNumber(selectedOption.values[i]).toString() === formFieldValue) {
+                                    formFieldValue = selectedOption.values[i];
+                                    if (selectedAttribute.valueKeys && selectedAttribute.valueKeys.length > i) {
+                                        formFieldValue = selectedOption.valueKeys[i];
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
                 //Take care of item usage
                 const globalSettings = getGlobalConfig();
@@ -878,7 +970,7 @@
         }
     };
     const hasUnconfiguredProductOptions = (product) => {
-        const attributeLookup = getAttributeLookup(product);
+        const attributeLookup = getAttributeLookup(product, true);
         const variantSpecificValues = [];
         const productOptionValues = getCurrentProductOptionValues(product);
         for (const name in productOptionValues) {
@@ -897,6 +989,22 @@
         show: function (settings) {
             //Clear item usage
             itemUsage = null;
+            //Ensure string values in attribute values (php transforms strings consisting of numbers to numbers)
+            if (settings.product && settings.product.attributes) {
+                for (const key in settings.product.attributes) {
+                    if (settings.product.attributes.hasOwnProperty(key)) {
+                        const attribute = settings.product.attributes[key];
+                        if (attribute.values) {
+                            for (let i = 0; i < attribute.values.length; ++i) {
+                                attribute.values[i] = "" + attribute.values[i];
+                                if (attribute.valueKeys && attribute.valueKeys.length > i) {
+                                    attribute.valueKeys[i] = "" + attribute.valueKeys[i];
+                                }
+                            }
+                        }
+                    }
+                }
+            }
             //Make sure all variant options are selected
             if (hasUnconfiguredProductOptions(settings.product)) {
                 //alert("Please select some product options before adding this product to your cart.");

@@ -255,3 +255,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.42 =
 * Fixed basket integration on "slow" rendering themes
+
+= 1.6.43 =
+* Added variant Support for controlling page count in books

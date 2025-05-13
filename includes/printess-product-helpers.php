@@ -33,15 +33,42 @@ class PrintessProductHelpers {
      * Returns all attributes related to a product (parent product in case of variation)
     */
     public function get_attributes() {
-        $ret = array();
         $product = $this->get_base_product();
+
+        return PrintessProductHelpers::get_product_attributes($product);
+    }
+
+    public static function get_product_attributes($product) {
+        $ret = array();
 
         if(isset($product) && false !== $product) {
             foreach ( $product->get_attributes() as $key => $value ) {
+                $terms = $value->get_terms();
+                $options = $value['options'];
+                $optionsKeys = null;
+                $name = $value['name'];
+
+                if(null !== $terms) {
+                    $name = wc_attribute_label($name);
+                    $options = array();
+
+                    foreach($terms as $term_slug => $term) {
+                        $options[] = $term->name;
+
+                        if(null === $optionsKeys) {
+                            $optionsKeys = array();
+                        }
+
+                        $optionsKeys[] = $term->slug;
+                    }
+                }
+
                 $ret[ $key ] = array(
                     'key'    => $key,
-                    'name'   => $value['name'],
-                    'values' => $value['options'],
+                    'name'   => $name,
+                    'values' => $options,
+                    'valueKeys' => $optionsKeys,
+                    'usedForVariants' => $value["variation"] === true
                 );
             }
         }
