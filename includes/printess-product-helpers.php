@@ -38,6 +38,52 @@ class PrintessProductHelpers {
         return PrintessProductHelpers::get_product_attributes($product);
     }
 
+    private function get_attribute_definition($attribute_name, array $attrbutes = null) {
+        if(null === $attrbutes) {
+            $attributes = $this->get_attributes();
+        }
+
+        if(array_key_exists($attribute_name, $attributes)) {
+            return $attributes[$attribute_name];
+        }
+
+        foreach($attrbutes as $key => $value) {
+            if($value["name"] === $attribute_name) {
+                return $value;
+            }
+        }
+
+        return null;
+    }
+
+    public function map_attribute_name_and_value($name, $value) {
+        $ret = array(
+            "name" => $name,
+            "value" => $value
+        );
+
+        $attrbute = $this->get_attribute_definition($name);
+
+        if(null === $attrbute) {
+            return $ret;
+        }
+
+        $ret["name"] = $attrbute["name"];
+
+        if(null !== $attrbute["valueKeys"]) {
+            for($i = 0; $i < count($attrbute["valueKeys"]); ++$i) {
+                if($attrbute["valueKeys"][$i] === $value && $i < count($attrbute["values"])) {
+                    $ret["value"] = $attrbute["values"][$i]; 
+                    break;
+                }
+            }
+        }
+
+        return $ret;
+    }
+
+
+
     public static function get_product_attributes($product) {
         $ret = array();
 

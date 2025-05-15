@@ -377,6 +377,26 @@
         }
         return s.join(dec);
     };
+    const mapFormFieldName = (product, formFieldName) => {
+        let name = formFieldName = formFieldName;
+        if (product && product.attributes) {
+            let attribute = product.attributes[formFieldName];
+            if (!attribute) {
+                for (const key in product.attributes) {
+                    if (product.attributes.hasOwnProperty(key)) {
+                        if (product.attributes[key].key === name || product.attributes[key].name === name) {
+                            name = product.attributes[key].name;
+                            break;
+                        }
+                    }
+                }
+            }
+            else {
+                name = attribute.name;
+            }
+        }
+        return name;
+    };
     const createShopContext = function (settings) {
         const context = {
             templateNameOrSaveToken: settings.templateNameOrSaveToken || settings.product.templateName,
@@ -1005,6 +1025,10 @@
                     }
                 }
             }
+            if (settings && settings.additionalAttachParams && typeof settings.additionalAttachParams["pageCountFormField"] !== "undefined") {
+                settings.additionalAttachParams = JSON.parse(JSON.stringify(settings.additionalAttachParams));
+                settings.additionalAttachParams["pageCountFormField"] = mapFormFieldName(settings.product, settings.additionalAttachParams["pageCountFormField"]);
+            }
             //Make sure all variant options are selected
             if (hasUnconfiguredProductOptions(settings.product)) {
                 //alert("Please select some product options before adding this product to your cart.");
@@ -1183,29 +1207,53 @@ if (window["wc"] && window["wc"].blocksCheckout) {
                             imageElement.classList.add("printess-thumbnail-image");
                             imageElement.setAttribute("src", extensions["printess-editor"]["thumbnailUrl"]);
                         });
-                        if (extensions["printess-editor"]["thumbnailUrl"]) {
-                            //Add edit link
-                            queryItem(function () {
-                                return cartItem?.querySelector(".wc-block-cart-item__image a");
-                            }, function (thumbnailLink) {
-                                thumbnailLink.setAttribute("href", extensions["printess-editor"]["editLink"]);
-                            });
-                            queryItem(function () {
-                                return cartItem?.querySelector(".wc-block-cart-item__quantity");
-                            }, function (quantityElement) {
-                                let link = quantityElement.querySelector(".printess-edit-link");
-                                if (!link) {
-                                    link = document.createElement("a");
-                                    link.classList.add("wc-block-cart-item__remove-link");
-                                    link.classList.add("printess-edit-link");
-                                    link.innerText = "Edit";
-                                    const linkWrapper = document.createElement("div");
-                                    linkWrapper.appendChild(link);
-                                    quantityElement.appendChild(linkWrapper);
+                        //Read quantity
+                        let quantity = 1;
+                        queryItem(function () {
+                            return cartItem?.querySelector(".wc-block-components-quantity-selector input");
+                        }, function (quantityInput) {
+                            if (quantityInput) {
+                                quantity = parseInt(quantityInput.value);
+                                if (isNaN(quantity) || !isFinite(quantity) || quantity < 1) {
+                                    quantity = 1;
                                 }
-                                link.setAttribute("href", extensions["printess-editor"]["editLink"]);
-                            });
-                        }
+                            }
+                            if (extensions["printess-editor"]["thumbnailUrl"]) {
+                                let editLink = extensions["printess-editor"]["editLink"];
+                                if (editLink.indexOf("?") > 0) {
+                                    editLink = editLink.replace("?", '?qty=' + quantity + '&');
+                                }
+                                else {
+                                    if (editLink.indexOf("#") > 0) {
+                                        editLink = editLink.replace("#", '?qty=' + quantity + '#');
+                                    }
+                                    else {
+                                        editLink = editLink + '?qty=' + quantity;
+                                    }
+                                }
+                                //Add edit link
+                                queryItem(function () {
+                                    return cartItem?.querySelector(".wc-block-cart-item__image a");
+                                }, function (thumbnailLink) {
+                                    thumbnailLink.setAttribute("href", editLink);
+                                });
+                                queryItem(function () {
+                                    return cartItem?.querySelector(".wc-block-cart-item__quantity");
+                                }, function (quantityElement) {
+                                    let link = quantityElement.querySelector(".printess-edit-link");
+                                    if (!link) {
+                                        link = document.createElement("a");
+                                        link.classList.add("wc-block-cart-item__remove-link");
+                                        link.classList.add("printess-edit-link");
+                                        link.innerText = "Edit";
+                                        const linkWrapper = document.createElement("div");
+                                        linkWrapper.appendChild(link);
+                                        quantityElement.appendChild(linkWrapper);
+                                    }
+                                    link.setAttribute("href", editLink);
+                                });
+                            }
+                        });
                     });
                 }, 0);
             }

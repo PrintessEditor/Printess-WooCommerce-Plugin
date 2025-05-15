@@ -702,12 +702,15 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 		return $ret;
 	};
 
-	$productAttributes = PrintessProductHelpers::get_product_attributes( $product );
+	$product_helper = new PrintessProductHelpers($product->get_id());
+	$productAttributes = $product_helper->get_attributes();
 
 	foreach ( $product->get_attributes() as $key => $attribute ) {
 		if(is_string($attribute)) {
-			if(!array_key_exists($key, $produce_payload["vdp"]["form"]) && array_key_exists($key, $productAttributes)) {
-				$produce_payload["vdp"]["form"][$onlyCharAndNumber($productAttributes[$key]["name"])] = $attribute;
+			$mapped_name_value = $product_helper->map_attribute_name_and_value($key, $attribute);
+
+			if(!array_key_exists($key, $produce_payload["vdp"]["form"])) {
+				$produce_payload["vdp"]["form"][$onlyCharAndNumber($mapped_name_value["name"])] = $mapped_name_value["value"];
 			}
 		} else {
 			$taxonomy = get_taxonomy($attribute['name']);
@@ -1985,7 +1988,7 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 	if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
 		?>
-		<span> - </span><a href="<?php echo esc_url( add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
+		<span> - </span><a class="printess-edit-link" href="<?php echo esc_url(add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) ) ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
 		<?php
 	}
 }
@@ -2849,7 +2852,7 @@ function printess_get_value_from_array( $arr, $key, $default_value = '' ) {
  * @return array Associative array that can be used as lookup for product option name -> slug
  */
 function printess_get_product_options_and_slugs($product) {
-	$productAttributes = PrintessProductHelpers::get_product_attributes( $product );
+	$productAttributes = printess_get_product_attributes($product);
 	$ret = array();
 
 	foreach ( $product->get_attributes() as $key => $attribute ) {
@@ -2865,6 +2868,31 @@ function printess_get_product_options_and_slugs($product) {
 					$ret[$data["name"]] = $key;
 				}
 			}
+		}
+	}
+
+	return $ret;
+}
+
+/**
+ * Returns all attributes related to a product (parent product in case of variation) !!Important: does not map global product attribute keys / values
+ */
+function printess_get_product_attributes($product) {
+	$ret = array();
+
+	$parent_id = $product->get_data()["parent_id"];#
+
+	if($parent_id > 0) {
+		$product = wc_get_product( $parent_id );
+	}
+
+	if(isset($product) && false !== $product) {
+		foreach ( $product->get_attributes() as $key => $value ) {
+			$ret[ $key ] = array(
+				'key'    => $key,
+				'name'   => $value['name'],
+				'values' => $value['options'],
+			);
 		}
 	}
 
@@ -3300,6 +3328,16 @@ function printess_load_externalscripts() {
 	wp_enqueue_script( 'printess_editor_woo', plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ ), array(), 1, array( 'in_footer' => true ) );
 }
 
+/**
+ * Add quantity url parameetr support to product page
+ */
+function printess_woocommerce_quantity_input_args($args) {
+    if ( isset( $_GET['qty'] ) && is_numeric($_GET['qty']) ) {
+        $args['input_value']    = $_GET['qty'];
+    }
+    return $args;
+}
+
 // function printess_modify_template_code($template, $templateName) {
 // 	if($template["blockName"] == "woocommerce/filled-mini-cart-contents-block") {
 // 		$debug = 10;
@@ -3372,6 +3410,10 @@ function printess_register_hooks() {
 	// Woodmart Mini Basket.
 	add_filter( 'woocommerce_widget_cart_item_quantity', 'printess_render_edit_button_before_mini_basket_buttons', 10, 2 );
 	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
+
+	//Support for quantity parameter on product page
+	add_filter( 'woocommerce_quantity_input_args', 'printess_woocommerce_quantity_input_args' ); // Simple products
+	add_filter( 'woocommerce_available_variation', 'printess_woocommerce_quantity_input_args' ); // Variations
 
 	//Recalculate basket item prices
 	add_action( 'woocommerce_before_calculate_totals', 'printess_recalculate_basketitem_price' );
