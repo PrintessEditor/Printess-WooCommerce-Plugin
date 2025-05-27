@@ -24,6 +24,14 @@ function printess_on_add_printess_cart_item_data($cart_item)
                     $editLink = add_query_arg( 'printess_item_key', $id, $editLink );
                 }
             }
+
+            if(array_key_exists("printess-display-name", $cart_item)) {
+                $editLink = add_query_arg( 'display_name', $cart_item["printess-display-name"], $editLink );
+            }
+
+            if(array_key_exists("printess-design-name", $cart_item)) {
+                $editLink = add_query_arg( 'design_name', $cart_item["printess-design-name"], $editLink );
+            }
         }
 
         $ret = array(

@@ -537,6 +537,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 				}
 
 				const buttonLabelHtml = <?php echo wp_json_encode( esc_html__( 'Customize', 'printess-editor' ) ); ?>;
+				const enforceDisplayName = <?php echo json_encode(PrintessAdminSettings::get_enforce_design_name()) ?>;
 
 				showPrintessEditor = function(saveToken = null, basketItemId = null) {
 					const pageCountFormFieldOption = <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>;
@@ -550,13 +551,14 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 						userId: <?php echo wp_json_encode( get_current_user_id() ); ?>,
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
 						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>,
-						additionalAttachParams: <?php echo wp_json_encode( $additionalAttachParams, JSON_FORCE_OBJECT ); ?>
+						additionalAttachParams: <?php echo wp_json_encode( $additionalAttachParams, JSON_FORCE_OBJECT ); ?>,
+						enforceDisplayName: enforceDisplayName
 					};
 
 					editor.show(settings);
 				};
 
-				editor.initProductPage(product, product.templateName, <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>, buttonLabelHtml, showPrintessEditor, "form.cart"/* product: IWooCommerceProduct, saveToken: string, customizeButtonClass: string, designNowButtonLabel: string = "Customize", formSelector: string = "form.cart" */);
+				editor.initProductPage(product, product.templateName, <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>, enforceDisplayName, buttonLabelHtml, showPrintessEditor, "form.cart"/* product: IWooCommerceProduct, saveToken: string, customizeButtonClass: string, designNowButtonLabel: string = "Customize", formSelector: string = "form.cart" */);
 			});
 		</script>
 		<?php
@@ -703,33 +705,68 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 	};
 
 	$product_helper = new PrintessProductHelpers($product->get_id());
-	$productAttributes = $product_helper->get_attributes();
 
-	foreach ( $product->get_attributes() as $key => $attribute ) {
-		if(is_string($attribute)) {
-			$mapped_name_value = $product_helper->map_attribute_name_and_value($key, $attribute);
+	try {
+		$meta_data = $line_item->get_meta_data();
 
-			if(!array_key_exists($key, $produce_payload["vdp"]["form"])) {
-				$produce_payload["vdp"]["form"][$onlyCharAndNumber($mapped_name_value["name"])] = $mapped_name_value["value"];
-			}
-		} else {
-			$taxonomy = get_taxonomy($attribute['name']);
-			$options = wc_get_product_terms( $product->get_id(), $attribute['name'], array( 'fields' => 'all' ) );
-			$label = $onlyCharAndNumber(str_replace('Product ', '', $taxonomy->label));
-			$value = "";
+		foreach($meta_data as $key => $value) {
+			$mapped_name_value = $product_helper->map_attribute_name_and_value($value->key, $value->value);
 
-			foreach($options as $option) {
-				if(!empty($value)) {
-					$value .= "_";
-				}
-
-				$value .= $option->name;
-			}
-
-			if(!array_key_exists($label, $produce_payload["vdp"]["form"])) {
-				$produce_payload["vdp"]["form"][$label] = $value;
+			if(!array_key_exists($mapped_name_value["name"], $produce_payload["vdp"]["form"])) {
+					$produce_payload["vdp"]["form"][$onlyCharAndNumber($mapped_name_value["name"])] = $mapped_name_value["value"];
 			}
 		}
+	}
+	catch(ex) {
+
+	}
+
+	$productAttributes = $product_helper->get_attributes();
+
+	try {
+		foreach ($productAttributes  as $key => $attribute ) {
+			if(is_string($attribute)) {
+				$mapped_name_value = $product_helper->map_attribute_name_and_value($key, $attribute);
+
+				if(!array_key_exists($mapped_name_value["name"], $produce_payload["vdp"]["form"])) {
+					$produce_payload["vdp"]["form"][$onlyCharAndNumber($mapped_name_value["name"])] = $mapped_name_value["value"];
+				}
+			} else if(array_key_exists("key", $attribute) && array_key_exists("name", $attribute) && array_key_exists("values", $attribute)) {
+				$label = $onlyCharAndNumber($attribute["name"]);
+				$value = "";
+
+				foreach($attribute["values"] as $value_entry) {
+					if(!empty($value)) {
+						$value .= "_";
+					}
+
+					$value .= $value_entry;
+				}
+
+				if(!array_key_exists($label, $produce_payload["vdp"]["form"])) {
+					$produce_payload["vdp"]["form"][$label] = $value;
+				}
+			} else {
+				$taxonomy = get_taxonomy($attribute['name']);
+				$options = wc_get_product_terms( $product->get_id(), $attribute['name'], array( 'fields' => 'all' ) );
+				$label = $onlyCharAndNumber(str_replace('Product ', '', $taxonomy->label));
+				$value = "";
+
+				foreach($options as $option) {
+					if(!empty($value)) {
+						$value .= "_";
+					}
+
+					$value .= $option->name;
+				}
+
+				if(!array_key_exists($label, $produce_payload["vdp"]["form"])) {
+					$produce_payload["vdp"]["form"][$label] = $value;
+				}
+			}
+		}
+	} catch(ex) {
+
 	}
 }
 
@@ -1433,6 +1470,8 @@ function printess_hide_order_item_meta_fields( $fields ) {
 		$fields[] = '_printess-design-name';
 		$fields[] = '_printess-valid-until';
 		$fields[] = '_printess-dropship-nonce';
+		$fields[] = '_printess-original-save-token';
+		$fields[] = '_printess-form-fields';
 	}
 
 	return $fields;
@@ -1558,6 +1597,7 @@ function printess_render_personalized_products_table( $order ) {
 	$has_shipping_status = false;
 	$has_thumbnail       = false;
 	$has_save_token      = false;
+	$has_design_name = false;
 	$render_line_item_id = 'on' === get_option( 'printess_displaylineitemid', 'wpadminbar, page' );
 
 	foreach ( $order->get_items() as &$item ) {
@@ -1566,6 +1606,7 @@ function printess_render_personalized_products_table( $order ) {
 		$shipping_status = $item->get_meta( '_printess_shipping-status' );
 		$thumbnail_url   = $item->get_meta( '_printess-thumbnail-url' );
 		$save_token      = $item->get_meta( '_printess-save-token' );
+		$design_name     = $item->get_meta( '_printess-design-name' );
 
 		if ( isset( $tracking_id ) && ! empty( $tracking_id ) ) {
 			$has_tracking = true;
@@ -1581,6 +1622,10 @@ function printess_render_personalized_products_table( $order ) {
 
 		if ( isset( $save_token ) && ! empty( $save_token ) ) {
 			$has_save_token = true;
+		}
+
+		if ( isset( $design_name ) && ! empty( $design_name ) ) {
+			$has_design_name = true;
 		}
 	}
 
@@ -1619,6 +1664,10 @@ function printess_render_personalized_products_table( $order ) {
 		$table->add_column( esc_html__( 'Open design', 'printess-editor' ) );
 	}
 
+	if ( $has_design_name ) {
+		$table->add_column( esc_html__( 'Design Name', 'printess-editor' ) );
+	}
+
 	if ( $render_line_item_id ) {
 		$table->add_column( esc_html__( 'Line item id', 'printess-editor' ) );
 	}
@@ -1630,13 +1679,20 @@ function printess_render_personalized_products_table( $order ) {
 		$link_text       = esc_html__( 'Tracking link', 'printess-editor' );
 		$thumbnail_url   = $item->get_meta( '_printess-thumbnail-url' );
 		$save_token      = $item->get_meta( '_printess-save-token' );
+		$design_name     = $item->get_meta( '_printess-design-name' );
 		$product         = wc_get_product( intval( $item->get_data()['variation_id'] < 1 ? $item->get_data() ['product_id'] : $item->get_data() ['variation_id'] ) );
 		$permalink       = $product->get_permalink();
 		$product_url     = add_query_arg( 'printess-save-token', $save_token, $permalink );
 		$attributes      = $product->get_attributes();
+		$design_name     = $item->get_meta( '_printess-design-name' );
+
 
 		foreach ( $attributes as $key => $value ) {
 			$product_url = add_query_arg( 'attribute_' . $key, $item->get_meta( $key ), $product_url );
+		}
+
+		if ( isset( $design_name ) && ! empty( $design_name ) ) {
+			$product_url = add_query_arg( 'design_name' , $design_name, $product_url );
 		}
 
 		if ( isset( $tracking_id ) && ! empty( $tracking_id ) ) {
@@ -1690,6 +1746,10 @@ function printess_render_personalized_products_table( $order ) {
 				'url'   => $product_url,
 				'label' => esc_html__( 'Open', 'printess-editor' ),
 			);
+		}
+
+		if($has_design_name) {
+			$content[] = $design_name;
 		}
 
 		if ( $render_line_item_id ) {
@@ -1827,9 +1887,15 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 	$printess_tracking_id     = $item->get_meta( '_printess-dropship-tracking-id' );
 	$printess_tracking_url    = $item->get_meta( '_printess-dropship-tracking-url' );
 	$printess_shipping_status = $item->get_meta( '_printess_shipping-status' );
-	$printess_design_name = $item->get_meta( '_printess-design-name' );
+	$display_name = $item->get_meta( '_printess-design-name' );
 	$printess_design_id = $item->get_meta( '_printess-design-id' );
 	$form_fields = $item->get_meta( '_printess-form-fields' );
+
+	if(null !== $display_name && !empty($display_name)) {
+		echo '<table cellspacing="0" class="display_meta"><tbody>';
+		echo '<tr><th>' . esc_html__("Design Name", "printess-editor")  . '</th><td>' . esc_html($display_name) . '</td></tr>';
+		echo '</tbody></table>';
+	}
 
 	if ( ! empty( $printess_save_token ) ) {
 		echo '<hr />';
@@ -2058,8 +2124,14 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 
 	if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
 		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
+		$product_permalink = add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) );
+
+		if(null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
+			$product_permalink = add_query_arg("design_name", $cart_item['design_name'], $product_permalink);
+		}
+
 		?>
-		<span> - </span><a class="printess-edit-link" href="<?php echo esc_url(add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) ) ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
+		<span> - </span><a class="printess-edit-link" href="<?php echo esc_url( $product_permalink ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
 		<?php
 	}
 }
@@ -3265,7 +3337,7 @@ function printess_render_edit_button_before_mini_basket_buttons( $html, $cart_it
 		$edit_link = get_permalink( $permalink_id );
 		$edit_link = add_query_arg( 'printess-save-token', $cart_item['printess-save-token'], $edit_link );
 
-		return $html . '<a href="' . esc_attr( $edit_link ) . '" style="z-index: 99; background: transparent;" >' . esc_html__( 'Edit', 'printess-editor' ) . '</a>';
+		return $html . '<a class="printess-edit-link" href="' . esc_attr( $edit_link ) . '" style="z-index: 99; background: transparent;" >' . esc_html__( 'Edit', 'printess-editor' ) . '</a>';
 	}
 
 	return $html;
@@ -3455,21 +3527,6 @@ function printess_woocommerce_quantity_input_args($args) {
     return $args;
 }
 
-// function printess_modify_template_code($template, $templateName) {
-// 	if($template["blockName"] == "woocommerce/filled-mini-cart-contents-block") {
-// 		$debug = 10;
-// 	}
-
-// 	return $template;
-// }
-
-// function printess_modify_template_code_1($content, $block) {
-// 	if($$block["blockName"] == "woocommerce/filled-mini-cart-contents-block") {
-// 		$debug = 10;
-// 	}
-
-// 	return $content;
-// }
 
 /**
  * Registers the plugin hooks used for the Printess integration.

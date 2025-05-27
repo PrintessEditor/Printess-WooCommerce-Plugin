@@ -625,7 +625,23 @@
                     });
                 }
             },
-            onAddToBasket: (saveToken, thumbnailUrl) => {
+            onAddToBasket: (saveToken, thumbnailUrl, displayName = null) => {
+                if (displayName === null && settings.enforceDisplayName) {
+                    const enforceDisplayNameValue = () => {
+                        const result = (prompt("Bitte geben sie einen Anzeigenamen an", context.designName || "") || "").trim();
+                        if (!result && "enforce" == settings.enforceDisplayName) {
+                            enforceDisplayNameValue();
+                        }
+                        else {
+                            context.onAddToBasket(saveToken, thumbnailUrl, result);
+                        }
+                    };
+                    enforceDisplayNameValue();
+                    return;
+                }
+                if (settings.enforceDisplayName) {
+                    context.designName = displayName;
+                }
                 if (printessSettings.editorMode === "admin") {
                     saveAdminSaveToken(saveToken, thumbnailUrl);
                     return;
@@ -813,7 +829,7 @@
                     const saveDesignCallback = (designName) => {
                         if (!designName || !designName.trim()) {
                             alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
-                            showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                            showSaveDialog(context.designName || "", printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
                             return;
                         }
                         showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
@@ -896,7 +912,7 @@
         }
         return context;
     };
-    const addPrintessInputs = function (parent, saveToken, customizeButtonClass, customizeButtonLabel) {
+    const addPrintessInputs = function (parent, saveToken, customizeButtonClass, customizeButtonLabel, enforceDisplayName) {
         const saveTokenInput = document.createElement("input");
         const saveTokenToRemoveFromCartInput = document.createElement("input");
         const thumbnailUrlInput = document.createElement("input");
@@ -1094,10 +1110,10 @@
                 }
             });
         },
-        initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR) {
+        initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, enforceDisplayName, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR) {
             const productForm = document.querySelector(formSelector || CART_FORM_SELECTOR);
             if (productForm) {
-                addPrintessInputs(productForm, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel);
+                addPrintessInputs(productForm, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel, enforceDisplayName);
                 if (templateNameOrSaveToken) {
                     showCustomizeButton(true);
                 }
@@ -1202,7 +1218,7 @@ if (window["wc"] && window["wc"].blocksCheckout) {
                         }
                         //Change thumbnail
                         queryItem(function () {
-                            return cartItem?.querySelector(".wc-block-cart-item__image img");
+                            return cartItem?.querySelector(".wc-block-cart-item__image img, .wc-block-components-order-summary-item__image img");
                         }, function (imageElement) {
                             imageElement.classList.add("printess-thumbnail-image");
                             imageElement.setAttribute("src", extensions["printess-editor"]["thumbnailUrl"]);

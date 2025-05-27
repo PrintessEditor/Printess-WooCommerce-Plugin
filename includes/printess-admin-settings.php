@@ -192,6 +192,13 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns true in case the integration should display an enter design name dialog during add to basket
+     */
+    static function get_enforce_design_name() {
+        return get_option( 'printess_enforce_design_name', 'wpadminbar, page' );
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -1033,6 +1040,37 @@ class PrintessAdminSettings
             'printess_options_page_html',
             plugin_dir_url( __FILE__ ) . 'images/icon.png',
             58
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_enforce_design_name',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+    
+        add_settings_field(
+            'printess_enforce_design_name',
+            __( 'Enforce Design Name during add to basket', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_enforce_design_name', '' );
+
+                if ( empty( $setting ) ) {
+                    $setting = 'pdf';
+                }
+            
+                ?>
+                    <select name="printess_enforce_design_name">
+                        <option value="" <?php echo esc_html( '' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'Do not use', 'printess-editor' ); ?></option>
+                        <option value="optional" <?php echo esc_html( 'optional' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'optional', 'printess-editor' ); ?></option>
+                        <option value="enforce" <?php echo esc_html( 'enforce' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'enforce', 'printess-editor' ); ?></option>
+                    </select>
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
         );
     }
 }
