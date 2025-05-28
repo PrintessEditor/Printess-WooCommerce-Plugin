@@ -195,7 +195,7 @@ class PrintessAdminSettings
      * Returns true in case the integration should display an enter design name dialog during add to basket
      */
     static function get_enforce_design_name() {
-        return get_option( 'printess_enforce_design_name', 'wpadminbar, page' );
+        return get_option( 'printess_enforce_design_name', '' );
     }
 
     /**

@@ -1134,11 +1134,26 @@
     window["printessWooEditor"] = editor;
     return editor;
 };
-// if (window["wc"] && window["wc"].miniCart) {
-//   const { ... } = window["wc"]["mini-cart"];
-// }
-if (window["wc"] && window["wc"].blocksCheckout) {
-    const { registerCheckoutFilters } = window["wc"].blocksCheckout;
+function printessQueryItem(itemQuery, callback, timeout = 200, maxRetires = 20, retries = 0) {
+    if (retries >= maxRetires) {
+        return;
+    }
+    const element = itemQuery();
+    if (element) {
+        callback(element);
+        return;
+    }
+    setTimeout(function () {
+        const element = itemQuery();
+        if (element) {
+            callback(element);
+        }
+        else {
+            printessQueryItem(itemQuery, callback, timeout, maxRetires, retries + 1);
+        }
+    }, timeout);
+}
+function printessRegisterCheckoutFilters(registerCheckoutFilters) {
     const getOrAddElement = (parent, className, tagType, additionalClass) => {
         let ret = (parent || document).querySelector("." + className);
         if (!ret) {
@@ -1152,37 +1167,32 @@ if (window["wc"] && window["wc"].blocksCheckout) {
         return ret;
     };
     registerCheckoutFilters('printess-editor', {
-        // additionalCartCheckoutInnerBlockTypes: (defaultValue, extensions, args) => {
-        //   debugger;
-        //   return defaultValue;
-        // },
         cartItemClass: (defaultValue, extensions, args) => {
             let ret = defaultValue || "";
-            const queryItem = (itemQuery, callback, retries = 0) => {
-                if (retries >= 100) {
-                    return;
-                }
-                const element = itemQuery();
-                if (element) {
-                    callback(element);
-                    return;
-                }
-                setTimeout(function () {
-                    const element = itemQuery();
-                    if (element) {
-                        callback(element);
-                    }
-                    else {
-                        queryItem(itemQuery, callback, retries + 1);
-                    }
-                }, 200);
-            };
+            // const queryItem = (itemQuery: () => HTMLElement | null | undefined, callback: (element: HTMLElement) => void, retries = 0): void => {
+            //   if (retries >= 100) {
+            //     return;
+            //   }
+            //   const element: HTMLElement | null | undefined = itemQuery();
+            //   if (element) {
+            //     callback(element);
+            //     return;
+            //   }
+            //   setTimeout(function () {
+            //     const element: HTMLElement | null | undefined = itemQuery();
+            //     if (element) {
+            //       callback(element);
+            //     } else {
+            //       queryItem(itemQuery, callback, retries + 1);
+            //     }
+            //   }, 200);
+            // };
             if (extensions && extensions["printess-editor"] && extensions["printess-editor"]["saveToken"] && args["cartItem"]) {
                 const className = "printess_cart_item_" + args["cartItem"]["key"];
                 ret += " " + className + " ";
                 //Modify item display
                 setTimeout(function () {
-                    queryItem(function () {
+                    printessQueryItem(function () {
                         return document.querySelector("." + className);
                     }, function (cartItem) {
                         //Display design name
@@ -1217,15 +1227,15 @@ if (window["wc"] && window["wc"].blocksCheckout) {
                             }
                         }
                         //Change thumbnail
-                        queryItem(function () {
+                        printessQueryItem(function () {
                             return cartItem?.querySelector(".wc-block-cart-item__image img, .wc-block-components-order-summary-item__image img");
                         }, function (imageElement) {
                             imageElement.classList.add("printess-thumbnail-image");
                             imageElement.setAttribute("src", extensions["printess-editor"]["thumbnailUrl"]);
-                        });
+                        }, 20, 100);
                         //Read quantity
                         let quantity = 1;
-                        queryItem(function () {
+                        printessQueryItem(function () {
                             return cartItem?.querySelector(".wc-block-components-quantity-selector input");
                         }, function (quantityInput) {
                             if (quantityInput) {
@@ -1248,12 +1258,12 @@ if (window["wc"] && window["wc"].blocksCheckout) {
                                     }
                                 }
                                 //Add edit link
-                                queryItem(function () {
+                                printessQueryItem(function () {
                                     return cartItem?.querySelector(".wc-block-cart-item__image a");
                                 }, function (thumbnailLink) {
                                     thumbnailLink.setAttribute("href", editLink);
-                                });
-                                queryItem(function () {
+                                }, 20, 100);
+                                printessQueryItem(function () {
                                     return cartItem?.querySelector(".wc-block-cart-item__quantity");
                                 }, function (quantityElement) {
                                     let link = quantityElement.querySelector(".printess-edit-link");
@@ -1267,13 +1277,24 @@ if (window["wc"] && window["wc"].blocksCheckout) {
                                         quantityElement.appendChild(linkWrapper);
                                     }
                                     link.setAttribute("href", editLink);
-                                });
+                                }, 20, 100);
                             }
-                        });
-                    });
+                        }, 200, 20);
+                    }, 200, 20);
                 }, 0);
             }
             return ret;
         }
     });
 }
+printessQueryItem(function () {
+    if (window["wc"] && window["wc"].blocksCheckout) {
+        const { registerCheckoutFilters } = window["wc"].blocksCheckout;
+        return registerCheckoutFilters;
+    }
+    else {
+        return null;
+    }
+}, (registerCheckoutFilters) => {
+    printessRegisterCheckoutFilters(registerCheckoutFilters);
+}, 0, 20);
