@@ -1110,7 +1110,7 @@
                 }
             });
         },
-        initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, enforceDisplayName, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR) {
+        initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR, enforceDisplayName = "") {
             const productForm = document.querySelector(formSelector || CART_FORM_SELECTOR);
             if (productForm) {
                 addPrintessInputs(productForm, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel, enforceDisplayName);
@@ -1169,24 +1169,6 @@ function printessRegisterCheckoutFilters(registerCheckoutFilters) {
     registerCheckoutFilters('printess-editor', {
         cartItemClass: (defaultValue, extensions, args) => {
             let ret = defaultValue || "";
-            // const queryItem = (itemQuery: () => HTMLElement | null | undefined, callback: (element: HTMLElement) => void, retries = 0): void => {
-            //   if (retries >= 100) {
-            //     return;
-            //   }
-            //   const element: HTMLElement | null | undefined = itemQuery();
-            //   if (element) {
-            //     callback(element);
-            //     return;
-            //   }
-            //   setTimeout(function () {
-            //     const element: HTMLElement | null | undefined = itemQuery();
-            //     if (element) {
-            //       callback(element);
-            //     } else {
-            //       queryItem(itemQuery, callback, retries + 1);
-            //     }
-            //   }, 200);
-            // };
             if (extensions && extensions["printess-editor"] && extensions["printess-editor"]["saveToken"] && args["cartItem"]) {
                 const className = "printess_cart_item_" + args["cartItem"]["key"];
                 ret += " " + className + " ";
@@ -1297,4 +1279,4 @@ printessQueryItem(function () {
     }
 }, (registerCheckoutFilters) => {
     printessRegisterCheckoutFilters(registerCheckoutFilters);
-}, 0, 20);
+}, 100, 20);

@@ -558,7 +558,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 					editor.show(settings);
 				};
 
-				editor.initProductPage(product, product.templateName, <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>, enforceDisplayName, buttonLabelHtml, showPrintessEditor, "form.cart"/* product: IWooCommerceProduct, saveToken: string, customizeButtonClass: string, designNowButtonLabel: string = "Customize", formSelector: string = "form.cart" */);
+				editor.initProductPage(product, product.templateName, <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>, buttonLabelHtml, showPrintessEditor, "form.cart"/* product: IWooCommerceProduct, saveToken: string, customizeButtonClass: string, designNowButtonLabel: string = "Customize", formSelector: string = "form.cart" */, enforceDisplayName);
 			});
 		</script>
 		<?php
@@ -578,6 +578,35 @@ function printess_show_printess_view_if_printess_product() {
 	if ( ! empty( $printess_attribute ) ) {
 		printess_render_editor_integration( $product, 'buyer' );
 	}
+}
+
+function printess_extract_yith_plugin_values($yith_meta_data) {
+	$ret = array();
+
+	$data = $yith_meta_data->get_data();
+
+	if(isset($data) && array_key_exists("value", $data)) {
+		$values = $data["value"];
+
+		foreach($values as $x => $y) {
+			foreach($y as $key => $value) {
+				$label = $value["display_label"];
+
+				if(str_contains($value["display_value"], ": ")) {
+					$index = strpos($value["display_value"], ": ");
+
+					if(false !== $index && $index >= 0) {
+						$ret[$label] = substr($value["display_value"], $index + 2);
+					}
+				} else {
+					$ret[$label] = $value["display_value"];
+				}
+				break;
+			}
+		}
+	}
+
+	return $ret;
 }
 
 function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payload) {
@@ -712,8 +741,20 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 		foreach($meta_data as $key => $value) {
 			$mapped_name_value = $product_helper->map_attribute_name_and_value($value->key, $value->value);
 
-			if(!array_key_exists($mapped_name_value["name"], $produce_payload["vdp"]["form"])) {
-					$produce_payload["vdp"]["form"][$onlyCharAndNumber($mapped_name_value["name"])] = $mapped_name_value["value"];
+			if("_ywapo_meta_data" === $value->key) {
+				$yith_values = printess_extract_yith_plugin_values($value);
+
+				foreach($yith_values as $label => $value) {
+					$name = $onlyCharAndNumber($label);
+					if(!array_key_exists($name, $produce_payload["vdp"]["form"])) {
+						$produce_payload["vdp"]["form"][$name] = $value;
+					}
+				}
+			} else if(!str_starts_with($value->key, "ywapo-")) {
+				$name = $onlyCharAndNumber($mapped_name_value["name"]);
+				if(!array_key_exists($name, $produce_payload["vdp"]["form"])) {
+					$produce_payload["vdp"]["form"][$name] = $mapped_name_value["value"];
+				}
 			}
 		}
 	}
