@@ -449,6 +449,9 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 		printess_render_save_dialog();
 		printess_render_information_overlay();
 
+		include_once("includes/printess-dialogs.php");
+		PrintessDialogs::render_display_name_dialog();
+
 		$printess_ui_version = $product->get_meta( 'printess_ui_version', true);
 
 		if(!isset($printess_ui_version) || empty($printess_ui_version)) {

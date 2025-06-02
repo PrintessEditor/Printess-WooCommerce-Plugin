@@ -3,10 +3,10 @@ msgstr ""
 "Project-Id-Version: Printess Editor\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-26 09:19+0000\n"
-"PO-Revision-Date: 2023-09-26 11:09+0000\n"
+"PO-Revision-Date: 2025-06-02 13:37+0000\n"
 "Last-Translator: \n"
 "Language-Team: English (United States)\n"
-"Language: en_US\n"
+"Language: en-US\n"
 "Plural-Forms: nplurals=2; plural=n != 1;\n"
 "MIME-Version: 1.0\n"
 "Content-Type: text/plain; charset=UTF-8\n"
@@ -15,199 +15,236 @@ msgstr ""
 "X-Loco-Version: 2.6.6; wp-6.3.1\n"
 "X-Domain: printess-editor"
 
-#: printess.php:471
-msgid "Please close this window or tab."
-msgstr "Please close this window or tab."
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2697
+msgid "Access Token"
+msgstr ""
 
-#: printess.php:688 printess.php:2528
-msgid "Customize"
-msgstr "Customize"
-
-#: printess.php:1398
-msgid "View thumbnail in new window."
-msgstr "View thumbnail in new window."
-
-#: printess.php:1423 printess.php:1540
-msgid "Tracking link"
-msgstr "Tracking link"
-
-#: printess.php:1440 printess.php:1526
-msgid "Tracking"
-msgstr "Tracking"
-
-#: printess.php:1461 printess.php:1529
-msgid "Shipping status"
-msgstr "Shipping status"
-
-#: printess.php:1519
-msgid "Shipping"
-msgstr "Shipping"
-
-#: printess.php:1524
-msgid "Product"
-msgstr "Product"
-
-#: printess.php:1621
-msgid "Edit Customer Design"
-msgstr "Edit Customer Design"
-
-#: printess.php:1630
-msgid "Printess Error Details"
-msgstr "Printess Error Details"
-
-#: printess.php:1636 printess.php:1644 printess.php:1652
-msgid "Printess Production Files"
-msgstr "Printess Production Files"
-
-#: printess.php:1668
-msgid "Approve and send to production."
-msgstr "Approve and send to production."
-
-#: printess.php:1670
-msgid "Processing."
-msgstr "Processing."
-
-#: printess.php:1687
-msgid "Please copy & paste the shop and service tokens from your"
-msgstr "Please copy & paste the shop and service tokens from your"
-
-#: printess.php:1688
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1913
 msgid "account page"
 msgstr "account page"
 
-#: printess.php:1694
-msgid "Save Settings"
-msgstr "Save Settings"
-
-#: printess.php:1837
-msgid "Automatic"
-msgstr "Automatic"
-
-#: printess.php:1838
-msgid "Manual"
-msgstr "Manual"
-
-#. section slug .
-#: printess.php:1861
-msgid "Printess Settings"
-msgstr "Printess Settings"
-
-#. setting slug .
-#: printess.php:1870
-msgid "Shop Token"
-msgstr "Shop Token"
-
-#: printess.php:1880
-msgid "Service Token"
-msgstr "Service Token"
-
-#: printess.php:1897
-msgid "Api Domain"
-msgstr "Api Domain"
-
-#: printess.php:1914
-msgid "Embed Html Url"
-msgstr "Embed Html Url"
-
-#: printess.php:1931
-msgid "Ids to hide when showing editor"
-msgstr "Ids to hide when showing editor"
-
-#: printess.php:1948
-msgid "Class names to hide when showing editor"
-msgstr "Class names to hide when showing editor"
-
-#: printess.php:1965
-msgid "Additional classes for customize button"
-msgstr "Additional classes for customize button"
-
-#: printess.php:1982
-msgid "Order Approval Mode"
-msgstr "Order Approval Mode"
-
-#: printess.php:1999
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2527
 msgid "Add to cart after customization"
 msgstr "Add to cart after customization"
 
-#: printess.php:2016
-msgid "Show customize button on archive page"
-msgstr "Show customize button on archive page"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2493
+msgid "Additional classes for customize button"
+msgstr "Additional classes for customize button"
 
-#: printess.php:2033
-msgid "Enable Debug Mode"
-msgstr "Enable Debug Mode"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:188
+msgid ""
+"After saving, your saved design can be found under {SAVE_DESIGN} on your "
+"account page."
+msgstr ""
 
-#: printess.php:2071
-msgid "Edit"
-msgstr "Edit"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2425
+msgid "Api Domain"
+msgstr "Api Domain"
 
-#: printess.php:2156 printess.php:2180 printess.php:2191
-msgid "No dropshipping"
-msgstr "No dropshipping"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1893
+msgid "Approve and send to production."
+msgstr "Approve and send to production."
 
-#: printess.php:2158 printess.php:2192
-msgid "Use template settings"
-msgstr "Use template settings"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2297
+msgid "Automatic"
+msgstr "Automatic"
 
-#: printess.php:2190
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+msgid "Available until"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:194
+msgid "Cancel"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2476
+msgid "Class names to hide when showing editor"
+msgstr "Class names to hide when showing editor"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3652
+msgid "Could not find line item or product..."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:488
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3626
+msgid "Customize"
+msgstr "Customize"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2180
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2228
+msgid "days"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3448
+msgid "Default"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3072
 msgid "Defaults"
 msgstr "Defaults"
 
-#: printess.php:2241
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4183
+msgid "Delete"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:182
+msgid "Design name"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2595
+msgid "Display legal info in case prices are displayed inside editor"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2765
+msgid "Display line item id in order view"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+msgid "Display name"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3036
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3076
+msgid "Do not use dropshipping override"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3349
 msgid "Dropshipping"
 msgstr "Dropshipping"
 
-#: printess.php:2254
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2820
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4179
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4227
+msgid "Edit"
+msgstr "Edit"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1845
+msgid "Edit Customer Design"
+msgstr "Edit Customer Design"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2442
+msgid "Embed Html Url"
+msgstr "Embed Html Url"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2782
+msgid "Enable Debug Mode"
+msgstr "Enable Debug Mode"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2646
+msgid "Enable saving of designs"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:183
+msgid "Enter your display name"
+msgstr ""
+
+#. Author URI of the plugin
+msgid "https://printess.com"
+msgstr "https://printess.com"
+
+#. URI of the plugin
+msgid "https://printess.com/kb/integrations/woo-commerce/index.html"
+msgstr "https://printess.com/kb/integrations/woo-commerce/index.html"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2459
+msgid "Ids to hide when showing editor"
+msgstr "Ids to hide when showing editor"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2629
+msgid "JPEG Compression"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2317
+msgid "JPG"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3429
+msgid "JPG compression"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1615
+msgid "Line item id"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1842
+msgid "Line item id:"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3723
+msgid "Loading editor..."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2298
+msgid "Manual"
+msgstr "Manual"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3371
 msgid "Merge Template 1"
 msgstr "Merge Template 1"
 
-#: printess.php:2255
-msgid "The name of the optional 1st merge template within Printess"
-msgstr "The name of the optional 1st merge template within Printess"
-
-#: printess.php:2262
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3379
 msgid "Merge Template 2"
 msgstr "Merge Template 2"
 
-#: printess.php:2263
-msgid "The name of the optional 2nd merge template within Printess"
-msgstr "The name of the optional 2nd merge template within Printess"
-
-#: printess.php:2270
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3387
 msgid "Merge Template 3"
 msgstr "Merge Template 3"
 
-#: printess.php:2271
-msgid "The name of the optional 3rd merge template within Printess"
-msgstr "The name of the optional 3rd merge template within Printess"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4204
+msgid "Next"
+msgstr ""
 
-#: printess.php:2282
-msgid "Output Type"
-msgstr "Output Type"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3038
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3062
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3081
+msgid "No dropshipping"
+msgstr "No dropshipping"
 
-#: printess.php:2283
-msgid "The output file type. Defaults to output a pdf file."
-msgstr "The output file type. Defaults to output a pdf file."
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4117
+msgid "No saved designs yet"
+msgstr ""
 
-#: printess.php:2296
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4076
+msgid "Not logged in"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1683
+msgid "Open"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1611
+msgid "Open design"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2510
+msgid "Order Approval Mode"
+msgstr "Order Approval Mode"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2680
+msgid "Ordered Design lifetime (Days)"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3414
 msgid "Output DPI"
 msgstr "Output DPI"
 
-#: printess.php:2297
-msgid "The used output dpi. Defaults to 300"
-msgstr "The used output dpi. Defaults to 300"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2612
+msgid "Output Format"
+msgstr ""
 
-#: printess.php:2561
-msgid "Saving design and redirecting back to product page..."
-msgstr "Saving design and redirecting back to product page..."
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3399
+msgid "Output Type"
+msgstr "Output Type"
 
-#: printess.php:2670
-msgid "Printess Template"
-msgstr "Printess Template"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2714
+msgid "Overwrite product drop shipper in case of template mode"
+msgstr ""
 
-#. Name of the plugin
-msgid "Printess Editor"
-msgstr "Printess Editor"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2315
+msgid "PDF"
+msgstr ""
 
 #. Description of the plugin
 msgid ""
@@ -217,14 +254,253 @@ msgstr ""
 "Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless "
 "possibilities."
 
-#. URI of the plugin
-msgid "https://printess.com/kb/integrations/woo-commerce/index.html"
-msgstr "https://printess.com/kb/integrations/woo-commerce/index.html"
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1585
+msgid "Personalized products"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:447
+msgid "Please close this window or tab."
+msgstr "Please close this window or tab."
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1912
+msgid "Please copy & paste the shop and service tokens from your"
+msgstr "Please copy & paste the shop and service tokens from your"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:444
+msgid "Please provide a display name."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2316
+msgid "PNG"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4200
+msgid "Previous"
+msgstr ""
 
 #. Author of the plugin
 msgid "Printess"
 msgstr "Printess"
 
-#. Author URI of the plugin
-msgid "https://printess.com"
-msgstr "https://printess.com"
+#. Name of the plugin
+msgid "Printess Editor"
+msgstr "Printess Editor"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1855
+msgid "Printess Error Details"
+msgstr "Printess Error Details"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1861
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1869
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1877
+msgid "Printess Production Files"
+msgstr "Printess Production Files"
+
+#. section slug .
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2389
+msgid "Printess Settings"
+msgstr "Printess Settings"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3825
+msgid "Printess Template"
+msgstr "Printess Template"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1895
+msgid "Processing."
+msgstr "Processing."
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1600
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1743
+msgid "Product"
+msgstr "Product"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+msgid "Product name"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1656
+msgid "Product thumbnail"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2731
+msgid "Provide input for design name on second save"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3446
+msgid "Redirect page"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:170
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:193
+msgid "Save design"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1919
+msgid "Save Settings"
+msgstr "Save Settings"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2663
+msgid "Saved Design lifetime (Days)"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3875
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4136
+msgid "Saved Designs"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:173
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:177
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:188
+msgid "Saved designs"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3722
+#, fuzzy
+#| msgid "Saving design and redirecting back to product page..."
+msgid "Saving design and redirecting back to order detail page..."
+msgstr "Saving design and redirecting back to product page..."
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:446
+msgid "Saving design to your list of saved designs"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:168
+msgid "Saving your design"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4139
+msgid "Search"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4137
+msgid "Search for name"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2408
+msgid "Service Token"
+msgstr "Service Token"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1738
+msgid "Shipping"
+msgstr "Shipping"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1503
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1607
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1748
+msgid "Shipping status"
+msgstr "Shipping status"
+
+#. setting slug .
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2398
+msgid "Shop Token"
+msgstr "Shop Token"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2544
+msgid "Show customize button on archive page"
+msgstr "Show customize button on archive page"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2748
+msgid "Show original product in basket"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2561
+msgid "Show prices inside editor"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2578
+msgid "Show product name inside editor"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3430
+msgid "The jpg compression ratio. Defaults to 90. 0 = Use system setting"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3372
+msgid "The name of the optional 1st merge template within Printess"
+msgstr "The name of the optional 1st merge template within Printess"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3380
+msgid "The name of the optional 2nd merge template within Printess"
+msgstr "The name of the optional 2nd merge template within Printess"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3388
+msgid "The name of the optional 3rd merge template within Printess"
+msgstr "The name of the optional 3rd merge template within Printess"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3400
+msgid "The output file type. Defaults to output a pdf file."
+msgstr "The output file type. Defaults to output a pdf file."
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3447
+msgid ""
+"The page that should be opened after the product has been added to the cart."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3415
+msgid "The used output dpi. Defaults to 300"
+msgstr "The used output dpi. Defaults to 300"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:445
+msgid "There was an error while trying to save your design"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3000
+msgid "This item was edited. Consider removing it from your cart."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:4147
+msgid "Thumbnail"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2318
+msgid "TIF"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1482
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1603
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1745
+msgid "Tracking"
+msgstr "Tracking"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1466
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1622
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1758
+msgid "Tracking link"
+msgstr "Tracking link"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2180
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2190
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2228
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:2238
+msgid "Unlimited"
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3040
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:3082
+msgid "Use template settings"
+msgstr "Use template settings"
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:1444
+msgid "View thumbnail in new window."
+msgstr "View thumbnail in new window."
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:170
+msgid ""
+"You are currently not logged in. To be able to save designs you need to be "
+"logged in. You will be redirected to the login page after clicking on "
+"{SAVE_DESIGN}. After logging in / account creation you will be redirected "
+"back to your current design so that you can continue working on your current "
+"design."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:177
+msgid ""
+"You can provide a new design name to store this version under a different "
+"name. This new version can then be found on your {SAVE_DESIGN} page as well."
+msgstr ""
+
+#: /home/alex/printess/src/Printess/shopIntegrations/woocommerce/printess.php:173
+msgid ""
+"You need to provide a display name for your saved design. This name is shown "
+"on the {SAVE_DESIGN} page so that you can easily find it on future visits."
+msgstr ""

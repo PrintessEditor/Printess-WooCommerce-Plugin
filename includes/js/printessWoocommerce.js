@@ -627,14 +627,21 @@
             },
             onAddToBasket: (saveToken, thumbnailUrl, displayName = null) => {
                 if (displayName === null && settings.enforceDisplayName) {
-                    const enforceDisplayNameValue = () => {
-                        const result = (prompt("Bitte geben sie einen Anzeigenamen an", context.designName || "") || "").trim();
-                        if (!result && "enforce" == settings.enforceDisplayName) {
-                            enforceDisplayNameValue();
-                        }
-                        else {
-                            context.onAddToBasket(saveToken, thumbnailUrl, result);
-                        }
+                    const enforceDisplayNameValue = (initialValue = null) => {
+                        this.showDialog("printess_display_name", initialValue || context.designName || "", (okClicked, value) => {
+                            value = (value || "").trim();
+                            if (settings.enforceDisplayName !== "enforce") {
+                                context.onAddToBasket(saveToken, thumbnailUrl, value);
+                            }
+                            else {
+                                if ((!okClicked && settings.enforceDisplayName === "enforce") || (settings.enforceDisplayName === "enforce" && !value)) {
+                                    enforceDisplayNameValue(value);
+                                }
+                                else {
+                                    context.onAddToBasket(saveToken, thumbnailUrl, value);
+                                }
+                            }
+                        });
                     };
                     enforceDisplayNameValue();
                     return;
@@ -1152,6 +1159,52 @@ function printessQueryItem(itemQuery, callback, timeout = 200, maxRetires = 20, 
             printessQueryItem(itemQuery, callback, timeout, maxRetires, retries + 1);
         }
     }, timeout);
+}
+function showDialog(prefix, initialValue, callback) {
+    const textInput = document.getElementById(prefix + "_edit");
+    const okButton = document.getElementById(prefix + "_ok_button");
+    const cancelButton = document.getElementById(prefix + "_cancel_button");
+    const dlg = document.getElementById(prefix + "_overlay_background");
+    const okCallback = (evt) => {
+        if (okButton) {
+            okButton.removeEventListener("click", okCallback);
+        }
+        if (cancelButton) {
+            cancelButton.removeEventListener("click", cancelCallback);
+        }
+        if (dlg) {
+            dlg.style.display = "none";
+        }
+        if (typeof callback === "function") {
+            callback(true, textInput.value);
+        }
+    };
+    const cancelCallback = (evt) => {
+        if (okButton) {
+            okButton.removeEventListener("click", okCallback);
+        }
+        if (cancelButton) {
+            cancelButton.removeEventListener("click", cancelCallback);
+        }
+        if (dlg) {
+            dlg.style.display = "none";
+        }
+        if (typeof callback === "function") {
+            callback(false, textInput.value);
+        }
+    };
+    if (textInput) {
+        textInput.value = initialValue || "";
+    }
+    if (okButton) {
+        okButton.addEventListener("click", okCallback);
+    }
+    if (cancelButton) {
+        cancelButton.addEventListener("click", cancelCallback);
+    }
+    if (dlg) {
+        dlg.style.display = "block";
+    }
 }
 function printessRegisterCheckoutFilters(registerCheckoutFilters) {
     const getOrAddElement = (parent, className, tagType, additionalClass) => {
