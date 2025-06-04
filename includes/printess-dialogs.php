@@ -6,7 +6,7 @@ if ( class_exists( 'PrintessDialogs', false ) ) return;
 class PrintessDialogs {
     public static function render_display_name_dialog() {
 	?>
-		<div class="printess_overlay_background" id="printess_display_name_overlay_background" style="display:none;">
+		<div class="printess_overlay_background printess-owned" id="printess_display_name_overlay_background" style="display:none;">
 			<div class="printess_overlay">
 				<div class="printess_overlay_content">
                     <p><?php echo '<span class="highlight">' . esc_html__( 'Please provide a design name', 'printess-editor' ) . '</span>' ?></p>

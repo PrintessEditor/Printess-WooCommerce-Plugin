@@ -2334,6 +2334,14 @@ function printess_add_to_cart_redirect( $redirect_url, $product ) {
 	 * @param mixed $cart_item The cart item.
 	 */
 function printess_get_item_data( $item_data, $cart_item ) {
+	if ( isset( $cart_item['printess-design-name'] ) ) {
+        $item_data[] = array(
+            'key'     => __('Design Name', 'printess-editor'),
+            'value'   => wc_clean( $cart_item['printess-design-name'] ),
+            'display' => ''
+        );
+    }
+
 	if ( ! isset( $cart_item['printess-was-edited'] ) ) {
 		return $item_data;
 	}

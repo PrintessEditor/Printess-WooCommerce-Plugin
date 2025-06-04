@@ -1165,6 +1165,7 @@ function showDialog(prefix, initialValue, callback) {
     const okButton = document.getElementById(prefix + "_ok_button");
     const cancelButton = document.getElementById(prefix + "_cancel_button");
     const dlg = document.getElementById(prefix + "_overlay_background");
+    const bodyElement = document.querySelector("body");
     const okCallback = (evt) => {
         if (okButton) {
             okButton.removeEventListener("click", okCallback);
@@ -1201,6 +1202,9 @@ function showDialog(prefix, initialValue, callback) {
     }
     if (cancelButton) {
         cancelButton.addEventListener("click", cancelCallback);
+    }
+    if (bodyElement && dlg.parentElement !== bodyElement) {
+        bodyElement.appendChild(dlg);
     }
     if (dlg) {
         dlg.style.display = "block";
@@ -1240,26 +1244,26 @@ function printessRegisterCheckoutFilters(registerCheckoutFilters) {
                                     detailBlocks = getOrAddElement(metaData, "wc-block-components-product-details", "ul");
                                 }
                             }
-                            if (detailBlocks) {
-                                const nameElement = detailBlocks.querySelector(".printess-product-detail-name");
-                                if (nameElement) {
-                                    nameElement.innerText = "Design name: ";
-                                    const valueEleement = detailBlocks.querySelector("printess-product-detail-name");
-                                    if (valueEleement) {
-                                        valueEleement.innerText = extensions["printess-editor"]["designName"];
-                                    }
-                                }
-                                else {
-                                    const li = document.createElement("li");
-                                    li.classList.add("wc-block-components-product-details__designName");
-                                    li.classList.add("printess-product-details-item");
-                                    const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
-                                    const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
-                                    name.innerText = "Design name: ";
-                                    value.innerText = extensions["printess-editor"]["designName"];
-                                    detailBlocks.appendChild(li);
-                                }
-                            }
+                            // if (detailBlocks) {
+                            //     const nameElement = detailBlocks.querySelector(".printess-product-detail-name");
+                            //     if (nameElement) {
+                            //         nameElement.innerText = "Design name: ";
+                            //         const valueEleement = detailBlocks.querySelector("printess-product-detail-name");
+                            //         if (valueEleement) {
+                            //             valueEleement.innerText = extensions["printess-editor"]["designName"];
+                            //         }
+                            //     }
+                            //     else {
+                            //         const li = document.createElement("li");
+                            //         li.classList.add("wc-block-components-product-details__designName");
+                            //         li.classList.add("printess-product-details-item");
+                            //         const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
+                            //         const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
+                            //         name.innerText = "Design name: ";
+                            //         value.innerText = extensions["printess-editor"]["designName"];
+                            //         detailBlocks.appendChild(li);
+                            //     }
+                            // }
                         }
                         //Change thumbnail
                         printessQueryItem(function () {
