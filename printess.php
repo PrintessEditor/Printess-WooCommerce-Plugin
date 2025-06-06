@@ -3579,6 +3579,24 @@ function printess_woocommerce_quantity_input_args($args) {
     return $args;
 }
 
+/**
+ * Adds the design name to the order email
+ */
+function printess_woocommerce_email_order_line_item_meta_fields($item_id, $item, $order) {
+	if ( ! is_wc_endpoint_url() && $item->is_type('line_item') ) {
+		if ( isset( $item['printess-design-name'] ) ) {
+			?>
+			<div><?php echo __( "Design Name", "printess-editor" ) ?>: <?php echo __($item['printess-design-name']) ?></div>
+
+			<?php
+			// $fields[] = array(
+			// 	'key'     => __('Design Name', 'printess-editor'),
+			// 	'value'   => wc_clean( $order['printess-design-name'] ),
+			// 	'display' => ''
+			// );
+		}
+	}
+}
 
 /**
  * Registers the plugin hooks used for the Printess integration.
@@ -3597,6 +3615,8 @@ function printess_register_hooks() {
 	add_filter( 'woocommerce_admin_order_item_thumbnail', 'printess_admin_order_item_thumbnail', 10, 3 );
 	add_action( 'woocommerce_after_order_itemmeta', 'printess_order_meta_customized_display', 10, 2 );
 	add_action( 'woocommerce_order_details_before_order_table', 'printess_render_personalized_products_table', 10, 2 );
+	//add_filter( 'woocommerce_email_order_meta_fields', 'printess_woocommerce_email_order_meta_fields', 10, 3 );
+	add_action( 'woocommerce_order_item_meta_start', 'printess_woocommerce_email_order_line_item_meta_fields', 10, 3 );
 
 	add_action( 'init', 'printess_edit_order_line_item' );
 	add_action( 'init', 'printess_save_edited_order_line_item' );
