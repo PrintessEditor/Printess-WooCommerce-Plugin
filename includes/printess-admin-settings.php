@@ -199,6 +199,19 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns true in case the original basket item should only be deleted in case the design name is the same
+    */
+    static function get_delete_original_basket_item_only_on_same_design_name() {
+        $setting = get_option( 'printess_delete_original_basket_item_only_on_same_design_name', '' );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -1058,7 +1071,7 @@ class PrintessAdminSettings
                 $setting = get_option( 'printess_enforce_design_name', '' );
 
                 if ( empty( $setting ) ) {
-                    $setting = 'pdf';
+                    $setting = '';
                 }
             
                 ?>
@@ -1067,6 +1080,39 @@ class PrintessAdminSettings
                         <option value="optional" <?php echo esc_html( 'optional' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'optional', 'printess-editor' ); ?></option>
                         <option value="enforce" <?php echo esc_html( 'enforce' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'enforce', 'printess-editor' ); ?></option>
                     </select>
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_delete_original_basket_item_only_on_same_design_name',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+    
+        add_settings_field(
+            'printess_delete_original_basket_item_only_on_same_design_name',
+            __( 'Delete original basket item only on same design name', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_delete_original_basket_item_only_on_same_design_name', true );
+                $checked = '';
+            
+                if ( null === $setting || empty( $setting ) ) {
+                    $setting = true;
+                }
+            
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+            
+                ?>
+                    
+                <input type="checkbox" name="printess_delete_original_basket_item_only_on_same_design_name" <?php echo esc_html( $checked ); ?> >
                 <?php
             },
             'printess-settings',

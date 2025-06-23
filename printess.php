@@ -138,6 +138,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$item_usage						= filter_input( INPUT_POST, 'printess_item_usage', FILTER_UNSAFE_RAW );
 	$remove_items_from_cart    = false;
 	$remove_option_value       = get_option( 'printess_show_original_product_in_basket', true );
+	$remove_basket_item_on_same_design_name = PrintessAdminSettings::get_delete_original_basket_item_only_on_same_design_name();
 
 	if ( isset( $remove_option_value ) && ( empty( $remove_option_value ) || 'off' === $remove_option_value ) ) {
 		$remove_items_from_cart = true;
@@ -155,15 +156,22 @@ function printess_add_cart_item_data( $cart_item_data ) {
 		foreach($cart_contents as $item_key => &$item) {
 			if(array_key_exists("printess-save-token", $item)) {
 				$item_save_token = $item["printess-save-token"];
+				$item_design_name = $item["printess-design-name"];
 
 				if($item_save_token === $save_token_to_remove_from_cart) {
 					// $items_to_remove_from_cart = WC()->cart->find_product_in_cart( $cart_item_id );
 
-					if(true === $remove_items_from_cart) {
-						WC()->cart->remove_cart_item( $item_key );
+					if(null !== $design_name && !empty($design_name) && null !== $item_design_name && !empty($item_design_name) && $design_name === $item_design_name) {
+						if(true === $remove_basket_item_on_same_design_name) {
+							WC()->cart->remove_cart_item( $item_key );
+						}
 					} else {
-						$item['printess-was-edited'] = 1;
-						$cart_item_data['printess-was-edited'] = 1;
+						if(true === $remove_items_from_cart) {
+							WC()->cart->remove_cart_item( $item_key );
+						} else {
+							$item['printess-was-edited'] = 1;
+							$cart_item_data['printess-was-edited'] = 1;
+						}
 					}
 
 					WC()->cart->set_session();
@@ -2170,7 +2178,7 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
 		$product_permalink = add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) );
 
-		if(null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
+		if(array_key_exists("design_name", $cart_item) && null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
 			$product_permalink = add_query_arg("design_name", $cart_item['design_name'], $product_permalink);
 		}
 
@@ -3598,6 +3606,14 @@ function printess_woocommerce_email_order_line_item_meta_fields($item_id, $item,
 	}
 }
 
+function printess_add_helper_scripts_after_cart() {
+	echo "<script>
+		document.addEventListener('DOMContentLoaded', function() {
+			alert('Du held');
+		});
+	</script>";
+}
+
 /**
  * Registers the plugin hooks used for the Printess integration.
  */
@@ -3629,6 +3645,7 @@ function printess_register_hooks() {
 	add_action( 'woocommerce_after_cart_item_name', 'printess_after_cart_item_name', 10, 2 );
 	add_action( 'woocommerce_cart_loaded_from_session', 'printess_cart_loaded_from_session', 10, 1 );
 	add_filter( 'woocommerce_add_to_cart_redirect', 'printess_add_to_cart_redirect', 10, 2 );
+	add_action( 'woocommerce_after_cart', 'printess_add_helper_scripts_after_cart' );
 
 	// PRODUCT.
 	add_action( 'admin_head', 'printess_admin_head' );
