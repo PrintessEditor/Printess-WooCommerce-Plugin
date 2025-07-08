@@ -45,7 +45,7 @@ function printess_render_information_overlay() {
  */
 function printess_render_save_dialog() {
 	?>
-		<div class="printess_overlay_background" id="printess_overlay_background" style="display:none;">
+		<div class="printess_overlay_background printess-owned" id="printess_overlay_background" style="display:none;">
 			<div class="printess_overlay">
 				<div class="printess_overlay_content">
 					<span class="title"><?php echo esc_html__( 'Saving your design', 'printess-editor' ); ?></span>
@@ -3213,6 +3213,10 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 				$product_url = add_query_arg( 'printess-save-token', $design['saveToken'], $permalink );
 				$product_url = add_query_arg( 'design_id', '' . $design['id'], $product_url );
 
+				if(null !== $display_name && !empty($display_name)) {
+					$product_url = add_query_arg( 'design_name', '' . $display_name, $product_url );
+				}
+
 				foreach ( $variant_options as $key => $value ) {
 					$product_url = $product_url . '&' . rawurlencode( $key ) . '=' . rawurlencode( $value );
 				}
@@ -3396,6 +3400,10 @@ function printess_render_edit_button_before_mini_basket_buttons( $html, $cart_it
 
 		$edit_link = get_permalink( $permalink_id );
 		$edit_link = add_query_arg( 'printess-save-token', $cart_item['printess-save-token'], $edit_link );
+
+		if(array_key_exists("design_name", $cart_item) && null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
+			$edit_link = add_query_arg("design_name", $cart_item['design_name'], $edit_link);
+		}
 
 		return $html . '<a class="printess-edit-link" href="' . esc_attr( $edit_link ) . '" style="z-index: 99; background: transparent;" >' . esc_html__( 'Edit', 'printess-editor' ) . '</a>';
 	}
@@ -3614,6 +3622,26 @@ function printess_add_helper_scripts_after_cart() {
 	</script>";
 }
 
+/*
+	Make sure that all Printess products that are added to the cart are having a save token.
+*/
+function printess_validate_cart_item($validation, $product_id) {
+	$variation_id = $_REQUEST['variation_id'];
+	$helper = new PrintessProductHelpers(null === $variation_id || empty($variation_id) ? $product_id : intval($variation_id) );
+	$product_template_name = $helper->get_template_name(true);
+
+	if($product_template_name) {
+		$cart_save_token = filter_input( INPUT_POST, 'printess-save-token', FILTER_SANITIZE_SPECIAL_CHARS );
+
+		if(null === $cart_save_token || empty($cart_save_token)) {
+			wc_add_notice( __( 'You just added a personalized product without any personalization. Please personalize the product first.', 'printess-editor' ), 'error' );
+    		$validation = false;
+		}
+	}
+
+	return $validation;
+}
+
 /**
  * Registers the plugin hooks used for the Printess integration.
  */
@@ -3646,6 +3674,7 @@ function printess_register_hooks() {
 	add_action( 'woocommerce_cart_loaded_from_session', 'printess_cart_loaded_from_session', 10, 1 );
 	add_filter( 'woocommerce_add_to_cart_redirect', 'printess_add_to_cart_redirect', 10, 2 );
 	add_action( 'woocommerce_after_cart', 'printess_add_helper_scripts_after_cart' );
+	add_filter('woocommerce_add_to_cart_validation', 'printess_validate_cart_item', 10, 2);
 
 	// PRODUCT.
 	add_action( 'admin_head', 'printess_admin_head' );
