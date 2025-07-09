@@ -236,12 +236,35 @@
                     }
                     break;
                 case 'basket':
-                    window.removeEventListener('message', eventListener);
-                    window.removeEventListener('beforeunload', closeTabListener);
-                    window.removeEventListener('unload', closeTabListener);
-                    iFrame.setAttribute("printessHasListener", "false");
-                    if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
-                        callbacks.onAddToBasketAsync(evt.data.token, evt.data.thumbnailUrl).then(() => { });
+                    const addToBasket = (saveToken, thumbnailUrl) => {
+                        window.removeEventListener('message', eventListener);
+                        window.removeEventListener('beforeunload', closeTabListener);
+                        window.removeEventListener('unload', closeTabListener);
+                        iFrame.setAttribute("printessHasListener", "false");
+                        if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
+                            callbacks.onAddToBasketAsync(evt.data.token, evt.data.thumbnailUrl).then(() => { });
+                        }
+                    };
+                    try {
+                        if (typeof context.onAllowAddToBasket === "function") {
+                            const result = context.onAllowAddToBasket(evt.data.token, evt.data.thumbnailUrl);
+                            if (typeof result !== "boolean" || result === true) {
+                                addToBasket(evt.data.token, evt.data.thumbnailUrl);
+                            }
+                        }
+                        else if (typeof context.onAllowAddToBasketAsync === "function") {
+                            context.onAllowAddToBasketAsync(evt.data.token, evt.data.thumbnailUrl).then((result) => {
+                                if (typeof result !== "boolean" || result === true) {
+                                    addToBasket(evt.data.token, evt.data.thumbnailUrl);
+                                }
+                            });
+                        }
+                        else {
+                            addToBasket(evt.data.token, evt.data.thumbnailUrl);
+                        }
+                    }
+                    catch (ex) {
+                        console.error(ex);
                     }
                     break;
                 case 'formFieldChanged':
@@ -258,6 +281,12 @@
                 case 'renderFirstPageImage': {
                     if (callbacks && typeof callbacks.onRenderedFirstPageImageAsync === "function") {
                         callbacks.onRenderedFirstPageImageAsync(evt.data.result);
+                    }
+                    break;
+                }
+                case "getFormField": {
+                    if (callbacks && typeof callbacks.onGetFormField === "function") {
+                        callbacks.onGetFormField(evt.data.result);
                     }
                     break;
                 }
@@ -443,6 +472,9 @@
                 else {
                     context.stickers = [];
                 }
+                if (typeof priceChangedInfo.printedRecordsCount !== "undefined" && priceChangedInfo.printedRecordsCount > 0 && typeof context.propertyChanged === "function" && priceChangedInfo.hasCirculationColumn === true) {
+                    context.propertyChanged("circulationRecordCount", priceChangedInfo.printedRecordsCount.toString());
+                }
                 priceInfo = await this.calculateCurrentPrices(priceChangedInfo, context);
             }
             catch (e) {
@@ -553,6 +585,19 @@
         }
         return ret || 'Some-Unique-Basket-Or-Session-Id';
     }
+    async getFormFieldValue(formFieldName) {
+        if (this.usePanelUi()) {
+            const editor = this.getPrintessComponent();
+            if (editor && editor.editor) {
+                const formFieldValue = await editor.editor.api.getFormField(formFieldName);
+                if (formFieldValue) {
+                }
+            }
+        }
+        else {
+            document.getElementById("printess")?.contentWindow?.postMessage({ cmd: "getFormField", parameters: [formFieldName] }, "*");
+        }
+    }
     async showBcUiVersion(context, callbacks) {
         const that = this;
         const priceInfo = context.getPriceInfo();
@@ -590,28 +635,72 @@
             };
             await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null);
             if (!isSaveToken && pageCount !== null && pageCount > 0) {
-                await printessComponent.editor.api.setBookinsidePages(pageCount);
+                await printessComponent.editor.api.setBookInsidePages(pageCount);
             }
+            setTimeout(function () {
+                if (that.Settings.autoImportImageUrlsInFormFields === true) {
+                    try {
+                        that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
+                            that.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
+                            });
+                        });
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }
+                if (context.hidePricesInEditor !== true) {
+                    that.calculateCurrentPrices({}, context).then((priceChangedInfo) => {
+                        printessComponent.editor.ui.refreshPriceDisplay(priceChangedInfo);
+                    });
+                }
+                callbacks.onLoadAsync(context.templateNameOrSaveToken);
+            }, 1000);
             printessComponent.editor.ui.show();
         }
         else {
+            let theme = that.Settings.uiSettings ? (that.Settings.uiSettings.theme || "") : "";
+            if (typeof theme !== "string" && theme.error) {
+                theme = theme.error;
+            }
+            if (!theme || theme.indexOf("json not allowed") === 0) {
+                theme = "DEFAULT";
+            }
             const attachParams = {
                 domain: that.Settings.apiDomain,
                 mergeTemplates: mergeTemplates,
                 formFields: formFields,
                 token: that.Settings.shopToken,
-                templateName: context.templateNameOrSaveToken,
+                templateName: context.templateNameOrSaveToken, // "Premier Test-3",// "test Trigger Dialog",  // "price-tester", // "Premier Test", //  "Children's book", // "Label FF Test", //"test Trigger Dialog",   "test Trigger Dialog", // "Bathrobe Man", //
                 //templateVersion: "publish",//"draft"
-                translationKey: "",
+                translationKey: "auto", //"en"
                 basketId: this.getOrGenerateBasketId(context),
                 shopUserId: 'Some-Unique-Shop-User-Id',
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
-                theme: that.Settings.uiSettings ? (that.Settings.uiSettings.theme || "") : "",
+                theme: theme,
                 addToBasketCallback: (token, thumbnailUrl) => {
-                    if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
-                        callbacks.onAddToBasketAsync(token, thumbnailUrl).then(() => { });
+                    const addToBasket = (saveToken, thumbnailUrl) => {
+                        if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
+                            callbacks.onAddToBasketAsync(token, thumbnailUrl).then(() => { });
+                        }
+                    };
+                    if (typeof context.onAllowAddToBasket === "function") {
+                        const result = context.onAllowAddToBasket(token, thumbnailUrl);
+                        if (typeof result !== "boolean" || result === true) {
+                            addToBasket(token, thumbnailUrl);
+                        }
+                    }
+                    else if (typeof context.onAllowAddToBasketAsync === "function") {
+                        context.onAllowAddToBasketAsync(token, thumbnailUrl).then((result) => {
+                            if (typeof result !== "boolean" || result === true) {
+                                addToBasket(token, thumbnailUrl);
+                            }
+                        });
+                    }
+                    else {
+                        addToBasket(token, thumbnailUrl);
                     }
                 },
                 formFieldChangedCallback: (name, value, tag, label, ffLabel) => {
@@ -634,20 +723,6 @@
                     if (type && type === "close") {
                         that.hideBcUiVersion(context, true);
                     }
-                },
-                loadTemplateCallback: (param) => {
-                    if (this.Settings.autoImportImageUrlsInFormFields === true) {
-                        try {
-                            this.downloadImages(this.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
-                                this.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
-                                });
-                            });
-                        }
-                        catch (e) {
-                            console.error(e);
-                        }
-                    }
-                    callbacks.onLoadAsync(attachParams.templateName);
                 }
             };
             if (!isSaveToken && pageCount !== null && pageCount >= 1) {
@@ -655,9 +730,30 @@
             }
             const printess = await printessLoader.load(attachParams);
             printessComponent = that.getPrintessComponent();
-            if (printessComponent) {
-                printessComponent.editor = printess;
-            }
+            printessComponent.editor = printess;
+            setTimeout(function () {
+                const printessComponent = that.getPrintessComponent();
+                if (!printessComponent) {
+                    return;
+                }
+                if (that.Settings.autoImportImageUrlsInFormFields === true) {
+                    try {
+                        that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
+                            that.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
+                            });
+                        });
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }
+                if (context.hidePricesInEditor !== true) {
+                    that.calculateCurrentPrices({}, context).then((priceChangedInfo) => {
+                        printessComponent.editor.ui.refreshPriceDisplay(priceChangedInfo);
+                    });
+                }
+                callbacks.onLoadAsync(attachParams.templateName);
+            }, 1000);
         }
     }
     static extractNumber(inputStr) {
@@ -715,6 +811,11 @@
                 }
                 else if (typeof context.onRenderFirstPageImage === "function") {
                     context.onRenderFirstPageImage(result);
+                }
+            },
+            onGetFormField: (result) => {
+                if (typeof context.onGetFormField === "function") {
+                    context.onGetFormField(result);
                 }
             },
             onSaveAsync: async (saveToken) => {
@@ -912,6 +1013,20 @@
             }
         }
         return formFields || {};
+    }
+    static ensureScriptExecution(scriptId, methodName = null, params = null) {
+        const scriptTag = document.getElementById(scriptId);
+        if (scriptTag && !scriptTag.getAttribute("data-replaced")) {
+            const newTag = document.createElement('script');
+            newTag.setAttribute("id", scriptId);
+            newTag.setAttribute("data-replaced", "true");
+            newTag.type = 'text/javascript';
+            newTag.text = scriptTag.text;
+            scriptTag.replaceWith(newTag);
+        }
+        if (methodName && typeof window[methodName] === "function") {
+            window[methodName].apply(null, params);
+        }
     }
 }function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
     let editorSettings;

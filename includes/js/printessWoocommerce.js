@@ -184,6 +184,28 @@
                 cancelCallback();
             }
         };
+        const keyUpHandler = (e) => {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+            else if (e.key === 'Escape' || e.keyCode === 27) {
+                e.preventDefault();
+                e.stopPropagation();
+            }
+        };
+        const keyDownHandler = (e) => {
+            if (e.key === 'Enter' || e.keyCode === 13) {
+                e.preventDefault();
+                e.stopPropagation();
+                internalSaveCallback();
+            }
+            else if (e.key === 'Escape' || e.keyCode === 27) {
+                e.preventDefault();
+                e.stopPropagation();
+                internalCancelCallback();
+            }
+        };
         removeEventHandlers = () => {
             const saveButton = document.getElementById("printess_save_design_button");
             if (saveButton) {
@@ -197,6 +219,8 @@
                 dialog.removeEventListener("mousedown", cancelMouse);
                 dialog.removeEventListener("mouseup", cancelMouse);
                 dialog.removeEventListener("mousemove", cancelMouse);
+                dialog.removeEventListener("keydown", keyUpHandler);
+                dialog.removeEventListener("keyup", keyDownHandler);
             }
         };
         if (loggedInBlock) {
@@ -227,6 +251,8 @@
             dialog.addEventListener("mousedown", cancelMouse);
             dialog.addEventListener("mouseup", cancelMouse);
             dialog.addEventListener("mousemove", cancelMouse);
+            dialog.addEventListener("keydown", keyUpHandler);
+            dialog.addEventListener("keyup", keyDownHandler);
             if (!dialog.getAttribute("data-initialized")) {
                 document.body.appendChild(dialog);
                 dialog.setAttribute("data-initialized", "true");
@@ -625,30 +651,38 @@
                     });
                 }
             },
-            onAddToBasket: (saveToken, thumbnailUrl, displayName = null) => {
-                if (displayName === null && settings.enforceDisplayName) {
-                    const enforceDisplayNameValue = (initialValue = null) => {
-                        this.showDialog("printess_display_name", initialValue || context.designName || "", (okClicked, value) => {
-                            value = (value || "").trim();
-                            if (settings.enforceDisplayName !== "enforce") {
-                                context.onAddToBasket(saveToken, thumbnailUrl, value);
-                            }
-                            else {
-                                if ((!okClicked && settings.enforceDisplayName === "enforce") || (settings.enforceDisplayName === "enforce" && !value)) {
-                                    enforceDisplayNameValue(value);
+            onAllowAddToBasketAsync: (saveToken, thumbnailUrl) => {
+                if (!settings.enforceDisplayName) {
+                    return new Promise((resolve, reject) => { resolve(true); });
+                }
+                return new Promise((resolve, reject) => {
+                    try {
+                        const enforceDisplayNameValue = (initialValue = null) => {
+                            this.showDialog("printess_display_name", initialValue || context.designName || "", (okClicked, value) => {
+                                value = (value || "").trim();
+                                if (okClicked) {
+                                    if (settings.enforceDisplayName === "enforce" && !value) {
+                                        enforceDisplayNameValue();
+                                    }
+                                    else {
+                                        context.designName = value || "";
+                                        resolve(true);
+                                    }
                                 }
                                 else {
-                                    context.onAddToBasket(saveToken, thumbnailUrl, value);
+                                    resolve(false);
                                 }
-                            }
-                        });
-                    };
-                    enforceDisplayNameValue();
-                    return;
-                }
-                if (settings.enforceDisplayName) {
-                    context.designName = displayName;
-                }
+                            });
+                        };
+                        enforceDisplayNameValue();
+                    }
+                    catch (ex) {
+                        console.error(ex);
+                        resolve(true);
+                    }
+                });
+            },
+            onAddToBasket: (saveToken, thumbnailUrl) => {
                 if (printessSettings.editorMode === "admin") {
                     saveAdminSaveToken(saveToken, thumbnailUrl);
                     return;
@@ -732,7 +766,7 @@
                     };
                     if (settings.product.ajaxEnabled) {
                         return {
-                            "executeBeforeClosing": changePageAfterSubmit,
+                            "executeBeforeClosing": changePageAfterSubmit, //printess_hide_information_overlay,
                             "waitUntilClosingMS": 1000
                         };
                     }
@@ -1166,7 +1200,36 @@ function showDialog(prefix, initialValue, callback) {
     const cancelButton = document.getElementById(prefix + "_cancel_button");
     const dlg = document.getElementById(prefix + "_overlay_background");
     const bodyElement = document.querySelector("body");
-    const okCallback = (evt) => {
+    let hide = null;
+    const keyUpHandler = (e) => {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+        else if (e.key === 'Escape' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+        }
+    };
+    const keyDownHandler = (e) => {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+            e.preventDefault();
+            e.stopPropagation();
+            hide();
+            if (typeof callback === "function") {
+                callback(true, textInput.value);
+            }
+        }
+        else if (e.key === 'Escape' || e.keyCode === 27) {
+            e.preventDefault();
+            e.stopPropagation();
+            hide();
+            if (typeof callback === "function") {
+                callback(false, textInput.value);
+            }
+        }
+    };
+    hide = function () {
         if (okButton) {
             okButton.removeEventListener("click", okCallback);
         }
@@ -1175,21 +1238,18 @@ function showDialog(prefix, initialValue, callback) {
         }
         if (dlg) {
             dlg.style.display = "none";
+            dlg.removeEventListener("keydown", keyUpHandler);
+            dlg.removeEventListener("keyup", keyDownHandler);
         }
+    };
+    const okCallback = (evt) => {
+        hide();
         if (typeof callback === "function") {
             callback(true, textInput.value);
         }
     };
     const cancelCallback = (evt) => {
-        if (okButton) {
-            okButton.removeEventListener("click", okCallback);
-        }
-        if (cancelButton) {
-            cancelButton.removeEventListener("click", cancelCallback);
-        }
-        if (dlg) {
-            dlg.style.display = "none";
-        }
+        hide();
         if (typeof callback === "function") {
             callback(false, textInput.value);
         }
@@ -1208,6 +1268,8 @@ function showDialog(prefix, initialValue, callback) {
     }
     if (dlg) {
         dlg.style.display = "block";
+        dlg.addEventListener("keydown", keyUpHandler);
+        dlg.addEventListener("keyup", keyDownHandler);
     }
 }
 function printessRegisterCheckoutFilters(registerCheckoutFilters) {
@@ -1245,24 +1307,23 @@ function printessRegisterCheckoutFilters(registerCheckoutFilters) {
                                 }
                             }
                             // if (detailBlocks) {
-                            //     const nameElement = detailBlocks.querySelector(".printess-product-detail-name");
-                            //     if (nameElement) {
-                            //         nameElement.innerText = "Design name: ";
-                            //         const valueEleement = detailBlocks.querySelector("printess-product-detail-name");
-                            //         if (valueEleement) {
-                            //             valueEleement.innerText = extensions["printess-editor"]["designName"];
-                            //         }
+                            //   const nameElement: HTMLElement = detailBlocks.querySelector(".printess-product-detail-name");
+                            //   if (nameElement) {
+                            //     nameElement.innerText = "Design name: ";
+                            //     const valueEleement = detailBlocks.querySelector("printess-product-detail-name") as HTMLElement;
+                            //     if (valueEleement) {
+                            //       valueEleement.innerText = extensions["printess-editor"]["designName"];
                             //     }
-                            //     else {
-                            //         const li = document.createElement("li");
-                            //         li.classList.add("wc-block-components-product-details__designName");
-                            //         li.classList.add("printess-product-details-item");
-                            //         const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
-                            //         const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
-                            //         name.innerText = "Design name: ";
-                            //         value.innerText = extensions["printess-editor"]["designName"];
-                            //         detailBlocks.appendChild(li);
-                            //     }
+                            //   } else {
+                            //     const li = document.createElement("li");
+                            //     li.classList.add("wc-block-components-product-details__designName");
+                            //     li.classList.add("printess-product-details-item");
+                            //     const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
+                            //     const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
+                            //     name.innerText = "Design name: "
+                            //     value.innerText = extensions["printess-editor"]["designName"];
+                            //     detailBlocks.appendChild(li);
+                            //   }
                             // }
                         }
                         //Change thumbnail

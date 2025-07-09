@@ -30,6 +30,13 @@ class PrintessProductHelpers {
     }
 
     /**
+     * Returns the current product.
+    */    
+    public function get_product() {
+        return $this->_product;
+    }
+
+    /**
      * Returns all attributes related to a product (parent product in case of variation)
     */
     public function get_attributes() {
@@ -122,10 +129,44 @@ class PrintessProductHelpers {
         return $ret;
     }
 
-    public function get_template_name(): string {
-      $ret = $this->_product->get_meta( 'printess_template', true );
+    public function get_template_name($check_base_product = false): string {
+      $template_name = $this->_product->get_meta( 'printess_template', true );
 
-      return $ret === null || empty($ret) ? "" : $ret;
+      $template_name = $template_name === null || empty($template_name) ? "" : $template_name;
+
+      if($check_base_product && $this->_product !== $this->_base_product && empty($template_name) ) {
+            //We can only return the base product template name if no variation has set a template name. In this case the whole product and its variations is treated as printess products.
+            //If at least one variant has a template name set, then the current variation (which has no template name set) should not be treated as printess product.
+
+            if ($this->_base_product->is_type( 'variable' )) {
+                $variant_has_template_name = false;
+
+                foreach ($this->_base_product->get_available_variations() as $key => $variation) { 
+                    $variation_template_name = "";
+
+                    if(is_array($variation)) {
+                        if(array_key_exists("printess_template_name", $variation)) {
+                            $variation_template_name = $variation["printess_template_name"];
+                        }
+                    } else {
+                        $variation_template_name = $variation->get_meta( 'printess_template_name', true );
+                    }
+
+                    if($variation_template_name !== null && !empty($variation_template_name)) {
+                        $variant_has_template_name = true;
+                        break;
+                    }
+                }
+
+                if(!$variant_has_template_name) {
+                    $template_name = $this->_base_product->get_meta( 'printess_template', true );
+                    $template_name = $template_name === null || empty($template_name) ? "" : $emplate_name;
+                }
+            }
+      }
+      
+
+      return $template_name;
     }
 
     public function get_formfield_mappings(): string {
