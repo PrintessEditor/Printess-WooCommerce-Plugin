@@ -224,7 +224,7 @@
                 callbacks.onCloseTab(evt);
             }
         };
-        const eventListener = (evt) => {
+        const eventListener = async (evt) => {
             switch (evt.data.cmd) {
                 case 'back':
                     window.removeEventListener('message', eventListener);
@@ -297,25 +297,31 @@
                     break;
                 }
                 case 'loaded': {
-                    if (this.Settings.autoImportImageUrlsInFormFields === true) {
+                    if (that.Settings.autoImportImageUrlsInFormFields === true) {
                         try {
-                            this.downloadImages(this.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
-                                if (!this.tempUploadImages) {
-                                    this.tempUploadImages = images;
-                                }
-                                else {
-                                    this.tempUploadImages = [
-                                        ...this.tempUploadImages,
-                                        ...images
-                                    ];
-                                }
-                                if (images.length > 0) {
-                                    this.uploadImageToClassicEditor(iFrame, images[0].data, images[0].name);
-                                }
-                            });
+                            const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                            if (!that.tempUploadImages) {
+                                that.tempUploadImages = images;
+                            }
+                            else {
+                                that.tempUploadImages = [
+                                    ...that.tempUploadImages,
+                                    ...images
+                                ];
+                            }
+                            if (images.length > 0) {
+                                that.uploadImageToClassicEditor(iFrame, images[0].data, images[0].name);
+                            }
                         }
                         catch (e) {
                             console.error(e);
+                        }
+                    }
+                    if (that.Settings.autoImportUserImages === true) {
+                        let userId = await that.getUserId(context);
+                        let basketId = await that.getOrGenerateBasketId(context);
+                        if (userId || basketId) {
+                            that.uploadUserImagesToClassicEditor(iFrame, basketId, userId);
                         }
                     }
                     if (callbacks && typeof callbacks.onLoadAsync === "function") {
@@ -367,7 +373,7 @@
                 iFrame.setAttribute("printessHasListener", "true");
                 if (window.visualViewport) {
                     window.visualViewport.addEventListener("scroll", () => {
-                        // unfortunately an iframe on iOS is not able to receive the correct visual-viewport, so we forward it. 
+                        // unfortunately an iframe on iOS is not able to receive the correct visual-viewport, so we forward it.
                         iFrame.contentWindow?.postMessage({ cmd: "viewportScroll", height: window.visualViewport?.height, offsetTop: window.visualViewport?.offsetTop }, "*");
                     }, { passive: true });
                 }
@@ -537,9 +543,19 @@
             }
         }
     }
+    async uploadUserImagesToBcUiEditor(editor, basketId = null, userId = null) {
+        if (userId || basketId) {
+            const result = await editor.api.importImages(userId || "", basketId);
+        }
+    }
     uploadImageToClassicEditor(iframe, file, formFieldName) {
         if (file) {
             iframe.contentWindow?.postMessage({ cmd: "uploadImage", parameters: [file, null, false, "ff_" + formFieldName] }, "*");
+        }
+    }
+    uploadUserImagesToClassicEditor(iframe, basketId = null, userId = null) {
+        if (basketId || userId) {
+            iframe.contentWindow?.postMessage({ cmd: "importImages", parameters: [userId || "", basketId] }, "*");
         }
     }
     static generateUUID() {
@@ -558,9 +574,12 @@
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
     }
-    getOrGenerateBasketId(context) {
+    async getOrGenerateBasketId(context) {
         let ret = typeof context.getBasketId === "function" ? context.getBasketId() : "";
-        if (!ret || ret.toLowerCase() == 'some-unique-basket-or-session-id' || ret.toLowerCase() == 'some-unique-shop-user-id') {
+        if (!ret && typeof context.getBasketIdAsync === "function") {
+            ret = await context.getBasketIdAsync() || null;
+        }
+        if (!ret) {
             if (!ret) {
                 try {
                     ret = localStorage.getItem("printessUniqueBasketId");
@@ -583,7 +602,14 @@
                 }
             }
         }
-        return ret || 'Some-Unique-Basket-Or-Session-Id';
+        return ret || null;
+    }
+    async getUserId(context) {
+        let ret = typeof context.getUserId === "function" ? context.getUserId() : null;
+        if (!ret && typeof context.getUserIdAsync === "function") {
+            ret = await context.getUserIdAsync();
+        }
+        return ret;
     }
     async getFormFieldValue(formFieldName) {
         if (this.usePanelUi()) {
@@ -622,6 +648,15 @@
         const loaderUrl = that.getLoaderUrl(this.Settings.editorUrl, this.Settings.editorVersion, startupParams);
         const printessLoader = await import(/* webpackIgnore: true */ loaderUrl);
         let printessComponent = that.getPrintessComponent();
+        const closeTabListener = (evt) => {
+            if (callbacks && typeof callbacks.onCloseTab === "function") {
+                callbacks.onCloseTab(evt);
+            }
+        };
+        if (this.Settings.showAlertOnTabClose === true) {
+            window.addEventListener('beforeunload', closeTabListener);
+            window.addEventListener('unload', closeTabListener);
+        }
         if (printessComponent && printessComponent.editor) {
             printessComponent.style.display = "block";
             context.renderFirstPageImageAsync = async (maxThumbnailWidth, maxThumbnailHeight) => {
@@ -637,24 +672,34 @@
             if (!isSaveToken && pageCount !== null && pageCount > 0) {
                 await printessComponent.editor.api.setBookInsidePages(pageCount);
             }
-            setTimeout(function () {
-                if (that.Settings.autoImportImageUrlsInFormFields === true) {
-                    try {
-                        that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
-                            that.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
-                            });
-                        });
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
-                }
+            setTimeout(async function () {
                 if (context.hidePricesInEditor !== true) {
                     that.calculateCurrentPrices({}, context).then((priceChangedInfo) => {
                         printessComponent.editor.ui.refreshPriceDisplay(priceChangedInfo);
                     });
                 }
-                callbacks.onLoadAsync(context.templateNameOrSaveToken);
+                if (that.Settings.autoImportImageUrlsInFormFields === true) {
+                    try {
+                        const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                        await that.uploadImagesToBcUiEditor(images, printessComponent.editor);
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }
+                if (that.Settings.autoImportUserImages === true) {
+                    try {
+                        let userId = await that.getUserId(context);
+                        let basketId = await that.getOrGenerateBasketId(context);
+                        if (userId || basketId) {
+                            await that.uploadUserImagesToBcUiEditor(printessComponent.editor, basketId, userId);
+                        }
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }
+                await callbacks.onLoadAsync(context.templateNameOrSaveToken);
             }, 1000);
             printessComponent.editor.ui.show();
         }
@@ -674,14 +719,16 @@
                 templateName: context.templateNameOrSaveToken, // "Premier Test-3",// "test Trigger Dialog",  // "price-tester", // "Premier Test", //  "Children's book", // "Label FF Test", //"test Trigger Dialog",   "test Trigger Dialog", // "Bathrobe Man", //
                 //templateVersion: "publish",//"draft"
                 translationKey: "auto", //"en"
-                basketId: this.getOrGenerateBasketId(context),
-                shopUserId: 'Some-Unique-Shop-User-Id',
+                basketId: await this.getOrGenerateBasketId(context),
+                shopUserId: await this.getUserId(context),
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
                 theme: theme,
                 addToBasketCallback: (token, thumbnailUrl) => {
                     const addToBasket = (saveToken, thumbnailUrl) => {
+                        window.removeEventListener('beforeunload', closeTabListener);
+                        window.removeEventListener('unload', closeTabListener);
                         if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
                             callbacks.onAddToBasketAsync(token, thumbnailUrl).then(() => { });
                         }
@@ -714,6 +761,8 @@
                     }
                 },
                 backButtonCallback: (saveToken) => {
+                    window.removeEventListener('beforeunload', closeTabListener);
+                    window.removeEventListener('unload', closeTabListener);
                     that.hideBcUiVersion(context, true);
                 },
                 saveTemplateCallback: (saveToken, type) => {
@@ -731,28 +780,37 @@
             const printess = await printessLoader.load(attachParams);
             printessComponent = that.getPrintessComponent();
             printessComponent.editor = printess;
-            setTimeout(function () {
+            setTimeout(async function () {
                 const printessComponent = that.getPrintessComponent();
                 if (!printessComponent) {
                     return;
                 }
+                if (context.hidePricesInEditor !== true) {
+                    const priceChangedInfo = await that.calculateCurrentPrices({}, context);
+                    printessComponent.editor.ui.refreshPriceDisplay(priceChangedInfo);
+                }
                 if (that.Settings.autoImportImageUrlsInFormFields === true) {
                     try {
-                        that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings()))).then((images) => {
-                            that.uploadImagesToBcUiEditor(images, printessComponent.editor).then((x) => {
-                            });
-                        });
+                        const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                        await that.uploadImagesToBcUiEditor(images, printessComponent.editor);
                     }
                     catch (e) {
                         console.error(e);
                     }
                 }
-                if (context.hidePricesInEditor !== true) {
-                    that.calculateCurrentPrices({}, context).then((priceChangedInfo) => {
-                        printessComponent.editor.ui.refreshPriceDisplay(priceChangedInfo);
-                    });
+                if (that.Settings.autoImportUserImages === true) {
+                    try {
+                        let userId = await that.getUserId(context);
+                        let basketId = await that.getOrGenerateBasketId(context);
+                        if (userId || basketId) {
+                            await that.uploadUserImagesToBcUiEditor(printessComponent.editor, basketId, userId);
+                        }
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
                 }
-                callbacks.onLoadAsync(attachParams.templateName);
+                await callbacks.onLoadAsync(attachParams.templateName);
             }, 1000);
         }
     }
@@ -878,8 +936,8 @@
                         templateName: context.templateNameOrSaveToken,
                         showBuyerSide: true,
                         templateUserId: '',
-                        basketId: this.getOrGenerateBasketId(context),
-                        shopUserId: typeof context.getUserId === "function" ? context.getUserId() || 'Some-Unique-Basket-Or-Session-Id' : 'Some-Unique-Shop-User-Id',
+                        basketId: await this.getOrGenerateBasketId(context),
+                        shopUserId: await this.getUserId(context),
                         formFields: formFields,
                         snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
                         mergeTemplates: mergeTemplates
@@ -1028,7 +1086,7 @@
             window[methodName].apply(null, params);
         }
     }
-}function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
+} function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
     let editorSettings;
     if (shopToken && typeof shopToken !== "string") {
         editorSettings = {
@@ -1046,6 +1104,7 @@
                 uiVersion: shopToken["uiVersion"] || ""
             },
             ...shopToken,
+            autoImportUserImages: shopToken["autoImportUserImages"] ? shopToken["autoImportUserImages"] === true : false
         };
     }
     else {

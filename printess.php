@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.46
+ * Version: 1.6.47
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924005dfsfhsf8429842385wdff234sfd
+ * Woo: 10000:924006dfsfhsf8429842385wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -48,7 +48,9 @@ function printess_render_save_dialog() {
 		<div class="printess_overlay_background printess-owned" id="printess_overlay_background" style="display:none;">
 			<div class="printess_overlay">
 				<div class="printess_overlay_content">
-					<span class="title"><?php echo esc_html__( 'Saving your design', 'printess-editor' ); ?></span>
+					<div class="header">
+						<span class="title"><?php echo esc_html__( 'Saving your design', 'printess-editor' ); ?></span>
+					</div>
 
 					<p class="printess_show_if_not_logged_in" id="printess_show_if_not_logged_in"><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Save design', 'printess-editor' ) . '</span>', esc_html__( 'You are currently not logged in. To be able to save designs you need to be logged in. You will be redirected to the login page after clicking on {SAVE_DESIGN}. After logging in / account creation you will be redirected back to your current design so that you can continue working on your current design.', 'printess-editor' ) ); ?></p>
 
@@ -514,6 +516,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 																										"uiVersion": <?php echo wp_json_encode( $printess_ui_version ); ?>,
 																										"theme": <?php echo wp_json_encode( $theme ); ?>
 																									},
+																									"showAlertOnTabClose": <?php echo wp_json_encode(PrintessAdminSettings::get_show_warning_on_tab_close() === true) ?>,
 																									"autoImportImageUrlsInFormFields": true,
 																									"editorUrl": <?php echo wp_json_encode( PrintessAdminSettings::get_embed_html_url() ); ?>,
 																									"shopToken": <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,

@@ -9,7 +9,9 @@ class PrintessDialogs {
 		<div class="printess_overlay_background printess-owned" id="printess_display_name_overlay_background" style="display:none;">
 			<div class="printess_overlay">
 				<div class="printess_overlay_content">
-                    <p><?php echo '<span class="highlight">' . esc_html__( 'Please provide a design name', 'printess-editor' ) . '</span>' ?></p>
+					<div class="header">
+          	<span class="title"><?php echo '<span class="highlight">' . esc_html__( 'Please provide a design name', 'printess-editor' ) . '</span>' ?></span>
+					</div>
 
 					<form class="woocommerce-form">
 						<p class="woocommerce-form-row woocommerce-form-row--wide form-row form-row-wide">

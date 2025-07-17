@@ -212,6 +212,19 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns true in case a warning should be displayed on tab reload / close
+    */
+    static function get_show_warning_on_tab_close() {
+        $setting = get_option( 'printess_warn_on_tab_change', '' );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -223,9 +236,9 @@ class PrintessAdminSettings
             function() {},
             'printess-settings'
         );
-    
+
         register_setting( 'printess-settings', 'printess_shop_token' );
-    
+
         add_settings_field(
             'printess_shop_token', // setting slug .
             __( 'Shop Token', 'printess-editor' ),
@@ -237,9 +250,9 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting( 'printess-settings', 'printess_service_token' );
-    
+
         add_settings_field(
             'printess_service_token',
             __( 'Service Token', 'printess-editor' ),
@@ -251,7 +264,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_api_domain',
@@ -260,7 +273,7 @@ class PrintessAdminSettings
                 'default' => 'api.printess.com',
             )
         );
-    
+
         add_settings_field(
             'printess_api_domain',
             __( 'Api Domain', 'printess-editor' ),
@@ -272,7 +285,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_embed_html_url',
@@ -281,7 +294,7 @@ class PrintessAdminSettings
                 'default' => 'https://editor.printess.com/printess-editor/embed.html',
             )
         );
-    
+
         add_settings_field(
             'printess_embed_html_url',
             __( 'Embed Html Url', 'printess-editor' ),
@@ -293,7 +306,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_customize_button_class',
@@ -302,7 +315,7 @@ class PrintessAdminSettings
                 'default' => '',
             )
         );
-    
+
         add_settings_field(
             'printess_ids_to_hide',
             __( 'Ids to hide when showing editor', 'printess-editor' ),
@@ -314,7 +327,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_ids_to_hide',
@@ -323,7 +336,7 @@ class PrintessAdminSettings
                 'default' => 'wpadminbar, page',
             )
         );
-    
+
         add_settings_field(
             'printess_class_names_to_hide',
             __( 'Class names to hide when showing editor', 'printess-editor' ),
@@ -335,7 +348,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_class_names_to_hide',
@@ -344,7 +357,7 @@ class PrintessAdminSettings
                 'default' => 'wp-site-blocks',
             )
         );
-    
+
         add_settings_field(
             'printess_customize_button_class',
             __( 'Additional classes for customize button', 'printess-editor' ),
@@ -356,7 +369,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_approval',
@@ -365,7 +378,7 @@ class PrintessAdminSettings
                 'default' => 'auto',
             )
         );
-    
+
         add_settings_field(
             'printess_approval',
             __( 'Order Approval Mode', 'printess-editor' ),
@@ -373,15 +386,15 @@ class PrintessAdminSettings
                 $setting         = PrintessAdminSettings::get_approval_mode();
                 $auto_selected   = '';
                 $manual_selected = '';
-            
+
                 if ( 'auto' === $setting ) {
                     $auto_selected = 'selected';
                 }
-            
+
                 if ( 'manual' === $setting ) {
                     $manual_selected = 'selected';
                 }
-            
+
                 ?>
                 <select name="printess_approval">
                     <option value="auto" <?php echo esc_html( $auto_selected ); ?>><?php echo esc_html__( 'Automatic', 'printess-editor' ); ?></option>
@@ -392,7 +405,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_add_to_cart_after_customization',
@@ -401,24 +414,24 @@ class PrintessAdminSettings
                 'default' => true,
             )
         );
-    
+
         add_settings_field(
             'printess_add_to_cart_after_customization',
             __( 'Add to cart after customization', 'printess-editor' ),
             function() {
                 $setting = PrintessAdminSettings::get_add_to_cart_after_customization();
                 $checked = '';
-            
+
                 if ( $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?><input type="checkbox" name="printess_add_to_cart_after_customization" <?php echo esc_html( $checked ); ?>><?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_show_customize_on_archive_page',
@@ -427,24 +440,24 @@ class PrintessAdminSettings
                 'default' => true,
             )
         );
-    
+
         add_settings_field(
             'printess_show_customize_on_archive_page',
             __( 'Show customize button on archive page', 'printess-editor' ),
             function() {
                 $setting = PrintessAdminSettings::get_show_customize_on_archive_page();
                 $checked = '';
-            
+
                 if ( $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?><input type="checkbox" name="printess_show_customize_on_archive_page" <?php echo esc_html( $checked ); ?>><?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_show_prices_in_editor',
@@ -453,28 +466,28 @@ class PrintessAdminSettings
                 'default' => true,
             )
         );
-    
+
         add_settings_field(
             'printess_show_prices_in_editor',
             __( 'Show prices inside editor', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_show_prices_in_editor', 'off' );
                 $checked = '';
-            
+
                 if ( 'on' === $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
-                
+
                 <input type="checkbox" name="printess_show_prices_in_editor" <?php echo esc_html( $checked ); ?>>
-            
+
                 <?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_show_product_name_in_editor',
@@ -483,28 +496,28 @@ class PrintessAdminSettings
                 'default' => true,
             )
         );
-    
+
         add_settings_field(
             'printess_show_product_name_in_editor',
             __( 'Show product name inside editor', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_show_product_name_in_editor', 'off' );
                 $checked = '';
-            
+
                 if ( 'on' === $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
-                
+
                 <input type="checkbox" name="printess_show_product_name_in_editor" <?php echo esc_html( $checked ); ?>>
-            
+
                 <?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_legal_notice',
@@ -513,7 +526,7 @@ class PrintessAdminSettings
                 'default' => 'auto',
             )
         );
-    
+
         add_settings_field(
             'printess_legal_notice',
             __( 'Display legal info in case prices are displayed inside editor', 'printess-editor' ),
@@ -529,7 +542,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_output_format',
@@ -538,7 +551,7 @@ class PrintessAdminSettings
                 'default' => 'auto',
             )
         );
-    
+
         add_settings_field(
             'printess_output_format',
             __( 'Output Format', 'printess-editor' ),
@@ -548,7 +561,7 @@ class PrintessAdminSettings
                 if ( empty( $setting ) ) {
                     $setting = 'pdf';
                 }
-            
+
                 ?>
                     <select name="printess_output_format">
                         <option value="pdf" <?php echo esc_html( 'pdf' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'PDF', 'printess-editor' ); ?></option>
@@ -561,7 +574,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_jpg_compression',
@@ -570,7 +583,7 @@ class PrintessAdminSettings
                 'default' => 'auto',
             )
         );
-    
+
         add_settings_field(
             'printess_jpg_compression',
             __( 'JPEG Compression', 'printess-editor' ),
@@ -580,7 +593,7 @@ class PrintessAdminSettings
                 if ( empty( $setting ) ) {
                     $setting = '90';
                 }
-            
+
                 try {
                     if ( intval( $setting ) < 0 ) {
                         $setting = '1';
@@ -590,9 +603,9 @@ class PrintessAdminSettings
                 } catch ( \Exception $ex ) {
                     $setting = '90';
                 }
-            
+
                 ?>
-            
+
                 <input type="number" style="min-width: 50%;" name="printess_jpg_compression" value="<?php echo esc_attr( $setting ); ?>" min="1" max="100">
 
                 <?php
@@ -600,7 +613,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_enable_design_save',
@@ -609,28 +622,28 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_enable_design_save',
             __( 'Enable saving of designs', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_enable_design_save', false );
                 $checked = '';
-            
+
                 if ( $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
-                    
+
                 <input type="checkbox" name="printess_enable_design_save" <?php echo esc_html( $checked ); ?>>
-            
+
                 <?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_saved_design_lifetime',
@@ -639,7 +652,7 @@ class PrintessAdminSettings
                 'default' => '30',
             )
         );
-    
+
         add_settings_field(
             'printess_saved_design_lifetime',
             __( 'Saved Design lifetime (Days)', 'printess-editor' ),
@@ -649,37 +662,37 @@ class PrintessAdminSettings
                 if ( ! isset( $setting ) || empty( $setting ) ) {
                     $setting = 30;
                 }
-            
+
                 $setting = intval( $setting );
-            
+
                 ?>
                     <input type="number" min="0" style="min-width: 50%;" id="printess_saved_design_lifetime_in" name="printess_saved_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : $setting; ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
-            
+
                     <script>
                         const lifeTimeInput = document.getElementById("printess_saved_design_lifetime_in");
-            
+
                         if(lifeTimeInput) {
                             const updateDisplayText = () => {
                                 let days = parseInt(lifeTimeInput.value);
-                
+
                                 if(days == 0) {
                                     days = "<?php echo esc_html__( 'Unlimited', 'printess-editor' ); ?>";
                                 }
                                 else if(days < 0) {
                                     days = 30;
                                 }
-                
+
                                 const span = document.getElementById("printess_days");
-                
+
                                 if(span) {
                                     span.innerHTML = " " + days + " ";
                                 }
                             };
-            
+
                             lifeTimeInput.addEventListener("change", (event) => {
                                 updateDisplayText();
                             });
-        
+
                             lifeTimeInput.addEventListener("keydown", (event) => {
                                 updateDisplayText();
                             });
@@ -690,7 +703,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_ordered_design_lifetime',
@@ -699,7 +712,7 @@ class PrintessAdminSettings
                 'default' => '30',
             )
         );
-    
+
         add_settings_field(
             'printess_ordered_design_lifetime',
             __( 'Ordered Design lifetime (Days)', 'printess-editor' ),
@@ -709,37 +722,37 @@ class PrintessAdminSettings
                 if ( ! isset( $setting ) || empty( $setting ) ) {
                     $setting = 30;
                 }
-            
+
                 $setting = intval( $setting );
-            
+
                 ?>
                     <input type="number" min="0" style="min-width: 50%;" id="printess_ordered_design_lifetime_in" name="printess_ordered_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_ordered_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : $setting; ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
-            
+
                     <script>
                         const orderedDesignLifeTimeInput = document.getElementById("printess_ordered_design_lifetime_in");
-            
+
                         if(orderedDesignLifeTimeInput) {
                             const updateDisplayText = () => {
                                 let days = parseInt(orderedDesignLifeTimeInput.value);
-            
+
                                 if(days == 0) {
                                     days = "<?php echo esc_html__( 'Unlimited', 'printess-editor' ); ?>";
                                 }
                                 else if(days < 0) {
                                     days = 30;
                                 }
-            
+
                                 const span = document.getElementById("printess_ordered_days");
-            
+
                                 if(span) {
                                     span.innerHTML = " " + days + " ";
-                                }                    
+                                }
                             };
-            
+
                             orderedDesignLifeTimeInput.addEventListener("change", (event) => {
                                 updateDisplayText();
                             });
-            
+
                             orderedDesignLifeTimeInput.addEventListener("keydown", (event) => {
                                 updateDisplayText();
                             });
@@ -750,7 +763,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_thumbnail_width',
@@ -759,7 +772,7 @@ class PrintessAdminSettings
                 'default' => '0',
             )
         );
-    
+
         add_settings_field(
             'printess_thumbnail_width',
             __( 'The width of the rendered thumbnail', 'printess-editor' ),
@@ -773,7 +786,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_thumbnail_height',
@@ -782,7 +795,7 @@ class PrintessAdminSettings
                 'default' => '0',
             )
         );
-    
+
         add_settings_field(
             'printess_thumbnail_height',
             __( 'The height of the rendered thumbnail', 'printess-editor' ),
@@ -796,7 +809,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_access_token',
@@ -805,7 +818,7 @@ class PrintessAdminSettings
                 'default' => '',
             )
         );
-    
+
         add_settings_field(
             'printess_access_token',
             __( 'Access Token', 'printess-editor' ),
@@ -821,7 +834,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_system_default_dropshipping',
@@ -830,7 +843,7 @@ class PrintessAdminSettings
                 'default' => '-1',
             )
         );
-    
+
         add_settings_field(
             'printess_system_default_dropshipping',
             __( 'Overwrite product drop shipper in case of template mode', 'printess-editor' ),
@@ -852,23 +865,23 @@ class PrintessAdminSettings
                         );
                     }
                 }
-            
+
                 $selected_dropshipping_id = get_option( 'printess_system_default_dropshipping', '' );
-            
+
                 if ( null === $selected_dropshipping_id || '' === $selected_dropshipping_id ) {
                     $selected_dropshipping_id = '-2';
                 }
-                
+
                 PrintessHtmlHelpers::render_select_with_option_groups( 'printess_system_default_dropshipping', '', $dropshipping, $selected_dropshipping_id, true );
-            
+
                 ?>
-                
+
                 <?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_ask_for_name_on_resave',
@@ -877,18 +890,18 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_ask_for_name_on_resave',
             __( 'Provide input for design name on second save', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_ask_for_name_on_resave', 'wpadminbar, page' );
                 $checked = '';
-            
+
                 if ( $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
                 <input type="checkbox" name="printess_ask_for_name_on_resave" <?php echo esc_html( $checked ); ?>>
                 <?php
@@ -896,7 +909,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_show_original_product_in_basket',
@@ -905,32 +918,32 @@ class PrintessAdminSettings
                 'default' => 'auto',
             )
         );
-    
+
         add_settings_field(
             'printess_show_original_product_in_basket',
             __( 'Show original product in basket', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_show_original_product_in_basket', true );
                 $checked = '';
-            
+
                 if ( null === $setting || empty( $setting ) ) {
                     $setting = true;
                 }
-            
+
                 if ( 'on' === $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
-                    
+
                 <input type="checkbox" name="printess_show_original_product_in_basket" <?php echo esc_html( $checked ); ?> >
-            
+
                 <?php
             },
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_displaylineitemid',
@@ -939,18 +952,18 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_displaylineitemid',
             __( 'Display line item id in order view', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_displaylineitemid', 'wpadminbar, page' );
                 $checked = '';
-            
+
                 if ( 'on' === $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
 
                 <input type="checkbox" name="printess_displaylineitemid" <?php echo esc_html( $checked ); ?>>
@@ -960,7 +973,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         register_setting(
             'printess-settings',
             'printess_debug',
@@ -969,18 +982,18 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_debug',
             __( 'Enable Debug Mode', 'printess-editor' ),
             function() {
                 $setting = PrintessAdminSettings::get_debug();
                 $checked = '';
-            
+
                 if ( $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
 
                 <input type="checkbox" name="printess_debug" <?php echo esc_html( $checked ); ?>>
@@ -999,7 +1012,7 @@ class PrintessAdminSettings
                 'default' => '',
             )
         );
-    
+
         add_settings_field(
             'printess_default_theme',
             __( 'Default Editor Theme', 'printess-editor' ),
@@ -1026,7 +1039,7 @@ class PrintessAdminSettings
                 'default' => '',
             )
         );
-    
+
         add_settings_field(
             'printess_user_fields',
             __( 'Push user fields', 'printess-editor' ),
@@ -1044,7 +1057,7 @@ class PrintessAdminSettings
             'printess-settings',
             'printess_settings_section'
         );
-    
+
         add_menu_page(
             'Printess',
             'Printess', // title .
@@ -1063,7 +1076,7 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_enforce_design_name',
             __( 'Enforce Design Name during add to basket', 'printess-editor' ),
@@ -1073,7 +1086,7 @@ class PrintessAdminSettings
                 if ( empty( $setting ) ) {
                     $setting = '';
                 }
-            
+
                 ?>
                     <select name="printess_enforce_design_name">
                         <option value="" <?php echo esc_html( '' === $setting ? 'selected' : '' ); ?>><?php echo esc_html__( 'Do not use', 'printess-editor' ); ?></option>
@@ -1094,25 +1107,58 @@ class PrintessAdminSettings
                 'default' => false,
             )
         );
-    
+
         add_settings_field(
             'printess_delete_original_basket_item_only_on_same_design_name',
             __( 'Delete original basket item only on same design name', 'printess-editor' ),
             function() {
                 $setting = get_option( 'printess_delete_original_basket_item_only_on_same_design_name', true );
                 $checked = '';
-            
+
                 if ( null === $setting || empty( $setting ) ) {
                     $setting = true;
                 }
-            
+
                 if ( 'on' === $setting ) {
                     $checked = 'checked';
                 }
-            
+
                 ?>
-                    
+
                 <input type="checkbox" name="printess_delete_original_basket_item_only_on_same_design_name" <?php echo esc_html( $checked ); ?> >
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_warn_on_tab_change',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+
+        add_settings_field(
+            'printess_warn_on_tab_change',
+            __( 'Show warning on tab close or page reload', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_warn_on_tab_change', true );
+                $checked = '';
+
+                if ( null === $setting || empty( $setting ) ) {
+                    $setting = true;
+                }
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_warn_on_tab_change" <?php echo esc_html( $checked ); ?> >
                 <?php
             },
             'printess-settings',

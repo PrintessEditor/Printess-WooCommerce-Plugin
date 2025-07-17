@@ -270,5 +270,9 @@ Please check https://printess.com/pricing.html for more details.
 * Fixed issues with wrong parameter count on card item validation callback in some WooCommerce versions.
 * Fixed wrong spelled variable name
 
-= 1.6.45 =
+= 1.6.46 =
 - Fixed issues with replacing save tokens in Admin order view
+
+= 1.6.47 =
+- Added header block to save design and display name dialogs
+- Added option to activate warning on page change / page reload while the editor is open
