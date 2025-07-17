@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.43
+ * Version: 1.6.46
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924004dfsfhsf8429842384wdff234sfd
+ * Woo: 10000:924005dfsfhsf8429842385wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -66,7 +66,7 @@ function printess_render_save_dialog() {
 							<input type="text" class="woocommerce-Input woocommerce-Input--text input-text" name="printess_designnameedit" id="printess_designnameedit" value="" placeholder="<?php echo esc_html__( 'Enter your display name', 'printess-editor' ); ?>">
 						</p>
 					</form>
-					
+
 
 					<p><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'After saving, your saved design can be found under {SAVE_DESIGN} on your account page.', 'printess-editor' ) ); ?></p>
 				</div>
@@ -530,7 +530,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 																									"nonce": <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>,
 																									"urlToken": <?php echo wp_json_encode( printess_create_url_token( $product->get_id() ) ); ?>,
 																									"userMessages": userMessages,
-																									"askForNameOnResave": 
+																									"askForNameOnResave":
 																									<?php
 																									$show_dlg = get_option( 'printess_ask_for_name_on_resave', 'wpadminbar, page' );
 																									echo wp_json_encode( true === $show_dlg || 'true' === $show_dlg || 'on' === $show_dlg );
@@ -631,7 +631,7 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 	}
 
 	$produce_payload["vdp"]["form"]["productName"] = $product->get_name();
-	
+
 	$produce_payload["vdp"]["form"]["ShippingFirstName"] = $order->get_shipping_first_name();
 	$produce_payload["vdp"]["form"]["ShippingLastName"] = $order->get_shipping_last_name();
 	$produce_payload["vdp"]["form"]["ShippingName"] = $order->get_shipping_first_name() . " " . $order->get_shipping_last_name();
@@ -645,7 +645,7 @@ function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payl
 	$produce_payload["vdp"]["form"]["ShippingPhone"] = $order->get_shipping_phone();
 	// $produce_payload["vdp"]["form"]["ShippingCountryCode"]
 	// $produce_payload["vdp"]["form"]["ShippingProvinceCode"]
-	
+
 	$produce_payload["vdp"]["form"]["BillingFirstName"] = $order->get_billing_first_name();
 	$produce_payload["vdp"]["form"]["BillingLastName"] = $order->get_billing_last_name();
 	$produce_payload["vdp"]["form"]["BillingName"] = $order->get_billing_first_name() . " " . $order->get_billing_last_name();
@@ -1688,7 +1688,7 @@ function printess_render_personalized_products_table( $order ) {
 	?>
 	<section>
 		<h2 class="woocommerce-column__title"><?php echo esc_html__( 'Personalized products', 'printess-editor' ); ?></h2>
-		
+
 	<?php
 		include_once 'includes/printess-table.php';
 
@@ -2008,29 +2008,8 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 							return;
 						}
 
-						  window.location.href = (\"" . $update_url . "\").replace(\"_NEW_SAVE_TOKEN_\", saveToken);
-						  return;
-
-
-
-						const form = document.querySelector('form[data-save-token=\"" . esc_html($printess_save_token) . "\"]');
-
-						if(form) {
-							form.setAttribute(\"action\", form.getAttribute(\"action\").replace(\"_NEW_SAVE_TOKEN_\", encodeUriComponent(newSaveToken)));
-							form.submit();
-						} else {
-							const parent = document.querySelector('div[data-save-token=\"" . esc_html($printess_save_token) . "\"]')
-
-							if(parent) {
-								const form = document.createElement(\"form\");
-								form.setAttribute(\"action\", (\"" . $update_url . "\").replace(\"_NEW_SAVE_TOKEN_\", saveToken));
-								form.setAttribute(\"type\", \"submit\");
-								form.setAttribute(\"data-save-token\", \"" . esc_html($printess_save_token) . "\");
-								parent.appendChild(form);
-
-								form.submit();
-							}
-						}
+						window.location.href = (\"" . $update_url . "\").replace(\"_NEW_SAVE_TOKEN_\", newSaveToken);
+						return;
 					};
 				}
 			</script>";
@@ -2125,7 +2104,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 				</table>
 <?php
 			} catch(\Exception $ex) {
-			}	
+			}
 		}
 	}
 }
@@ -2180,6 +2159,8 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 
 		if(array_key_exists("design_name", $cart_item) && null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
 			$product_permalink = add_query_arg("design_name", $cart_item['design_name'], $product_permalink);
+		} else if(array_key_exists("printess-design-name", $cart_item) && null !== $cart_item["printess-design-name"] && !empty($cart_item["printess-design-name"])){
+			$product_permalink = add_query_arg("design_name", $cart_item["printess-design-name"], $product_permalink);
 		}
 
 		?>
@@ -2469,7 +2450,7 @@ function printess_render_form_field_mappings() {
 							input.value = this.getElementsByTagName("input")[0].value;
 							closeAllLists();
 						});
-								
+
 						a.appendChild(b);
 					} else if (autocomplete[i].substr(0, val.length).toUpperCase() == val.toUpperCase()) {
 
@@ -2483,22 +2464,22 @@ function printess_render_form_field_mappings() {
 							input.value = this.getElementsByTagName("input")[0].value;
 							closeAllLists();
 						});
-								
+
 						a.appendChild(b);
 					}
 				}
 			};
-  
+
 			input.addEventListener("input", function(e) {
 				var a, b, i, val = this.value;
-	  
+
 				closeAllLists();
 
 			currentFocus = -1;
-	  
+
 				fillList(this.parentNode, val);
 			});
-  
+
 			input.addEventListener("keydown", function(e) {
 					var x = document.getElementById(this.id + "printess_autocomplete_list");
 
@@ -2541,8 +2522,8 @@ function printess_render_form_field_mappings() {
 				if (currentFocus < 0) {
 					currentFocus = (x.length - 1);
 				}
-				
-				
+
+
 				x[currentFocus].classList.add("printess_autocomplete_active");
 			}
 
@@ -2570,8 +2551,8 @@ function printess_render_form_field_mappings() {
 			const productAttributes = <?php echo wp_json_encode( $attributes ); ?>;
 			const wrapper = document.createElement("div");
 			const input = document.createElement("input");
-			
-			
+
+
 			wrapper.classList.add("printess_autocomplete");
 			wrapper.appendChild(input);
 
@@ -2769,7 +2750,7 @@ function printess_edit_order_line_item() {
 																																																			"customizeButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>,
 																																																			"showPricesInEditor": false,
 																																																			"cartUrl": <?php echo wp_json_encode( wc_get_cart_url() ) ?>
-																																																		}) : null; 
+																																																		}) : null;
 
 					if(!editor) {
 						console.warn("Unable to initialize printess editor.");
@@ -3403,6 +3384,8 @@ function printess_render_edit_button_before_mini_basket_buttons( $html, $cart_it
 
 		if(array_key_exists("design_name", $cart_item) && null !== $cart_item['design_name'] && !empty($cart_item['design_name'])){
 			$edit_link = add_query_arg("design_name", $cart_item['design_name'], $edit_link);
+		} else if(array_key_exists("printess-design-name", $cart_item) && null !== $cart_item["printess-design-name"] && !empty($cart_item["printess-design-name"])){
+			$product_permalink = add_query_arg("design_name", $cart_item["printess-design-name"], $product_permalink);
 		}
 
 		return $html . '<a class="printess-edit-link" href="' . esc_attr( $edit_link ) . '" style="z-index: 99; background: transparent;" >' . esc_html__( 'Edit', 'printess-editor' ) . '</a>';
@@ -3478,7 +3461,7 @@ function printess_render_login_script() {
 					applyRegisterForm();
 				}
 			} catch(e) {
-	
+
 			}
 		}
 
@@ -3625,7 +3608,7 @@ function printess_add_helper_scripts_after_cart() {
 /*
 	Make sure that all Printess products that are added to the cart are having a save token.
 */
-function printess_validate_cart_item($validation, $product_id) {
+function printess_validate_cart_item($validation, $product_id, $dummy1 = 1, $dummy2 = 2, $dummy3 = 3) {
 	$variation_id = $_REQUEST['variation_id'];
 	$helper = new PrintessProductHelpers(null === $variation_id || empty($variation_id) ? $product_id : intval($variation_id) );
 	$product_template_name = $helper->get_template_name(true);

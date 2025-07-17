@@ -32,7 +32,7 @@ write an e-mail to support@printess.com , we'll answer asap :).
 
 = How much does it cost? =
 
-The account is free of charge. 
+The account is free of charge.
 Only pay when your customers order something.
 10 orders are free.
 
@@ -99,7 +99,7 @@ Please check https://printess.com/pricing.html for more details.
   productCategorySlugs
   productTags
   productTagSlugs
-  
+
   ShippingFirstName
   ShippingLastName
   ShippingName
@@ -258,3 +258,17 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.43 =
 * Added variant Support for controlling page count in books
+
+= 1.6.44 =
+* Added support to auto forward ACF fields and global product attributes into template form fields at the time the customer opens the buyer side.
+* Added support for editing (replacing) save tokens in orders
+* Shopping cart now blocks add to cart actions on products that are configured as printess products but are missing the printess specific settings like the save token to prevent adding items to the cart that were not personalized before.
+* End- customers can now provide display names for line items while editing / adding designs to the cart
+* Fixed bug in Save Dailog that sent an unpersonalized product to the shopping cart instead of saving the current design in case the enter key was hit inside the save dialog.
+
+= 1.6.45 =
+* Fixed issues with wrong parameter count on card item validation callback in some WooCommerce versions.
+* Fixed wrong spelled variable name
+
+= 1.6.45 =
+- Fixed issues with replacing save tokens in Admin order view

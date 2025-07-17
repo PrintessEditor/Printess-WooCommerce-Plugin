@@ -160,7 +160,7 @@ class PrintessProductHelpers {
 
                 if(!$variant_has_template_name) {
                     $template_name = $this->_base_product->get_meta( 'printess_template', true );
-                    $template_name = $template_name === null || empty($template_name) ? "" : $emplate_name;
+                    $template_name = $template_name === null || empty($template_name) ? "" : $template_name;
                 }
             }
       }
