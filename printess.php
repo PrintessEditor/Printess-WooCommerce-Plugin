@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.47
+ * Version: 1.6.49
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924006dfsfhsf8429842385wdff234sfd
+ * Woo: 10000:924008dfsfhsf8429842385wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -1975,12 +1975,12 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 		if(null !== $printess_original_save_token && !empty($printess_original_save_token)) {
 			$editUrl = "https://editor.printess.com?name=" . $printess_original_save_token;
 
-			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($edit_url) . "\" target=\"_blank\">" . esc_html($printess_original_save_token) . '</a></div>';
+			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($editUrl) . "\" target=\"_blank\">" . esc_html($printess_original_save_token) . '</a></div>';
 		}
 
 		if(null !== $printess_save_token && !empty($printess_save_token)) {
 			$edit_url = "https://editor.printess.com?name=" . $printess_save_token;
-			$update_url = $url = add_query_arg(
+			$update_url = add_query_arg(
 				array(
 					'action'   => 'printess_update_save_token',
 					'order_id' => $order_id,
@@ -1994,7 +1994,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 			echo ' <div><div style="white-space:nowrap">' . esc_html__( 'Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($edit_url) . "\" target=\"_blank\"')\">" . esc_html($printess_save_token) . '</a></div>';
 			echo "<script>
 				if(!window['printessUpdateSaveToken']) {
-					window['printessUpdateSaveToken'] = function(saveToken) {
+					window['printessUpdateSaveToken'] = function(saveToken, updateUrl) {
 						let newSaveToken = window.prompt(\"New save token\", saveToken);
 
 						if(!newSaveToken) {
@@ -2011,12 +2011,12 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 							return;
 						}
 
-						window.location.href = (\"" . $update_url . "\").replace(\"_NEW_SAVE_TOKEN_\", newSaveToken);
+						window.location.href = (updateUrl || \"\").replace(\"_NEW_SAVE_TOKEN_\", newSaveToken);
 						return;
 					};
 				}
 			</script>";
-			echo ' <div data-save-token="' . esc_html($printess_save_token) . '"><a href="#" onclick="window.printessUpdateSaveToken(\'' . esc_html($printess_save_token) . '\')" >' . esc_html__( 'Edit save token', 'printess-editor' ) . "</a></div>";
+			echo ' <div data-save-token="' . esc_html($printess_save_token) . '"><a href="#" onclick="window.printessUpdateSaveToken(\'' . esc_html($printess_save_token) . '\', \'' . esc_html($update_url) . '\')" >' . esc_html__( 'Edit save token', 'printess-editor' ) . "</a></div>";
 			echo '</div>';
 		}
 
@@ -2877,7 +2877,22 @@ function printess_update_save_token() {
 		$save_token = $item->get_meta('_printess-save-token');
 		$original_save_token = $item->get_meta('_printess-original-save-token');
 
-		if  ((null === $printess_save_token || empty($printess_save_token)) || (null !== $printess_save_token && !empty($printess_save_token) && null !== $original_save_token && !empty($original_save_token) && $printess_save_token === $original_save_token)) {
+		if  (null === $printess_save_token || empty($printess_save_token)) {
+			$query_string = http_build_query(array(
+				'post'   => $order_id,
+				'action' => 'edit',
+			));
+
+			$redirect = admin_url( 'post.php?' . $query_string );
+			wp_safe_redirect( $redirect );
+			die;
+		}
+
+		if  (null !== $printess_save_token && !empty($printess_save_token) && null !== $original_save_token && !empty($original_save_token) && $printess_save_token === $original_save_token) {
+			//Set the current save token to the original save token and remove original save token property
+			wc_update_order_item_meta($item->get_id(), '_printess-save-token', $printess_save_token);
+			wc_delete_order_item_meta($item->get_id(), '_printess-original-save-token');
+
 			$query_string = http_build_query(array(
 				'post'   => $order_id,
 				'action' => 'edit',
@@ -3600,14 +3615,6 @@ function printess_woocommerce_email_order_line_item_meta_fields($item_id, $item,
 	}
 }
 
-function printess_add_helper_scripts_after_cart() {
-	echo "<script>
-		document.addEventListener('DOMContentLoaded', function() {
-			alert('Du held');
-		});
-	</script>";
-}
-
 /*
 	Make sure that all Printess products that are added to the cart are having a save token.
 */
@@ -3659,7 +3666,6 @@ function printess_register_hooks() {
 	add_action( 'woocommerce_after_cart_item_name', 'printess_after_cart_item_name', 10, 2 );
 	add_action( 'woocommerce_cart_loaded_from_session', 'printess_cart_loaded_from_session', 10, 1 );
 	add_filter( 'woocommerce_add_to_cart_redirect', 'printess_add_to_cart_redirect', 10, 2 );
-	add_action( 'woocommerce_after_cart', 'printess_add_helper_scripts_after_cart' );
 	add_filter('woocommerce_add_to_cart_validation', 'printess_validate_cart_item', 10, 2);
 
 	// PRODUCT.

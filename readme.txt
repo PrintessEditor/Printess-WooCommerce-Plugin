@@ -276,3 +276,10 @@ Please check https://printess.com/pricing.html for more details.
 = 1.6.47 =
 - Added header block to save design and display name dialogs
 - Added option to activate warning on page change / page reload while the editor is open
+
+= 1.6.48 =
+- Removed unused WooCommerce Cart Hook
+
+= 1.6.49 =
+- Fixed broken editing of order line items
+- Fixed broken editing of save tokens in order line items
