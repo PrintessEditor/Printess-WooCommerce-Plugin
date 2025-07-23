@@ -289,3 +289,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.51 =
 - Added option to order line items to reproduce single items
+
+= 1.6.52 =
+- Added option to printess settings to disable the basket warning about unpersonalized items added to the cart that should be personalized.

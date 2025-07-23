@@ -225,6 +225,19 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns true in case the basket item warning about unpersonalized items should not be thrown
+    */
+    static function get_disable_basket_warning_on_unpersonalized_items() {
+        $setting = get_option( 'printess_disable_basket_warning_on_unpersonalized_items', false );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -1159,6 +1172,39 @@ class PrintessAdminSettings
                 ?>
 
                 <input type="checkbox" name="printess_warn_on_tab_change" <?php echo esc_html( $checked ); ?> >
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_disable_basket_warning_on_unpersonalized_items',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+
+        add_settings_field(
+            'printess_disable_basket_warning_on_unpersonalized_items',
+            __( 'Disable unpersonalized items warning in basket', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_disable_basket_warning_on_unpersonalized_items', false );
+                $checked = '';
+
+                if ( null === $setting || empty( $setting ) ) {
+                    $setting = false;
+                }
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_disable_basket_warning_on_unpersonalized_items" <?php echo esc_html( $checked ); ?> >
                 <?php
             },
             'printess-settings',
