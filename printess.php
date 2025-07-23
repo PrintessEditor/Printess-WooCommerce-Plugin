@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.50
+ * Version: 1.6.51
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924009dfsfhsf8429842385wdff234sfd
+ * Woo: 10000:924010dfsfhsf8429842385wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -604,6 +604,10 @@ function printess_extract_yith_plugin_values($yith_meta_data) {
 
 		foreach($values as $x => $y) {
 			foreach($y as $key => $value) {
+				if(is_string($value)) {
+					break;
+				}
+
 				$label = $value["display_label"];
 
 				if(str_contains($value["display_value"], ": ")) {
@@ -615,6 +619,7 @@ function printess_extract_yith_plugin_values($yith_meta_data) {
 				} else {
 					$ret[$label] = $value["display_value"];
 				}
+
 				break;
 			}
 		}
@@ -2020,12 +2025,26 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 			echo '</div>';
 		}
 
-
-		echo ' <div>' . esc_html__( 'Line item id:', 'printess-editor' ) . "&nbsp;" . $item->get_id() . '</div>';
-
 		if ( printess_do_render_edit_link( $item ) ) {
 			echo ' <a target=_blank href="' . esc_url( $url ) . '">' . esc_html__( 'Edit Customer Design', 'printess-editor' ) . '</a>';
 		}
+
+		if (null !== $printess_job_id && !empty( $printess_job_id ) ) {
+			$url = add_query_arg(
+				array(
+					'action'   => 'printess_reproduce_order_line_item',
+					'order_id' => $order_id,
+					'item_id'  => $item_id,
+					'pst'      => $printess_save_token,
+					'nonce'    => wp_create_nonce( 'printess_reproduce_order_line_item' ),
+				),
+				home_url()
+			);
+
+			echo '<div><a href="' . esc_url( $url ) . '">' . esc_attr__( 'Reproduce item', 'printess-editor' ) . '</a></div>';
+		}
+
+		echo ' <div>' . esc_html__( 'Line item id:', 'printess-editor' ) . "&nbsp;" . $item->get_id() . '</div>';
 	}
 
 	printess_render_dropship_table( $printess_tracking_id, $printess_tracking_url, $printess_shipping_status );
@@ -2837,12 +2856,18 @@ function printess_approve_order_line_item() {
 	$action = filter_input( INPUT_GET, 'action' );
 	$nonce  = filter_input( INPUT_GET, 'nonce' );
 
-	if ( isset( $action ) && isset( $nonce ) && 'printess_approve_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_approve_order_line_item' ) ) {
+	if ( isset( $action ) && isset( $nonce ) && (('printess_approve_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_approve_order_line_item' )) || ('printess_reproduce_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_reproduce_order_line_item' )))  ) {
 									$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
 									$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
 									$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
 									$order               = new WC_Order( $order_id );
 									$item                = $order->get_item( $line_item_id );
+
+									$job_id = $item->get_meta( '_printess-job-id', true );
+
+									if(null !== $job_id && !empty($job_id)) {
+										$item->delete_meta_data( '_printess-job-id');
+									}
 
 									$order_items = array( $line_item_id => $item );
 									printess_handle_order_items( $order, $order_items );
