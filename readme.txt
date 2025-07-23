@@ -286,3 +286,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.50 =
 - Fixed issues with "Personalized product without personalization was added to the cart" warning that appeared on some products that have not been configured as printess items.
+
+= 1.6.51 =
+- Added option to order line items to reproduce single items
