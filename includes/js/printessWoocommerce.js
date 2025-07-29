@@ -448,39 +448,26 @@
                             const merge = JSON.parse(settings.mergeTemplates);
                             if (Array.isArray(merge)) {
                                 ret = [...ret, ...merge.map((x) => {
-                                        if (typeof x === "string") {
-                                            return {
-                                                templateName: x
-                                            };
-                                        }
-                                        else {
-                                            return x;
-                                        }
-                                    })];
+                                    if (typeof x === "string") {
+                                        return {
+                                            templateName: x
+                                        };
+                                    }
+                                    else {
+                                        return x;
+                                    }
+                                })];
                             }
                             else {
-                                return [];
+                                ret = [];
                             }
                         }
                         catch (e) {
-                            return [];
+                            ret = [];
                         }
                     }
                     else {
                         ret = [...ret, ...settings.mergeTemplates.map((x) => {
-                                if (typeof x === "string") {
-                                    return {
-                                        templateName: x
-                                    };
-                                }
-                                else {
-                                    return x;
-                                }
-                            })];
-                    }
-                }
-                if (settings.product.mergeTemplates) {
-                    ret = [...ret, ...settings.product.mergeTemplates.map((x) => {
                             if (typeof x === "string") {
                                 return {
                                     templateName: x
@@ -490,6 +477,26 @@
                                 return x;
                             }
                         })];
+                    }
+                }
+                if (settings.product.mergeTemplates) {
+                    ret = [...ret, ...settings.product.mergeTemplates.map((x) => {
+                        if (typeof x === "string") {
+                            return {
+                                templateName: x
+                            };
+                        }
+                        else {
+                            return x;
+                        }
+                    })];
+                }
+                const currentFormFieldValues = getCurrentProductOptionValues(settings.product);
+                const selectedVariant = getCurrentVariant(currentFormFieldValues, settings.product);
+                if (selectedVariant && selectedVariant.templateName && selectedVariant.templateIsMergeTemplate) {
+                    ret.push({
+                        templateName: selectedVariant.templateName
+                    });
                 }
                 return ret;
             },
@@ -934,7 +941,7 @@
         //Try to find out the correct template name (selected variant & url params)
         const currentProductOptions = getCurrentProductOptionValues(settings.product);
         const currentVariant = getCurrentVariant(currentProductOptions, settings.product);
-        if (currentVariant && currentVariant.templateName) {
+        if (currentVariant && currentVariant.templateName && !currentVariant.templateIsMergeTemplate) {
             context.templateNameOrSaveToken = currentVariant.templateName;
         }
         //parse url settings and apply these
@@ -1027,8 +1034,8 @@
     const variantChangedHandler = function (product) {
         let templateName = "";
         const selectedVariant = getCurrentVariant(getCurrentProductOptionValues(product), product);
-        const variantsHaveTemplateNames = product.variants && typeof product.variants.find((x) => x.templateName) !== "undefined" ? true : false;
-        if (selectedVariant != null && selectedVariant.templateName) {
+        const variantsHaveTemplateNames = product.variants && typeof product.variants.find((x) => x.templateName && !x.templateIsMergeTemplate) !== "undefined" ? true : false;
+        if (selectedVariant != null && selectedVariant.templateName && !selectedVariant.templateIsMergeTemplate) {
             templateName = selectedVariant.templateName;
         }
         if (!templateName && !variantsHaveTemplateNames) {
@@ -1306,25 +1313,6 @@ function printessRegisterCheckoutFilters(registerCheckoutFilters) {
                                     detailBlocks = getOrAddElement(metaData, "wc-block-components-product-details", "ul");
                                 }
                             }
-                            // if (detailBlocks) {
-                            //   const nameElement: HTMLElement = detailBlocks.querySelector(".printess-product-detail-name");
-                            //   if (nameElement) {
-                            //     nameElement.innerText = "Design name: ";
-                            //     const valueEleement = detailBlocks.querySelector("printess-product-detail-name") as HTMLElement;
-                            //     if (valueEleement) {
-                            //       valueEleement.innerText = extensions["printess-editor"]["designName"];
-                            //     }
-                            //   } else {
-                            //     const li = document.createElement("li");
-                            //     li.classList.add("wc-block-components-product-details__designName");
-                            //     li.classList.add("printess-product-details-item");
-                            //     const name = getOrAddElement(li, "wc-block-components-product-details__name", "span", "printess-product-detail-name");
-                            //     const value = getOrAddElement(li, "wc-block-components-product-details__value", "span", "printess-product-detail-value");
-                            //     name.innerText = "Design name: "
-                            //     value.innerText = extensions["printess-editor"]["designName"];
-                            //     detailBlocks.appendChild(li);
-                            //   }
-                            // }
                         }
                         //Change thumbnail
                         printessQueryItem(function () {

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.52
+ * Version: 1.6.53
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924012dfsfhsf8429842385wdff234sfd
+ * Woo: 10000:924012dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -288,6 +288,7 @@ function printess_get_product_json( $product ) {
 				'attributes'   => array(),
 				'id'           => $id,
 				'templateName' => $variation->get_meta( 'printess_template_name', true ),
+				"templateIsMergeTemplate" => "on" === $variation->get_meta( 'printess_template_is_merge_template', true ),
 				'parentId'     => $variation->get_data()['parent_id'],
 				'regularPrice' => $variation->get_regular_price(),
 				'salePrice'    => $variation->get_sale_price(),
@@ -2949,7 +2950,6 @@ function printess_update_save_token() {
 	}
 }
 
-
 /**
  * Adds a custom field to the variations view of the admin side.
  * Used to assign a different Printess template to this variation.
@@ -2959,14 +2959,14 @@ function printess_update_save_token() {
  * @param mixed $variation      .
  */
 function printess_add_custom_field_to_variations( $loop, $variation_data, $variation ) {
-	woocommerce_wp_text_input(
-		array(
-			'id'    => 'printess_template_name[' . $loop . ']',
-			'class' => 'short',
-			'label' => __( 'Printess Template', 'printess-editor' ),
-			'value' => get_post_meta( $variation->ID, 'printess_template_name', true ),
-		)
-	);
+	$template_name = get_post_meta( $variation->ID, 'printess_template_name', true );
+	$is_checked = "on" === get_post_meta( $variation->ID, 'printess_template_is_merge_template', "on" );
+	?>
+		<p class="form-field form-row form-row-full">
+			<label for="printess_template_name[<?php echo $loop ?>]"><?php echo __( 'Template name', 'printess-editor' ) ?> (&nbsp;&nbsp;<input type="checkbox" class="short" style="" name="printess_template_is_merge_template[<?php echo $loop ?>]" id="printess_template_is_merge_template[<?php echo $loop ?>]" <?php echo true === $is_checked ? 'checked="checked"' : "" ?>> <?php echo __( 'Is merge template', 'printess-editor' ) ?>)</label>
+			<input type="text" class="short" style="" name="printess_template_name[<?php echo $loop ?>]" id="printess_template_name[<?php echo $loop ?>]" value="<?php echo esc_attr($template_name) ?>" placeholder="<?php echo esc_attr(__( 'Template name or merge template', 'printess-editor' )) ?>">
+		</p>
+	<?php
 }
 
 /**
@@ -2977,15 +2977,23 @@ function printess_add_custom_field_to_variations( $loop, $variation_data, $varia
  */
 function printess_save_custom_field_variations( $variation_id, $i ) {
 	$template_names = filter_input( INPUT_POST, 'printess_template_name', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
+	$is_merge_template = filter_input( INPUT_POST, 'printess_template_is_merge_template', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
 
 	if ( ! isset( $template_names ) ) {
 										return;
 	}
 
 	$template_name = $template_names[ $i ];
+	$is_merge_template = $is_merge_template[ $i ];
 
 	if ( isset( $template_name ) ) {
 		update_post_meta( $variation_id, 'printess_template_name', esc_attr( $template_name ) );
+
+		if(isset($is_merge_template)) {
+			update_post_meta( $variation_id, 'printess_template_is_merge_template', esc_attr( $is_merge_template ) );
+		} else {
+			update_post_meta( $variation_id, 'printess_template_is_merge_template', false );
+		}
 	}
 }
 
