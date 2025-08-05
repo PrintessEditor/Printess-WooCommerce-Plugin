@@ -847,67 +847,50 @@
                 }
                 return ret;
             },
-            onRenderFirstPageImage: (thumbnailUrl) => {
-                if (context.cameFromSave && context.lastSaveSaveToken) {
-                    try {
-                        context.onSave(context.lastSaveSaveToken, thumbnailUrl, true);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
-                    context.cameFromSave = false;
-                    context.lastSaveSaveToken = "";
-                }
-            },
-            onSave: (saveToken, thumbnailUrl, cameFromRenderFirstPageImage = false) => {
+            onSave: (saveToken, thumbnailUrl) => {
                 context.cameFromSave = true;
                 context.lastSaveSaveToken = saveToken;
                 const productValues = getCurrentProductOptionValues(settings.product);
                 const variant = getCurrentVariant(productValues, settings.product);
-                if (!cameFromRenderFirstPageImage) {
-                    postMessage("renderFirstPageImage", null);
+                if (printessSettings.editorMode === "admin") {
+                    saveAdminSaveToken(saveToken, thumbnailUrl);
+                    return;
                 }
-                else {
-                    if (printessSettings.editorMode === "admin") {
-                        saveAdminSaveToken(saveToken, thumbnailUrl);
+                const cancelCallback = () => {
+                };
+                const saveDesignCallback = (designName) => {
+                    if (!designName || !designName.trim()) {
+                        alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
+                        showSaveDialog(context.designName || "", printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
                         return;
                     }
-                    const cancelCallback = () => {
-                    };
-                    const saveDesignCallback = (designName) => {
-                        if (!designName || !designName.trim()) {
-                            alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
-                            showSaveDialog(context.designName || "", printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
-                            return;
-                        }
-                        showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
-                        saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, getCurrentProductOptionValues(settings.product, false), (savedDesignName, savedDesignId) => {
-                            hideInformationOverlay();
-                            context.designName = savedDesignName;
-                            context.designId = savedDesignId;
-                            try {
-                                const globalConfig = getGlobalConfig();
-                                if (globalConfig && typeof globalConfig.onSave === "function") {
-                                    globalConfig.onSave(saveToken, thumbnailUrl);
-                                }
+                    showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
+                    saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, getCurrentProductOptionValues(settings.product, false), (savedDesignName, savedDesignId) => {
+                        hideInformationOverlay();
+                        context.designName = savedDesignName;
+                        context.designId = savedDesignId;
+                        try {
+                            const globalConfig = getGlobalConfig();
+                            if (globalConfig && typeof globalConfig.onSave === "function") {
+                                globalConfig.onSave(saveToken, thumbnailUrl);
                             }
-                            catch (e) {
-                                console.error(e);
-                            }
-                        }, (message) => {
-                            hideInformationOverlay();
-                            alert(message);
-                            showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
-                        });
-                    };
-                    const loginCallback = (designName) => {
-                        if (!loginAndSave(designName, settings.product.id, variant ? variant.id : null, saveToken, thumbnailUrl, productValues)) {
-                            alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
-                            showSaveDialog(designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
                         }
-                    };
-                    showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
-                }
+                        catch (e) {
+                            console.error(e);
+                        }
+                    }, (message) => {
+                        hideInformationOverlay();
+                        alert(message);
+                        showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                    });
+                };
+                const loginCallback = (designName) => {
+                    if (!loginAndSave(designName, settings.product.id, variant ? variant.id : null, saveToken, thumbnailUrl, productValues)) {
+                        alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
+                        showSaveDialog(designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
+                    }
+                };
+                showSaveDialog(context.designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
             },
             getBasketId: () => { return settings.basketId; },
             getUserId: () => { return settings.userId; },
@@ -941,8 +924,8 @@
         //Try to find out the correct template name (selected variant & url params)
         const currentProductOptions = getCurrentProductOptionValues(settings.product);
         const currentVariant = getCurrentVariant(currentProductOptions, settings.product);
-        if (currentVariant && currentVariant.templateName && !currentVariant.templateIsMergeTemplate) {
-            context.templateNameOrSaveToken = currentVariant.templateName;
+        if (currentVariant && currentVariant.templateName) {
+            context.templateNameOrSaveToken = currentVariant.templateIsMergeTemplate ? settings.product.templateName : currentVariant.templateName;
         }
         //parse url settings and apply these
         const urlParams = new URLSearchParams(window.location.search);
@@ -1035,8 +1018,8 @@
         let templateName = "";
         const selectedVariant = getCurrentVariant(getCurrentProductOptionValues(product), product);
         const variantsHaveTemplateNames = product.variants && typeof product.variants.find((x) => x.templateName && !x.templateIsMergeTemplate) !== "undefined" ? true : false;
-        if (selectedVariant != null && selectedVariant.templateName && !selectedVariant.templateIsMergeTemplate) {
-            templateName = selectedVariant.templateName;
+        if (selectedVariant != null && selectedVariant.templateName) {
+            templateName = selectedVariant.templateIsMergeTemplate ? product.templateName : selectedVariant.templateName;
         }
         if (!templateName && !variantsHaveTemplateNames) {
             templateName = product.templateName;

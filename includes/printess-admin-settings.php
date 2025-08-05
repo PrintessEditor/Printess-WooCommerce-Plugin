@@ -237,6 +237,73 @@ class PrintessAdminSettings
         return false;
     }
 
+    static function get_acf_field_mappings(): array {
+        $setting = get_option( 'printess_acf_field_mapping', false );
+        $ret = [];
+        $parse_as_text = false;
+
+        if(null === $setting) {
+            $setting = "";
+        }
+
+        if(!empty($setting)) {
+            try {
+               $values = json_decode($setting, true);
+
+               if(null !== $values && is_array($values)) {
+                foreach($values as $key => $value) {
+                    if(null !== $key && null !== $value) {
+                        $key = trim("" . $key);
+                        $value = trim("" . $value);
+
+                        if(!empty($key) && !empty($value)) {
+                            $ret[$key] = $value;
+                        }
+                    }
+                }
+               } else {
+                    $parse_as_text = true;
+                }
+            } catch(\Exception $ex) {
+                $parse_as_text = true;
+            }
+
+            if($parse_as_text) {
+                $lines = str_replace("\r\n", "\n", "" . $setting);
+                $lines = explode("\n", $lines);
+
+                foreach($lines as $line) {
+                    $line = trim($line);
+                    $parts = explode(":", $line);
+
+                    if(count($parts) > 1) {
+                        $key = trim($parts[0]);
+                        $value = trim($parts[1]);
+
+                        if(!empty($key) && !empty($value)) {
+                            $ret[$key] = $value;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Returns true in case the form field values pulled in from ACF plugin should use the acf field name instead of its label
+    */
+    static function get_use_acf_name_instead_of_label() {
+        $setting = get_option( 'printess_use_acf_name_instead_of_label', false );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
     /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
@@ -1063,8 +1130,70 @@ class PrintessAdminSettings
 
                 ?>
 
-                <textarea style="min-width: 50%; min-height: 200px:" name="printess_user_fields" ?><?php echo esc_attr( $setting ); ?></textarea>
+                <textarea style="min-width: 50%;" rows="10" name="printess_user_fields" ?><?php echo esc_attr( $setting ); ?></textarea>
 
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_use_acf_name_instead_of_label',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+
+        add_settings_field(
+            'printess_use_acf_name_instead_of_label',
+            __( 'Use names instead of labels for ACF fields', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_use_acf_name_instead_of_label', false );
+                $checked = '';
+
+                if ( null === $setting || empty( $setting ) ) {
+                    $setting = false;
+                }
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_use_acf_name_instead_of_label" <?php echo esc_html( $checked ); ?> >
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_acf_field_mapping',
+            array(
+                'type'    => 'string',
+                'default' => "",
+            )
+        );
+
+        add_settings_field(
+            'printess_acf_field_mapping',
+            __( 'ACF Field to Printess formfield mappings', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_acf_field_mapping', "");
+
+
+                if ( null === $setting) {
+                    $setting = "";
+                }
+
+                ?>
+
+                <textarea style="min-width: 50%;" rows="10" name="printess_acf_field_mapping" ?><?php echo esc_attr( $setting ); ?></textarea>
                 <?php
             },
             'printess-settings',

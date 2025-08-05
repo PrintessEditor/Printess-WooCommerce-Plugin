@@ -136,7 +136,7 @@
     getPrintessComponent() {
         return document.querySelector("printess-component") || null;
     }
-    applyFormFieldMappings(formFields, mappings) {
+    static applyFormFieldMappings(formFields, mappings) {
         const ret = [];
         if (!mappings) {
             for (const ffName in formFields) {
@@ -278,12 +278,6 @@
                     }
                     break;
                 }
-                case 'renderFirstPageImage': {
-                    if (callbacks && typeof callbacks.onRenderedFirstPageImageAsync === "function") {
-                        callbacks.onRenderedFirstPageImageAsync(evt.data.result);
-                    }
-                    break;
-                }
                 case "getFormField": {
                     if (callbacks && typeof callbacks.onGetFormField === "function") {
                         callbacks.onGetFormField(evt.data.result);
@@ -292,14 +286,14 @@
                 }
                 case 'save': {
                     if (callbacks && typeof callbacks.onSaveAsync === "function") {
-                        callbacks.onSaveAsync(evt.data.token);
+                        callbacks.onSaveAsync(evt.data.token, evt.data.thumbnailUrl);
                     }
                     break;
                 }
                 case 'loaded': {
                     if (that.Settings.autoImportImageUrlsInFormFields === true) {
                         try {
-                            const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                            const images = await that.downloadImages(that.getImagesInFormFields(PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
                             if (!that.tempUploadImages) {
                                 that.tempUploadImages = images;
                             }
@@ -318,8 +312,8 @@
                         }
                     }
                     if (that.Settings.autoImportUserImages === true) {
-                        let userId = await that.getUserId(context);
-                        let basketId = await that.getOrGenerateBasketId(context);
+                        let userId = await PrintessEditor.getUserId(context);
+                        let basketId = await PrintessEditor.getOrGenerateBasketId(context);
                         if (userId || basketId) {
                             that.uploadUserImagesToClassicEditor(iFrame, basketId, userId);
                         }
@@ -574,7 +568,7 @@
             return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
         });
     }
-    async getOrGenerateBasketId(context) {
+    static async getOrGenerateBasketId(context) {
         let ret = typeof context.getBasketId === "function" ? context.getBasketId() : "";
         if (!ret && typeof context.getBasketIdAsync === "function") {
             ret = await context.getBasketIdAsync() || null;
@@ -604,7 +598,7 @@
         }
         return ret || null;
     }
-    async getUserId(context) {
+    static async getUserId(context) {
         let ret = typeof context.getUserId === "function" ? context.getUserId() : null;
         if (!ret && typeof context.getUserIdAsync === "function") {
             ret = await context.getUserIdAsync();
@@ -632,7 +626,7 @@
         let formFields = null;
         let mergeTemplates = null;
         if (!isSaveToken) {
-            formFields = that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
+            formFields = PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
             mergeTemplates = context.getMergeTemplates();
             if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined") {
                 const pageFormField = formFields.filter(x => x.name === context.additionalAttachParams["pageCountFormField"]);
@@ -659,15 +653,6 @@
         }
         if (printessComponent && printessComponent.editor) {
             printessComponent.style.display = "block";
-            context.renderFirstPageImageAsync = async (maxThumbnailWidth, maxThumbnailHeight) => {
-                const url = await printessComponent.editor.api.renderFirstPageImage("thumbnail.png", undefined, maxThumbnailWidth, maxThumbnailHeight);
-                if (context && typeof context.onRenderFirstPageImageAsync === "function") {
-                    await context.onRenderFirstPageImageAsync(url);
-                }
-                else if (context && typeof context.onRenderFirstPageImage === "function") {
-                    context.onRenderFirstPageImage(url);
-                }
-            };
             await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null);
             if (!isSaveToken && pageCount !== null && pageCount > 0) {
                 await printessComponent.editor.api.setBookInsidePages(pageCount);
@@ -680,7 +665,7 @@
                 }
                 if (that.Settings.autoImportImageUrlsInFormFields === true) {
                     try {
-                        const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                        const images = await that.downloadImages(that.getImagesInFormFields(PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
                         await that.uploadImagesToBcUiEditor(images, printessComponent.editor);
                     }
                     catch (e) {
@@ -689,8 +674,8 @@
                 }
                 if (that.Settings.autoImportUserImages === true) {
                     try {
-                        let userId = await that.getUserId(context);
-                        let basketId = await that.getOrGenerateBasketId(context);
+                        let userId = await PrintessEditor.getUserId(context);
+                        let basketId = await PrintessEditor.getOrGenerateBasketId(context);
                         if (userId || basketId) {
                             await that.uploadUserImagesToBcUiEditor(printessComponent.editor, basketId, userId);
                         }
@@ -719,8 +704,8 @@
                 templateName: context.templateNameOrSaveToken, // "Premier Test-3",// "test Trigger Dialog",  // "price-tester", // "Premier Test", //  "Children's book", // "Label FF Test", //"test Trigger Dialog",   "test Trigger Dialog", // "Bathrobe Man", //
                 //templateVersion: "publish",//"draft"
                 translationKey: "auto", //"en"
-                basketId: await this.getOrGenerateBasketId(context),
-                shopUserId: await this.getUserId(context),
+                basketId: await PrintessEditor.getOrGenerateBasketId(context),
+                shopUserId: await PrintessEditor.getUserId(context),
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
@@ -765,17 +750,24 @@
                     window.removeEventListener('unload', closeTabListener);
                     that.hideBcUiVersion(context, true);
                 },
-                saveTemplateCallback: (saveToken, type) => {
+                saveTemplateCallback: (saveToken, type, thumbnailUrl) => {
                     if (typeof callbacks.onSaveAsync === "function") {
-                        callbacks.onSaveAsync(saveToken);
+                        callbacks.onSaveAsync(saveToken, thumbnailUrl);
                     }
                     if (type && type === "close") {
                         that.hideBcUiVersion(context, true);
                     }
                 }
             };
+            if (typeof context.showSplitterGridSizeButton !== "undefined" && context.showSplitterGridSizeButton !== null) {
+                attachParams["showSplitterGridSizeButton"] = context.showSplitterGridSizeButton === true || context.showSplitterGridSizeButton === "true";
+            }
             if (!isSaveToken && pageCount !== null && pageCount >= 1) {
                 attachParams["bookInsidePages"] = pageCount;
+            }
+            const globalSettings = PrintessEditor.getGlobalShopSettings();
+            if (typeof globalSettings.getFormFieldProperties === "function") {
+                attachParams.formFieldProperties = globalSettings.getFormFieldProperties();
             }
             const printess = await printessLoader.load(attachParams);
             printessComponent = that.getPrintessComponent();
@@ -791,7 +783,7 @@
                 }
                 if (that.Settings.autoImportImageUrlsInFormFields === true) {
                     try {
-                        const images = await that.downloadImages(that.getImagesInFormFields(that.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
+                        const images = await that.downloadImages(that.getImagesInFormFields(PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings())));
                         await that.uploadImagesToBcUiEditor(images, printessComponent.editor);
                     }
                     catch (e) {
@@ -800,8 +792,8 @@
                 }
                 if (that.Settings.autoImportUserImages === true) {
                     try {
-                        let userId = await that.getUserId(context);
-                        let basketId = await that.getOrGenerateBasketId(context);
+                        let userId = await PrintessEditor.getUserId(context);
+                        let basketId = await PrintessEditor.getOrGenerateBasketId(context);
                         if (userId || basketId) {
                             await that.uploadUserImagesToBcUiEditor(printessComponent.editor, basketId, userId);
                         }
@@ -863,25 +855,17 @@
             onPriceChangedAsync: async (priceInfo) => {
                 await that.onPriceChanged(priceInfo, context);
             },
-            onRenderedFirstPageImageAsync: async (result) => {
-                if (typeof context.onRenderFirstPageImageAsync === "function") {
-                    await context.onRenderFirstPageImageAsync(result);
-                }
-                else if (typeof context.onRenderFirstPageImage === "function") {
-                    context.onRenderFirstPageImage(result);
-                }
-            },
             onGetFormField: (result) => {
                 if (typeof context.onGetFormField === "function") {
                     context.onGetFormField(result);
                 }
             },
-            onSaveAsync: async (saveToken) => {
+            onSaveAsync: async (saveToken, thumbnailUrl) => {
                 if (typeof context.onSaveAsync === "function") {
-                    await context.onSaveAsync(saveToken, "");
+                    await context.onSaveAsync(saveToken, thumbnailUrl);
                 }
                 else if (typeof context.onSave === "function") {
-                    context.onSave(saveToken, "");
+                    context.onSave(saveToken, thumbnailUrl);
                 }
             },
             onLoadAsync: async (currentTemplateNameOrSaveToken) => {
@@ -906,7 +890,7 @@
             let formFields = null;
             let mergeTemplates = null;
             if (!isSaveToken) {
-                formFields = this.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
+                formFields = PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
                 mergeTemplates = context.getMergeTemplates();
                 if (context.additionalAttachParams && typeof context.additionalAttachParams["pageCountFormField"] !== "undefined") {
                     const pageFormField = formFields.filter(x => x.name === context.additionalAttachParams["pageCountFormField"]);
@@ -919,15 +903,6 @@
                 }
             }
             const iFrame = await this.initializeIFrame(callbacks, context, this.Settings);
-            context.renderFirstPageImageAsync = (maxThumbnailWidth, maxThumbnailHeight) => {
-                setTimeout(function () {
-                    iFrame.contentWindow.postMessage({
-                        cmd: "renderFirstPageImage",
-                        properties: {}
-                    }, "*");
-                }, 0);
-                return Promise.resolve();
-            };
             if (iFrame.getAttribute('data-attached') === "false") {
                 try {
                     const attachParams = {
@@ -936,14 +911,18 @@
                         templateName: context.templateNameOrSaveToken,
                         showBuyerSide: true,
                         templateUserId: '',
-                        basketId: await this.getOrGenerateBasketId(context),
-                        shopUserId: await this.getUserId(context),
+                        basketId: await PrintessEditor.getOrGenerateBasketId(context),
+                        shopUserId: await PrintessEditor.getUserId(context),
                         formFields: formFields,
                         snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
                         mergeTemplates: mergeTemplates
                     };
                     if (typeof context.showSplitterGridSizeButton !== "undefined" && context.showSplitterGridSizeButton !== null) {
                         attachParams["showSplitterGridSizeButton"] = context.showSplitterGridSizeButton === true || context.showSplitterGridSizeButton === "true";
+                    }
+                    const globalSettings = PrintessEditor.getGlobalShopSettings();
+                    if (typeof globalSettings.getFormFieldProperties === "function") {
+                        attachParams.formFieldProperties = globalSettings.getFormFieldProperties();
                     }
                     if (this.Settings.uiSettings && this.Settings.uiSettings.theme) {
                         attachParams["theme"] = this.Settings.uiSettings.theme;

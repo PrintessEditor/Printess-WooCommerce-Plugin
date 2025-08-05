@@ -295,3 +295,14 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.53 =
 - Added support for merge templates inside variants
+
+= 1.6.54 =
+- Added option to use ACF field names instead of labels while assigning form field values
+- Fixed variant option to use given template name as merge template for variants where not all variants use the template name as merge template
+
+= 1.6.55 =
+- fixed: broken thumbnail retrieval on save actions in PanelUi
+- added: save token timeouts are automtaically extended after replacing the original save token in the admin order view
+- added: admin order view / customer order view are now displaying the expiration date of the save tokens
+- fixed: saved designs do now display the correct timeout date format that is configured inside the wordpress date / time settings
+- added: it is now possible to specify form field mappings for ACF fields

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.53
+ * Version: 1.6.55
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924012dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924014dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -361,15 +361,12 @@ function printess_get_custom_formfields($user_id) {
 		if(in_array("all", $filter_lookup) || in_array("lastname", $filter_lookup))$form_fields["Lastname"] = $customer->__get('last_name');
 		if(in_array("all", $filter_lookup) || in_array("description", $filter_lookup))$form_fields["Description"] = get_user_meta($user_id, 'description', true);
 
-
-
-
 		if(in_array("all", $filter_lookup) || in_array("billingfirstname", $filter_lookup))$form_fields["BillingFirstname"] = $customer->billing["first_name"];
 		if(in_array("all", $filter_lookup) || in_array("billinglastname", $filter_lookup))$form_fields["BillingLastname"] = $customer->billing["last_name"];
 		if(in_array("all", $filter_lookup) || in_array("billingcompany", $filter_lookup))$form_fields["BillingCompany"] = $customer->billing["company"];
 		if(in_array("all", $filter_lookup) || in_array("billingemail", $filter_lookup))$form_fields["BillingEmail"] = $customer->billing["email"];
 		if(in_array("all", $filter_lookup) || in_array("billingphone", $filter_lookup))$form_fields["BillingPhone"] = $customer->billing["phone"];
-		if(in_array("all", $filter_lookup) || in_array("billingcity", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
+		if(in_array("all", $filter_lookup) || in_array("-  ", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
 		if(in_array("all", $filter_lookup) || in_array("billingstate", $filter_lookup))$form_fields["BillingState"] = $customer->billing["state"];
 		if(in_array("all", $filter_lookup) || in_array("billingpostcode", $filter_lookup))$form_fields["BillingPostcode"] = $customer->billing["postcode"];
 		if(in_array("all", $filter_lookup) || in_array("billingcountry", $filter_lookup))$form_fields["BillingCountry"] = $customer->billing["country"];
@@ -393,9 +390,19 @@ function printess_get_custom_formfields($user_id) {
 		$acf_fields = get_field_objects("user_" . $user_id);
 
 		if(null !== $acf_fields && false !== $acf_fields && is_array($acf_fields)) {
+			$acf_label_property = PrintessAdminSettings::get_use_acf_name_instead_of_label() ? "name" : "label";
+			$acf_mappings = PrintessAdminSettings::get_acf_field_mappings();
+
 			foreach($acf_fields as $key => &$field) {
-				if(is_array($field) && array_key_exists("label", $field) && array_key_exists("value", $field) && (in_array("all", $filter_lookup) || in_array(strtolower($field["label"]), $filter_lookup))) {
-					$form_fields[$field["label"]] = $field["value"];
+				if(is_array($field) && array_key_exists($acf_label_property, $field) && array_key_exists("value", $field) && (in_array("all", $filter_lookup) || in_array(strtolower($field[$acf_label_property]), $filter_lookup))) {
+					$key = $field[$acf_label_property];
+					$value = $field["value"];
+
+					if(count($acf_mappings) > 0 && array_key_exists($key, $acf_mappings)) {
+						$key = $acf_mappings[$key];
+					}
+
+					$form_fields[$key] = $value;
 				}
 			}
 		}
@@ -1723,6 +1730,7 @@ function printess_render_personalized_products_table( $order ) {
 
 	if ( $has_save_token ) {
 		$table->add_column( esc_html__( 'Open design', 'printess-editor' ) );
+		$table->add_column( esc_html__( 'Valid until', 'printess-editor' ) );
 	}
 
 	if ( $has_design_name ) {
@@ -1802,11 +1810,19 @@ function printess_render_personalized_products_table( $order ) {
 			$content[] = $shipping_status;
 		}
 
-		if ( $has_save_token && printess_do_render_edit_link( $item ) ) {
-			$content[] = array(
-				'url'   => $product_url,
-				'label' => esc_html__( 'Open', 'printess-editor' ),
-			);
+		if ( $has_save_token) {
+			if(printess_do_render_edit_link( $item )) {
+				$content[] = array(
+					'url'   => $product_url,
+					'label' => esc_html__( 'Open', 'printess-editor' ),
+				);
+			} else {
+				$content[] = "";
+			}
+
+			$expiration_date = $save_token !== null && !empty($save_token) ? PrintessApi::get_expiration_date($save_token) : null;
+
+			$content[] = null !== $expiration_date ? wp_date(get_option( 'date_format' ), $expiration_date->getTimestamp()) : "";
 		}
 
 		if($has_design_name) {
@@ -1958,6 +1974,8 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 		echo '</tbody></table>';
 	}
 
+	$expiration_date = $printess_save_token !== null && !empty($printess_save_token) ? PrintessApi::get_expiration_date($printess_save_token) : null;
+
 	if ( ! empty( $printess_save_token ) ) {
 		echo '<hr />';
 
@@ -1998,6 +2016,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 			);
 
 			echo ' <div><div style="white-space:nowrap">' . esc_html__( 'Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($edit_url) . "\" target=\"_blank\"')\">" . esc_html($printess_save_token) . '</a></div>';
+
 			echo "<script>
 				if(!window['printessUpdateSaveToken']) {
 					window['printessUpdateSaveToken'] = function(saveToken, updateUrl) {
@@ -2023,6 +2042,11 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 				}
 			</script>";
 			echo ' <div data-save-token="' . esc_html($printess_save_token) . '"><a href="#" onclick="window.printessUpdateSaveToken(\'' . esc_html($printess_save_token) . '\', \'' . esc_html($update_url) . '\')" >' . esc_html__( 'Edit save token', 'printess-editor' ) . "</a></div>";
+
+			if(null !== $expiration_date) {
+				echo ' <div><div style="white-space:nowrap">' . esc_html__( 'Expires On:', 'printess-editor' ) . "&nbsp;<span>" . esc_html(wp_date(get_option( 'date_format' ), $expiration_date->getTimestamp())) . '</span></div>';
+			}
+
 			echo '</div>';
 		}
 
@@ -2918,6 +2942,7 @@ function printess_update_save_token() {
 			//Set the current save token to the original save token and remove original save token property
 			wc_update_order_item_meta($item->get_id(), '_printess-save-token', $printess_save_token);
 			wc_delete_order_item_meta($item->get_id(), '_printess-original-save-token');
+			printess_unexpire_save_token( $printess_save_token, printess_create_new_unexpiration_date( true ) );
 
 			$query_string = http_build_query(array(
 				'post'   => $order_id,
@@ -2938,6 +2963,7 @@ function printess_update_save_token() {
 		}
 
 		wc_update_order_item_meta($item->get_id(), '_printess-save-token', $printess_save_token);
+		printess_unexpire_save_token( $printess_save_token, printess_create_new_unexpiration_date( true ) );
 
 		$query_string = http_build_query(array(
 											'post'   => $order_id,
@@ -3382,7 +3408,7 @@ function printess_render_saved_designs() {
 			),
 			$design['displayName'],
 			$design['productName'],
-			( new \DateTime( $design['validUntil'] ) )->format( wc_date_format() ),
+			wp_date(get_option( 'date_format' ), (new DateTime($design['validUntil']))->getTimestamp()),
 			array(
 				'url'   => $product_url,
 				'label' => esc_html__( 'Edit', 'printess-editor' ),

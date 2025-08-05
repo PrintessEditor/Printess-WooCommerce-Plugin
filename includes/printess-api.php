@@ -29,14 +29,14 @@ class PrintessApi
             'sslverify'   => $ssl_verify,
             'data_format' => 'body',
         );
-    
+
         $response = wp_remote_post( $url, $args );
-    
+
         if ( is_wp_error( $response ) ) {
             $error_message = $response->get_error_message();
             throw new \Exception( $error_message );
         }
-    
+
         return json_decode( wp_remote_retrieve_body( $response ), true );
     }
 
@@ -60,14 +60,14 @@ class PrintessApi
             ),
             'sslverify'   => $ssl_verify,
         );
-    
+
         $response = wp_remote_get( $url, $args );
-    
+
         if ( is_wp_error( $response ) ) {
             $error_message = $response->get_error_message();
             throw new \Exception( $error_message );
         }
-    
+
         return json_decode( wp_remote_retrieve_body( $response ), true );
     }
 
@@ -137,6 +137,25 @@ class PrintessApi
             PrintessAdminSettings::get_service_token(),
             $data
         );
+    }
+
+    static function get_save_token_info($save_token) {
+        include_once("printess-admin-settings.php");
+
+        $printess_host = PrintessAdminSettings::get_host();
+        $service_token = PrintessAdminSettings::get_service_token();
+
+        return PrintessApi::send_post_request("$printess_host/shop/template/info/", $service_token, Array( "id" => $save_token));
+    }
+
+    static function get_expiration_date($save_token) {
+        $info = PrintessApi::get_save_token_info($save_token);
+
+        if(null !== $info && is_array($info) && array_key_exists("expiresOn", $info) && null !== $info["expiresOn"] && !empty($info["expiresOn"])) {
+            return new DateTime($info["expiresOn"]);
+        }
+
+        return null;
     }
 }
 
