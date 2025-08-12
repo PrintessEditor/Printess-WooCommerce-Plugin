@@ -305,6 +305,20 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns the number of minutes after which the save reminder is displayed. Returns null if disabled.
+    */
+    static function get_save_reminder_in_minutes() {
+        $setting = get_option( 'printess_display_save_warning', "" );
+        $minutes = null;
+
+        if(null !== $setting && !empty($setting) && is_numeric($setting)) {
+            $minutes = intval($setting);
+        }
+
+        return $minutes;
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -717,6 +731,36 @@ class PrintessAdminSettings
                 ?>
 
                 <input type="checkbox" name="printess_enable_design_save" <?php echo esc_html( $checked ); ?>>
+
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_display_save_warning',
+            array(
+                'type'    => 'string',
+                'default' => "",
+            )
+        );
+
+        add_settings_field(
+            'printess_display_save_warning',
+            __( 'Show save warning after x minutes', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_display_save_warning', "" );
+                $minutes = "";
+
+                if(null !== $setting && !empty($setting) && is_numeric($setting)) {
+                    $minutes = intval($setting);
+                }
+
+                ?>
+
+                <input type="text" style="min-width: 50%;" name="printess_display_save_warning" value="<?php echo esc_attr( $minutes ); ?>">
 
                 <?php
             },

@@ -847,6 +847,16 @@
                 }
                 return ret;
             },
+            onSaveTimer: () => {
+                if (typeof settings.showSaveWarningAfter !== "undefined" && settings.showSaveWarningAfter > 0 && typeof context.save === "function") {
+                    this.showDialog("printess_save_reminder", "", (okClicked, value) => {
+                        value = (value || "").trim();
+                        if (okClicked) {
+                            context.save();
+                        }
+                    });
+                }
+            },
             onSave: (saveToken, thumbnailUrl) => {
                 context.cameFromSave = true;
                 context.lastSaveSaveToken = saveToken;
@@ -1090,6 +1100,9 @@
                 }
             }
             const shopContext = createShopContext(settings);
+            if (typeof settings.showSaveWarningAfter !== undefined && settings.showSaveWarningAfter > 0) {
+                shopContext.currentSaveTimerInMinutes = settings.showSaveWarningAfter;
+            }
             //Hide shop items
             if (printessSettings.idsToHide) {
                 printessSettings.idsToHide.forEach((x) => {
@@ -1235,13 +1248,13 @@ function showDialog(prefix, initialValue, callback) {
     const okCallback = (evt) => {
         hide();
         if (typeof callback === "function") {
-            callback(true, textInput.value);
+            callback(true, textInput?.value);
         }
     };
     const cancelCallback = (evt) => {
         hide();
         if (typeof callback === "function") {
-            callback(false, textInput.value);
+            callback(false, textInput?.value);
         }
     };
     if (textInput) {

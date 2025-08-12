@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.55
+ * Version: 1.6.58
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924014dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924017dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -366,7 +366,7 @@ function printess_get_custom_formfields($user_id) {
 		if(in_array("all", $filter_lookup) || in_array("billingcompany", $filter_lookup))$form_fields["BillingCompany"] = $customer->billing["company"];
 		if(in_array("all", $filter_lookup) || in_array("billingemail", $filter_lookup))$form_fields["BillingEmail"] = $customer->billing["email"];
 		if(in_array("all", $filter_lookup) || in_array("billingphone", $filter_lookup))$form_fields["BillingPhone"] = $customer->billing["phone"];
-		if(in_array("all", $filter_lookup) || in_array("-  ", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
+		if(in_array("all", $filter_lookup) || in_array("billingcity", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
 		if(in_array("all", $filter_lookup) || in_array("billingstate", $filter_lookup))$form_fields["BillingState"] = $customer->billing["state"];
 		if(in_array("all", $filter_lookup) || in_array("billingpostcode", $filter_lookup))$form_fields["BillingPostcode"] = $customer->billing["postcode"];
 		if(in_array("all", $filter_lookup) || in_array("billingcountry", $filter_lookup))$form_fields["BillingCountry"] = $customer->billing["country"];
@@ -469,6 +469,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 
 		include_once("includes/printess-dialogs.php");
 		PrintessDialogs::render_display_name_dialog();
+		PrintessDialogs::render_save_reminder_dialog(PrintessAdminSettings::get_save_reminder_in_minutes());
 
 		$printess_ui_version = $product->get_meta( 'printess_ui_version', true);
 
@@ -576,6 +577,13 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 						additionalAttachParams: <?php echo wp_json_encode( $additionalAttachParams, JSON_FORCE_OBJECT ); ?>,
 						enforceDisplayName: enforceDisplayName
 					};
+
+					<?php
+						$minutes = PrintessAdminSettings::get_save_reminder_in_minutes();
+						if(null !== $minutes && $minutes > 0) {
+							echo "settings.showSaveWarningAfter=" . $minutes . ";";
+						}
+					?>
 
 					editor.show(settings);
 				};

@@ -306,3 +306,14 @@ Please check https://printess.com/pricing.html for more details.
 - added: admin order view / customer order view are now displaying the expiration date of the save tokens
 - fixed: saved designs do now display the correct timeout date format that is configured inside the wordpress date / time settings
 - added: it is now possible to specify form field mappings for ACF fields
+
+= 1.6.56 =
+- Added: support for showing a save reminder after a given amount of minutes
+- Added: Order views now display the save token end date
+- Fixed: Replaced save tokens will also now have the correct token life time configured inside the printess settings
+
+= 1.6.57 =
+- Fixed bug that came in 1.6.56 in saving that did not save the current save token to the list of saved designs.
+
+= 1.6.58 =
+- Fixed wrong BillingCity variable name that prevented billing city to be pushed into the buyer side of the editor.

@@ -1,5 +1,7 @@
 ﻿class PrintessEditor {
     constructor(settings) {
+        this.lastSaveDate = new Date();
+        this.visible = false;
         this.calculateCurrentPrices = async (priceInfo, context) => {
             const r = await this.getPriceCategories(context);
             let basePrice = r.basePrice;
@@ -19,6 +21,7 @@
         this.Settings = {
             ...settings
         };
+        this.visible = false;
         const hasUiSettings = typeof this.Settings.uiSettings !== "undefined" && this.Settings.uiSettings !== null;
         const startupSettings = {};
         if (hasUiSettings) {
@@ -135,6 +138,23 @@
     }
     getPrintessComponent() {
         return document.querySelector("printess-component") || null;
+    }
+    save(callbacks) {
+        let printessComponent = document.querySelector("printess-component") || null;
+        if (printessComponent) {
+            if (printessComponent && printessComponent.editor) {
+                printessComponent.editor.api.saveAndGenerateBasketThumbnailUrl().then((result) => {
+                    callbacks.onSaveAsync(result.saveToken, result.basketUrl).then(() => {
+                    });
+                });
+            }
+        }
+        else {
+            let iFrame = document.getElementById("printess");
+            if (iFrame) {
+                iFrame.contentWindow?.postMessage({ cmd: "saveAndGenerateBasketThumbnailUrl", parameters: [] }, "*");
+            }
+        }
     }
     static applyFormFieldMappings(formFields, mappings) {
         const ret = [];
@@ -287,6 +307,12 @@
                 case 'save': {
                     if (callbacks && typeof callbacks.onSaveAsync === "function") {
                         callbacks.onSaveAsync(evt.data.token, evt.data.thumbnailUrl);
+                    }
+                    break;
+                }
+                case "saveAndGenerateBasketThumbnailUrl": {
+                    if (callbacks && typeof callbacks.onSaveAsync === "function") {
+                        callbacks.onSaveAsync(evt.data.result.saveToken, evt.data.result.basketUrl);
                     }
                     break;
                 }
@@ -500,6 +526,7 @@
     }
     ;
     hideBcUiVersion(context, closeButtonClicked) {
+        this.visible = false;
         const editor = this.getPrintessComponent();
         if (editor && editor.editor) {
             editor.editor.ui.hide();
@@ -815,7 +842,9 @@
     }
     async show(context) {
         const that = this;
+        this.lastSaveDate = new Date();
         let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
+        this.visible = true;
         const callbacks = {
             onBack: () => {
                 that.hide(context, true);
@@ -861,6 +890,7 @@
                 }
             },
             onSaveAsync: async (saveToken, thumbnailUrl) => {
+                that.lastSaveDate = new Date();
                 if (typeof context.onSaveAsync === "function") {
                     await context.onSaveAsync(saveToken, thumbnailUrl);
                 }
@@ -881,6 +911,11 @@
                 evt.returnValue = '';
             }
         };
+        if (context) {
+            context.save = function () {
+                that.save(callbacks);
+            };
+        }
         if (this.usePanelUi()) {
             that.showBcUiVersion(context, callbacks);
         }
@@ -1007,8 +1042,20 @@
             // iframeWrapper.style.display = "block !important";
             iframeWrapper.style.setProperty('display', 'block', 'important');
         }
+        if (!this.show.saveInterval) {
+            this.show.saveInterval = setInterval(function () {
+                if (that.visible && context.currentSaveTimerInMinutes !== null && context.currentSaveTimerInMinutes > 0 && typeof context.onSaveTimer === "function") {
+                    const timeDifferenceMs = ((new Date()).getTime() - that.lastSaveDate.getTime());
+                    if (timeDifferenceMs > (context.currentSaveTimerInMinutes * 60000)) {
+                        that.lastSaveDate = new Date();
+                        context.onSaveTimer();
+                    }
+                }
+            }, 30000);
+        }
     }
     hide(context, closeButtonClicked) {
+        this.visible = false;
         if (this.usePanelUi()) {
             const editor = this.getPrintessComponent();
             if (editor && editor.editor) {
