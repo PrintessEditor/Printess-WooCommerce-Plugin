@@ -506,19 +506,21 @@
             catch (e) {
                 console.error(e);
             }
-            const iframe = document.getElementById("printess");
-            if (iframe && !context.hidePricesInEditor) {
-                setTimeout(() => {
-                    iframe.contentWindow.postMessage({
-                        cmd: "refreshPriceDisplay",
-                        priceDisplay: priceInfo
-                    }, "*");
-                }, 0);
-            }
-            //BcUI
-            const component = this.getPrintessComponent();
-            if (component && component.editor) {
-                component.editor.ui.refreshPriceDisplay(priceInfo);
+            if (!context.hidePricesInEditor) {
+                const iframe = document.getElementById("printess");
+                if (iframe) {
+                    setTimeout(() => {
+                        iframe.contentWindow.postMessage({
+                            cmd: "refreshPriceDisplay",
+                            priceDisplay: priceInfo
+                        }, "*");
+                    }, 0);
+                }
+                //BcUI
+                const component = this.getPrintessComponent();
+                if (component && component.editor) {
+                    component.editor.ui.refreshPriceDisplay(priceInfo);
+                }
             }
         }
         catch (e) {
@@ -645,13 +647,27 @@
             document.getElementById("printess")?.contentWindow?.postMessage({ cmd: "getFormField", parameters: [formFieldName] }, "*");
         }
     }
+    static closeAllHtmlDialogs() {
+        document.querySelectorAll(":not(printess-owned) dialog").forEach((x) => {
+            if (typeof x.close === "function") {
+                try {
+                    x.close();
+                }
+                catch (ex) {
+                    console.error(ex);
+                }
+            }
+        });
+    }
     async showBcUiVersion(context, callbacks) {
         const that = this;
         const priceInfo = context.getPriceInfo();
         let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
         let pageCount = null;
+        let useCustomLoader = false;
         let formFields = null;
         let mergeTemplates = null;
+        PrintessEditor.closeAllHtmlDialogs();
         if (!isSaveToken) {
             formFields = PrintessEditor.applyFormFieldMappings(context.getCurrentFormFieldValues(), context.getFormFieldMappings());
             mergeTemplates = context.getMergeTemplates();
@@ -663,6 +679,16 @@
                         pageCount = intValue;
                     }
                 }
+            }
+        }
+        const globalSettings = PrintessEditor.getGlobalShopSettings();
+        if (globalSettings && globalSettings.customLoader && typeof globalSettings.customLoader.onShowLoader === "function") {
+            try {
+                globalSettings.customLoader.onShowLoader();
+                useCustomLoader = true;
+            }
+            catch (e) {
+                console.error(e);
             }
         }
         const startupParams = {};
@@ -712,6 +738,14 @@
                     }
                 }
                 await callbacks.onLoadAsync(context.templateNameOrSaveToken);
+                if (globalSettings && globalSettings.customLoader && typeof globalSettings.customLoader.onHideLoader === "function") {
+                    try {
+                        globalSettings.customLoader.onHideLoader();
+                    }
+                    catch (e) {
+                        console.error(e);
+                    }
+                }
             }, 1000);
             printessComponent.editor.ui.show();
         }
@@ -724,6 +758,7 @@
                 theme = "DEFAULT";
             }
             const attachParams = {
+                suppressLoadingAnimation: useCustomLoader,
                 domain: that.Settings.apiDomain,
                 mergeTemplates: mergeTemplates,
                 formFields: formFields,
@@ -783,6 +818,16 @@
                     }
                     if (type && type === "close") {
                         that.hideBcUiVersion(context, true);
+                    }
+                },
+                loadingDoneCallback: () => {
+                    if (globalSettings && globalSettings.customLoader && typeof globalSettings.customLoader.onHideLoader === "function") {
+                        try {
+                            globalSettings.customLoader.onHideLoader();
+                        }
+                        catch (e) {
+                            console.error(e);
+                        }
                     }
                 }
             };
@@ -845,6 +890,7 @@
         this.lastSaveDate = new Date();
         let isSaveToken = context && context.templateNameOrSaveToken && context.templateNameOrSaveToken.indexOf("st:") === 0;
         this.visible = true;
+        PrintessEditor.closeAllHtmlDialogs();
         const callbacks = {
             onBack: () => {
                 that.hide(context, true);
