@@ -317,3 +317,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.58 =
 - Fixed wrong BillingCity variable name that prevented billing city to be pushed into the buyer side of the editor.
+
+= 1.6.59 =
+- Fixed cart sorting for shopping cart items that are not of type object but of type array.

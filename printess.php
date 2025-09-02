@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.58
+ * Version: 1.6.59
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8
  *
- * Woo: 10000:924017dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924018dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 9.8.2
  */
@@ -2257,20 +2257,46 @@ function printess_cart_loaded_from_session( $cart ) {
 
 	// Sort the cart items to newest item first.
 	$sorted_cart_contents = $cart_contents; // $b will be a different array.
-	usort(
-		$sorted_cart_contents,
-		function ( $a, $b ) {
-			if ( array_key_exists( 'printess_date_added', $a ) && array_key_exists( 'printess_date_added', $b ) ) {
-				return strcmp( $a['printess_date_added'], $b['printess_date_added'] ) * -1;
-			} elseif ( array_key_exists( 'printess_date_added', $a ) && ! array_key_exists( 'printess_date_added', $b ) ) {
-				return -1;
-			} elseif ( ! array_key_exists( 'printess_date_added', $a ) && array_key_exists( 'printess_date_added', $b ) ) {
-				return 1;
-			} else {
-				return $sort_order[ $a->id ] < $sort_order[ $b->id ] ? -1 : 1;
+
+	try {
+		usort(
+			$sorted_cart_contents,
+			function ( $a, $b ) {
+				if ( array_key_exists( 'printess_date_added', $a ) && array_key_exists( 'printess_date_added', $b ) ) {
+					return strcmp( $a['printess_date_added'], $b['printess_date_added'] ) * -1;
+				} elseif ( array_key_exists( 'printess_date_added', $a ) && ! array_key_exists( 'printess_date_added', $b ) ) {
+					return -1;
+				} elseif ( ! array_key_exists( 'printess_date_added', $a ) && array_key_exists( 'printess_date_added', $b ) ) {
+					return 1;
+				} else {
+					$a_id = -1;
+					$b_id = -1;
+
+					if(property_exists($a, "id")) {
+						$a_id = $a->id;
+					} else if(is_array($a) && array_key_exists("id", $a)) {
+						$a_id = $a["id"];
+					} else {
+						//Give up and sort it at the end
+						return 1;
+					}
+
+					if(property_exists($b, "id")) {
+						$a_id = $a->id;
+					} else if(is_array($b) && array_key_exists("id", $b)) {
+						$b_id = $b["id"];
+					} else {
+						//Give up and sort it at the end
+						return -1;
+					}
+
+					return $sort_order[ $a_id ] < $sort_order[ $b_id ] ? -1 : 1;
+				}
 			}
-		}
-	);
+		);
+	} catch( \Exception $ex) {
+		$sorted_cart_contents = $cart_contents;
+	}
 
 	$index              = 0;
 	$sort_order_changed = false;
