@@ -156,7 +156,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 		$cart_contents = $items = WC()->cart->get_cart();
 
 		foreach($cart_contents as $item_key => &$item) {
-			if(array_key_exists("printess-save-token", $item)) {
+			if(array_key_exists("printess-save-token", $item) && array_key_exists("printess-design-name", $item)) {
 				$item_save_token = $item["printess-save-token"];
 				$item_design_name = $item["printess-design-name"];
 
