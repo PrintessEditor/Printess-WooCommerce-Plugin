@@ -1,4 +1,22 @@
-﻿const initPrintessWCEditor = function (printessSettings) {
+﻿function trapFocus(root) {
+    const keyboardFocusableElements = root.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
+    const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
+    const firstFocusableElement = keyboardFocusableElements[0];
+    firstFocusableElement.addEventListener("keydown", (e) => {
+        if (e.key === "Tab" && e.shiftKey && lastFocusableElement) {
+            e.preventDefault();
+            lastFocusableElement.focus();
+        }
+    });
+    lastFocusableElement.addEventListener("keydown", (e) => {
+        if (e.key === "Tab" && !e.shiftKey && firstFocusableElement) {
+            e.preventDefault();
+            firstFocusableElement.focus();
+        }
+    });
+    firstFocusableElement.focus();
+}
+const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";
     let itemUsage = null;
     if (typeof window["printessWooEditor"] !== "undefined") {
@@ -196,9 +214,12 @@
         };
         const keyDownHandler = (e) => {
             if (e.key === 'Enter' || e.keyCode === 13) {
-                e.preventDefault();
-                e.stopPropagation();
-                internalSaveCallback();
+                // if a button is active, Enter should activate the button, not do anything else
+                if (!(document.activeElement instanceof HTMLButtonElement)) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    internalSaveCallback();
+                }
             }
             else if (e.key === 'Escape' || e.keyCode === 27) {
                 e.preventDefault();
@@ -251,8 +272,8 @@
             dialog.addEventListener("mousedown", cancelMouse);
             dialog.addEventListener("mouseup", cancelMouse);
             dialog.addEventListener("mousemove", cancelMouse);
-            dialog.addEventListener("keydown", keyUpHandler);
-            dialog.addEventListener("keyup", keyDownHandler);
+            dialog.addEventListener("keydown", keyDownHandler);
+            dialog.addEventListener("keyup", keyUpHandler);
             if (!dialog.getAttribute("data-initialized")) {
                 document.body.appendChild(dialog);
                 dialog.setAttribute("data-initialized", "true");
@@ -265,8 +286,11 @@
         }
         const cancelButton = document.getElementById("printess_cancel_button");
         if (cancelButton) {
+            cancelButton.type = "button";
             cancelButton.addEventListener("click", internalCancelCallback);
         }
+        cancelButton.style.backgroundColor = "red";
+        trapFocus(dialog);
     };
     const postMessage = (cmd, properties) => {
         const iFrame = document.getElementById("printess");
@@ -292,6 +316,7 @@
                 document.body.appendChild(overlay);
             }
         }
+        trapFocus(overlay);
     };
     const hideInformationOverlay = () => {
         const overlay = document.getElementById("printess_information_overlay_background");
@@ -1197,6 +1222,7 @@ function printessQueryItem(itemQuery, callback, timeout = 200, maxRetires = 20, 
         }
     }, timeout);
 }
+let previouslyFocused;
 function showDialog(prefix, initialValue, callback) {
     const textInput = document.getElementById(prefix + "_edit");
     const okButton = document.getElementById(prefix + "_ok_button");
@@ -1204,6 +1230,7 @@ function showDialog(prefix, initialValue, callback) {
     const dlg = document.getElementById(prefix + "_overlay_background");
     const bodyElement = document.querySelector("body");
     let hide = null;
+    previouslyFocused = document.activeElement;
     const keyUpHandler = (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
@@ -1216,11 +1243,15 @@ function showDialog(prefix, initialValue, callback) {
     };
     const keyDownHandler = (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
-            e.preventDefault();
-            e.stopPropagation();
-            hide();
-            if (typeof callback === "function") {
-                callback(true, textInput.value);
+            const activeDomElement = document.activeElement;
+            // if a button is active, Enter should activate the button, not do anything else
+            if (!(activeDomElement instanceof HTMLButtonElement) && activeDomElement.id === "printess_display_name_cancel_button") {
+                e.preventDefault();
+                e.stopPropagation();
+                hide();
+                if (typeof callback === "function") {
+                    callback(true, textInput.value);
+                }
             }
         }
         else if (e.key === 'Escape' || e.keyCode === 27) {
@@ -1241,8 +1272,11 @@ function showDialog(prefix, initialValue, callback) {
         }
         if (dlg) {
             dlg.style.display = "none";
-            dlg.removeEventListener("keydown", keyUpHandler);
-            dlg.removeEventListener("keyup", keyDownHandler);
+            dlg.removeEventListener("keyup", keyUpHandler);
+            dlg.removeEventListener("keydown", keyDownHandler);
+        }
+        if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
+            previouslyFocused.focus();
         }
     };
     const okCallback = (evt) => {
@@ -1264,6 +1298,7 @@ function showDialog(prefix, initialValue, callback) {
         okButton.addEventListener("click", okCallback);
     }
     if (cancelButton) {
+        cancelButton.type = "button";
         cancelButton.addEventListener("click", cancelCallback);
     }
     if (bodyElement && dlg.parentElement !== bodyElement) {
@@ -1271,9 +1306,10 @@ function showDialog(prefix, initialValue, callback) {
     }
     if (dlg) {
         dlg.style.display = "block";
-        dlg.addEventListener("keydown", keyUpHandler);
-        dlg.addEventListener("keyup", keyDownHandler);
+        dlg.addEventListener("keyup", keyUpHandler);
+        dlg.addEventListener("keydown", keyDownHandler);
     }
+    trapFocus(dlg);
 }
 function printessRegisterCheckoutFilters(registerCheckoutFilters) {
     const getOrAddElement = (parent, className, tagType, additionalClass) => {
