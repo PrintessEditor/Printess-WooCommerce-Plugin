@@ -320,3 +320,7 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.59 =
 - Fixed cart sorting for shopping cart items that are not of type object but of type array.
+
+= 1.6.60 =
+- Fixed wrong behaviour in PanelUi that did not hide the price when it was configured to be hidden.
+- Saving dialog, saving reminder dialog and provide design name dialog are now accessible.
