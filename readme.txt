@@ -324,3 +324,6 @@ Please check https://printess.com/pricing.html for more details.
 = 1.6.60 =
 - Fixed wrong behaviour in PanelUi that did not hide the price when it was configured to be hidden.
 - Saving dialog, saving reminder dialog and provide design name dialog are now accessible.
+
+= 1.6.61 =
+- Cancel button is now not red anymore in save dialog
