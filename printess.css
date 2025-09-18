@@ -10,6 +10,7 @@ body.hideAll {
   padding: 0;
   height: 100vh;
   height: -webkit-fill-available;
+  overflow: hidden;
 }
 
 #printess {
@@ -244,7 +245,8 @@ form[name="printess_search_form"] {
   /* pointer-events: none; */
   z-index: 999999;
   overflow: hidden;
-  display: none;
+  /*display: none;*/
+  --printess-panelBackground: white;
 }
 
 .printess_overlay_background.visible {
@@ -268,7 +270,7 @@ form[name="printess_search_form"] {
   width: -moz-fit-content;
   width: fit-content;
   grid-template-rows: 1fr auto;
-  z-index: 100;
+  z-index: 9999991;
 }
 
 .printess_overlay:not(.printess_information_overlay) {
@@ -334,10 +336,6 @@ form[name="printess_search_form"] {
 
 .printess_show_if_design_name.visible {
   display: grid;
-}
-
-.printess_overlay_background {
-  --printess-panelBackground: white;
 }
 
 #printess_information_overlay_text {

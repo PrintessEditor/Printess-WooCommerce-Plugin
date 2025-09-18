@@ -30,7 +30,7 @@ $printess_global_plugin_path = trailingslashit( WP_PLUGIN_DIR ) . 'woocommerce/w
  */
 function printess_render_information_overlay() {
 	?>
-	<div class="printess_overlay_background" id="printess_information_overlay_background" style="display:none;">
+	<div class="printess_overlay_background printess-owned" id="printess_information_overlay_background" style="display:none;">
 		<div class="printess_overlay printess_information_overlay">
 			<div class="printess_overlay_content progress">
 				<p id="printess_information_overlay_text"><p>
