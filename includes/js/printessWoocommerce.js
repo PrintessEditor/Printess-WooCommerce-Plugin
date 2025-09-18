@@ -1,6 +1,5 @@
 ﻿function trapFocus(root) {
-    const keyboardFocusableElements = root.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
-
+    const keyboardFocusableElements = root?.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
     if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
         const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
         const firstFocusableElement = keyboardFocusableElements[0];
@@ -292,6 +291,7 @@ const initPrintessWCEditor = function (printessSettings) {
             cancelButton.type = "button";
             cancelButton.addEventListener("click", internalCancelCallback);
         }
+        cancelButton.style.backgroundColor = "red";
         trapFocus(dialog);
     };
     const postMessage = (cmd, properties) => {
@@ -450,6 +450,53 @@ const initPrintessWCEditor = function (printessSettings) {
         }
         return name;
     };
+    const decodeHTMLEntities = (encoded) => {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = encoded;
+        return textarea.value;
+    };
+    const parseMergeTemplate = (template) => {
+        let ret = [];
+        if (template) {
+            if (Array.isArray(template)) {
+                template.forEach((x) => {
+                    ret = [
+                        ...ret,
+                        ...parseMergeTemplate(x)
+                    ];
+                });
+            }
+            else {
+                if (typeof template !== "string") {
+                    ret.push(template);
+                }
+                else {
+                    try {
+                        let deserialized = JSON.parse(template);
+                        ret = [
+                            ...ret,
+                            ...parseMergeTemplate(deserialized)
+                        ];
+                    }
+                    catch {
+                        try {
+                            let deserialized = JSON.parse(decodeHTMLEntities(template));
+                            ret = [
+                                ...ret,
+                                ...parseMergeTemplate(deserialized)
+                            ];
+                        }
+                        catch {
+                            ret.push({
+                                templateName: template
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    };
     const createShopContext = function (settings) {
         const context = {
             templateNameOrSaveToken: settings.templateNameOrSaveToken || settings.product.templateName,
@@ -470,60 +517,24 @@ const initPrintessWCEditor = function (printessSettings) {
             getMergeTemplates: () => {
                 let ret = [];
                 if (settings.mergeTemplates) {
-                    if (typeof settings.mergeTemplates === "string") {
-                        try {
-                            const merge = JSON.parse(settings.mergeTemplates);
-                            if (Array.isArray(merge)) {
-                                ret = [...ret, ...merge.map((x) => {
-                                    if (typeof x === "string") {
-                                        return {
-                                            templateName: x
-                                        };
-                                    }
-                                    else {
-                                        return x;
-                                    }
-                                })];
-                            }
-                            else {
-                                ret = [];
-                            }
-                        }
-                        catch (e) {
-                            ret = [];
-                        }
-                    }
-                    else {
-                        ret = [...ret, ...settings.mergeTemplates.map((x) => {
-                            if (typeof x === "string") {
-                                return {
-                                    templateName: x
-                                };
-                            }
-                            else {
-                                return x;
-                            }
-                        })];
-                    }
+                    ret = [
+                        ...ret,
+                        ...parseMergeTemplate(settings.mergeTemplates)
+                    ];
                 }
                 if (settings.product.mergeTemplates) {
-                    ret = [...ret, ...settings.product.mergeTemplates.map((x) => {
-                        if (typeof x === "string") {
-                            return {
-                                templateName: x
-                            };
-                        }
-                        else {
-                            return x;
-                        }
-                    })];
+                    ret = [
+                        ...ret,
+                        ...parseMergeTemplate(settings.product.mergeTemplates)
+                    ];
                 }
                 const currentFormFieldValues = getCurrentProductOptionValues(settings.product);
                 const selectedVariant = getCurrentVariant(currentFormFieldValues, settings.product);
                 if (selectedVariant && selectedVariant.templateName && selectedVariant.templateIsMergeTemplate) {
-                    ret.push({
-                        templateName: selectedVariant.templateName
-                    });
+                    ret = [
+                        ...ret,
+                        ...parseMergeTemplate(selectedVariant.templateName)
+                    ];
                 }
                 return ret;
             },

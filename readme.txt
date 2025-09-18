@@ -330,3 +330,7 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.62 =
 - Fixed broken saving functionality while trying to trap focus events on save dialog
+
+= 1.6.63 =
+- Fixed parsing of serialized json configuration for merge templates in case a json string was provided as merge template name
+- Fixed css for saving overlay thats displayed during saving a design to the customer account.
