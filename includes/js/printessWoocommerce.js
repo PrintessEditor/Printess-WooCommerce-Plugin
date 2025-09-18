@@ -1,20 +1,23 @@
 ﻿function trapFocus(root) {
     const keyboardFocusableElements = root.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
-    const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
-    const firstFocusableElement = keyboardFocusableElements[0];
-    firstFocusableElement.addEventListener("keydown", (e) => {
-        if (e.key === "Tab" && e.shiftKey && lastFocusableElement) {
-            e.preventDefault();
-            lastFocusableElement.focus();
-        }
-    });
-    lastFocusableElement.addEventListener("keydown", (e) => {
-        if (e.key === "Tab" && !e.shiftKey && firstFocusableElement) {
-            e.preventDefault();
-            firstFocusableElement.focus();
-        }
-    });
-    firstFocusableElement.focus();
+
+    if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
+        const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
+        const firstFocusableElement = keyboardFocusableElements[0];
+        firstFocusableElement?.addEventListener("keydown", (e) => {
+            if (e.key === "Tab" && e.shiftKey && lastFocusableElement) {
+                e.preventDefault();
+                lastFocusableElement.focus();
+            }
+        });
+        lastFocusableElement?.addEventListener("keydown", (e) => {
+            if (e.key === "Tab" && !e.shiftKey && firstFocusableElement) {
+                e.preventDefault();
+                firstFocusableElement.focus();
+            }
+        });
+        firstFocusableElement?.focus();
+    }
 }
 const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";

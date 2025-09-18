@@ -327,3 +327,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.61 =
 - Cancel button is now not red anymore in save dialog
+
+= 1.6.62 =
+- Fixed broken saving functionality while trying to trap focus events on save dialog
