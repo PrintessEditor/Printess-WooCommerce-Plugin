@@ -2324,6 +2324,10 @@ function printess_cart_loaded_from_session( $cart ) {
 		$sorted_cart_contents = $cart_contents;
 	} catch( \Exception $ex) {
 		$sorted_cart_contents = $cart_contents;
+	} catch (TypeError $e) {
+		$sorted_cart_contents = $cart_contents;
+	} catch (Throwable $e) {
+		$sorted_cart_contents = $cart_contents;
 	}
 
 		$index              = 0;
