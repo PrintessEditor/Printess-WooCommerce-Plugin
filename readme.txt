@@ -334,3 +334,6 @@ Please check https://printess.com/pricing.html for more details.
 = 1.6.63 =
 - Fixed parsing of serialized json configuration for merge templates in case a json string was provided as merge template name
 - Fixed css for saving overlay thats displayed during saving a design to the customer account.
+
+= 1.6.64 =
+- Fixed improper handling of cart item sorting for some users that have cart items that are not printess cart items and have object type cart items instead of array type cart items
