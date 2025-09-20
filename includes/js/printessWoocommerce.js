@@ -298,7 +298,6 @@ const initPrintessWCEditor = function (printessSettings) {
             cancelButton.type = "button";
             cancelButton.addEventListener("click", internalCancelCallback);
         }
-        cancelButton.style.backgroundColor = "red";
         trapFocus(dialog);
     };
     const postMessage = (cmd, properties) => {
