@@ -1,22 +1,28 @@
-﻿function trapFocus(root) {
+﻿const focusListener = new AbortController();
+function trapFocus(root) {
     const keyboardFocusableElements = root?.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
     if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
         const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
         const firstFocusableElement = keyboardFocusableElements[0];
-        firstFocusableElement?.addEventListener("keydown", (e) => {
-            if (e.key === "Tab" && e.shiftKey && lastFocusableElement) {
-                e.preventDefault();
+        const tabBackToLast = (keyEvent) => {
+            if (keyEvent.key === "Tab" && keyEvent.shiftKey && lastFocusableElement) {
+                keyEvent.preventDefault();
                 lastFocusableElement.focus();
             }
-        });
-        lastFocusableElement?.addEventListener("keydown", (e) => {
-            if (e.key === "Tab" && !e.shiftKey && firstFocusableElement) {
-                e.preventDefault();
+        };
+        const tabToFirst = (keyEvent) => {
+            if (keyEvent.key === "Tab" && !keyEvent.shiftKey && firstFocusableElement) {
+                keyEvent.preventDefault();
                 firstFocusableElement.focus();
             }
-        });
+        };
+        firstFocusableElement?.addEventListener("keydown", tabBackToLast, { signal: focusListener.signal });
+        lastFocusableElement?.addEventListener("keydown", tabToFirst, { signal: focusListener.signal });
         firstFocusableElement?.focus();
     }
+}
+function freeFocus() {
+    focusListener.abort();
 }
 const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";
@@ -173,6 +179,7 @@ const initPrintessWCEditor = function (printessSettings) {
         const dialog = document.getElementById("printess_overlay_background");
         if (dialog) {
             dialog.classList.remove("visible");
+            freeFocus();
         }
     };
     const showSaveDialog = (designName, saveCallback, cancelCallback) => {
@@ -324,6 +331,7 @@ const initPrintessWCEditor = function (printessSettings) {
         const overlay = document.getElementById("printess_information_overlay_background");
         if (overlay) {
             overlay.classList.remove("visible");
+            freeFocus();
         }
     };
     const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError) => {
@@ -1287,6 +1295,7 @@ function showDialog(prefix, initialValue, callback) {
             dlg.style.display = "none";
             dlg.removeEventListener("keyup", keyUpHandler);
             dlg.removeEventListener("keydown", keyDownHandler);
+            freeFocus();
         }
         if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
             previouslyFocused.focus();
