@@ -1,23 +1,34 @@
-﻿function trapFocus(root) {
+﻿const printessFocusListeners = [];
+let saveReminderActive = false;
+function printessTrapFocus(root) {
     const keyboardFocusableElements = root?.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
     if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
         const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
         const firstFocusableElement = keyboardFocusableElements[0];
-        firstFocusableElement?.addEventListener("keydown", (e) => {
-            if (e.key === "Tab" && e.shiftKey && lastFocusableElement) {
-                e.preventDefault();
+        const tabBackToLast = (keyEvent) => {
+            if (keyEvent.key === "Tab" && keyEvent.shiftKey && lastFocusableElement) {
+                keyEvent.preventDefault();
                 lastFocusableElement.focus();
             }
-        });
-        lastFocusableElement?.addEventListener("keydown", (e) => {
-            if (e.key === "Tab" && !e.shiftKey && firstFocusableElement) {
-                e.preventDefault();
+        };
+        const tabToFirst = (keyEvent) => {
+            if (keyEvent.key === "Tab" && !keyEvent.shiftKey && firstFocusableElement) {
+                keyEvent.preventDefault();
                 firstFocusableElement.focus();
             }
-        });
+        };
+        printessFocusListeners.push(new AbortController);
+        firstFocusableElement?.addEventListener("keydown", tabBackToLast, { signal: printessFocusListeners[printessFocusListeners.length - 1].signal });
+        lastFocusableElement?.addEventListener("keydown", tabToFirst, { signal: printessFocusListeners[printessFocusListeners.length - 1].signal });
         firstFocusableElement?.focus();
     }
 }
+const printessFreeFocus = function () {
+    if (printessFocusListeners.length > 0) {
+        printessFocusListeners[printessFocusListeners.length - 1].abort();
+        printessFocusListeners.pop();
+    }
+};
 const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";
     let itemUsage = null;
@@ -173,6 +184,7 @@ const initPrintessWCEditor = function (printessSettings) {
         const dialog = document.getElementById("printess_overlay_background");
         if (dialog) {
             dialog.classList.remove("visible");
+            printessFreeFocus();
         }
     };
     const showSaveDialog = (designName, saveCallback, cancelCallback) => {
@@ -291,8 +303,7 @@ const initPrintessWCEditor = function (printessSettings) {
             cancelButton.type = "button";
             cancelButton.addEventListener("click", internalCancelCallback);
         }
-        cancelButton.style.backgroundColor = "red";
-        trapFocus(dialog);
+        printessTrapFocus(dialog);
     };
     const postMessage = (cmd, properties) => {
         const iFrame = document.getElementById("printess");
@@ -318,12 +329,13 @@ const initPrintessWCEditor = function (printessSettings) {
                 document.body.appendChild(overlay);
             }
         }
-        trapFocus(overlay);
+        printessTrapFocus(overlay);
     };
     const hideInformationOverlay = () => {
         const overlay = document.getElementById("printess_information_overlay_background");
         if (overlay) {
             overlay.classList.remove("visible");
+            printessFreeFocus();
         }
     };
     const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError) => {
@@ -887,12 +899,15 @@ const initPrintessWCEditor = function (printessSettings) {
             },
             onSaveTimer: () => {
                 if (typeof settings.showSaveWarningAfter !== "undefined" && settings.showSaveWarningAfter > 0 && typeof context.save === "function") {
-                    this.showDialog("printess_save_reminder", "", (okClicked, value) => {
-                        value = (value || "").trim();
-                        if (okClicked) {
-                            context.save();
-                        }
-                    });
+                    if (!saveReminderActive) {
+                        this.showDialog("printess_save_reminder", "", (okClicked, value) => {
+                            value = (value || "").trim();
+                            if (okClicked) {
+                                context.save();
+                            }
+                        });
+                        saveReminderActive = true;
+                    }
                 }
             },
             onSave: (saveToken, thumbnailUrl) => {
@@ -1287,9 +1302,13 @@ function showDialog(prefix, initialValue, callback) {
             dlg.style.display = "none";
             dlg.removeEventListener("keyup", keyUpHandler);
             dlg.removeEventListener("keydown", keyDownHandler);
+            printessFreeFocus();
         }
         if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
             previouslyFocused.focus();
+        }
+        if (saveReminderActive) {
+            saveReminderActive = false;
         }
     };
     const okCallback = (evt) => {
@@ -1322,7 +1341,7 @@ function showDialog(prefix, initialValue, callback) {
         dlg.addEventListener("keyup", keyUpHandler);
         dlg.addEventListener("keydown", keyDownHandler);
     }
-    trapFocus(dlg);
+    printessTrapFocus(dlg);
 }
 function printessRegisterCheckoutFilters(registerCheckoutFilters) {
     const getOrAddElement = (parent, className, tagType, additionalClass) => {
