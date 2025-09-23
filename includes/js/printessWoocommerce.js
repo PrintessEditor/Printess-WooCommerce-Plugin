@@ -1,5 +1,6 @@
 ﻿const printessFocusListeners = [];
-const printessTrapFocus = function (root) {
+let saveReminderActive = false;
+function printessTrapFocus(root) {
     const keyboardFocusableElements = root?.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
     if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
         const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
@@ -21,7 +22,7 @@ const printessTrapFocus = function (root) {
         lastFocusableElement?.addEventListener("keydown", tabToFirst, { signal: printessFocusListeners[printessFocusListeners.length - 1].signal });
         firstFocusableElement?.focus();
     }
-};
+}
 const printessFreeFocus = function () {
     if (printessFocusListeners.length > 0) {
         printessFocusListeners[printessFocusListeners.length - 1].abort();
@@ -334,7 +335,6 @@ const initPrintessWCEditor = function (printessSettings) {
         const overlay = document.getElementById("printess_information_overlay_background");
         if (overlay) {
             overlay.classList.remove("visible");
-            printessFreeFocus();
         }
     };
     const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError) => {
@@ -898,12 +898,15 @@ const initPrintessWCEditor = function (printessSettings) {
             },
             onSaveTimer: () => {
                 if (typeof settings.showSaveWarningAfter !== "undefined" && settings.showSaveWarningAfter > 0 && typeof context.save === "function") {
-                    this.showDialog("printess_save_reminder", "", (okClicked, value) => {
-                        value = (value || "").trim();
-                        if (okClicked) {
-                            context.save();
-                        }
-                    });
+                    if (!saveReminderActive) {
+                        this.showDialog("printess_save_reminder", "", (okClicked, value) => {
+                            value = (value || "").trim();
+                            if (okClicked) {
+                                context.save();
+                            }
+                        });
+                        saveReminderActive = true;
+                    }
                 }
             },
             onSave: (saveToken, thumbnailUrl) => {
@@ -1302,6 +1305,9 @@ function showDialog(prefix, initialValue, callback) {
         }
         if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
             previouslyFocused.focus();
+        }
+        if (saveReminderActive) {
+            saveReminderActive = false;
         }
     };
     const okCallback = (evt) => {
