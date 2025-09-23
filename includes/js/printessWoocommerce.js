@@ -22,7 +22,9 @@ function printessTrapFocus(root) {
         lastFocusableElement?.addEventListener("keydown", tabToFirst, { signal: printessFocusListeners[printessFocusListeners.length - 1].signal });
         firstFocusableElement?.focus();
     }
+
 }
+
 const printessFreeFocus = function () {
     if (printessFocusListeners.length > 0) {
         printessFocusListeners[printessFocusListeners.length - 1].abort();
@@ -948,7 +950,7 @@ const initPrintessWCEditor = function (printessSettings) {
                     });
                 };
                 const loginCallback = (designName) => {
-                    if (!loginAndSave(designName, settings.product.id, variant ? variant.id : null, saveToken, thumbnailUrl, productValues)) {
+                    if (!loginAndSave(designName, settings.product.id, variant ? variant.id : null, saveToken, thumbnailUrl, getCurrentProductOptionValues(settings.product, false))) {
                         alert(printessSettings.userMessages && printessSettings.userMessages["noDisplayName"] ? printessSettings.userMessages["noDisplayName"] : 'Please provide a display name.');
                         showSaveDialog(designName, printessSettings.userIsLoggedIn ? saveDesignCallback : loginCallback, cancelCallback);
                     }

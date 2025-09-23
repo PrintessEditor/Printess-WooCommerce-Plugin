@@ -337,3 +337,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.64 =
 - Fixed improper handling of cart item sorting for some users that have cart items that are not printess cart items and have object type cart items instead of array type cart items
+
+= 1.6.65 =
+- Fixed: Fixed bug that saved a wrong variant in case the current user is not logged in and clicks on save. Before, the default variant was used instead of the current selected variant.
