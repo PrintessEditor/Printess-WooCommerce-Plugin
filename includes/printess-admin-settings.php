@@ -322,7 +322,7 @@ class PrintessAdminSettings
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
-        include_once("printess-api.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-api.php");
 
         add_settings_section(
             'printess_settings_section', // section slug .
@@ -972,7 +972,7 @@ class PrintessAdminSettings
             'printess_system_default_dropshipping',
             __( 'Overwrite product drop shipper in case of template mode', 'printess-editor' ),
             function() {
-                include_once("printess-api.php");
+                require_once(plugin_dir_path(__DIR__) . "includes/printess-api.php");
 
                 $dropshipping = array();
 

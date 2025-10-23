@@ -1,5 +1,283 @@
-﻿const printessFocusListeners = [];
-const printessTrapFocus = function (root) {
+﻿class PrintessSharedTools {
+    static async createSaveToken(shopToken, params) {
+        const response = await fetch('https://api.printess.com/production/savetoken/create', {
+            method: 'POST',
+            redirect: "follow",
+            headers: {
+                "Content-Type": 'application/json',
+                "Authorization": `Bearer ${shopToken}`,
+            },
+            body: JSON.stringify(params)
+        });
+        if (!response.ok) {
+            console.error("Unable to create save token: [" + response.status + "] " + response.statusText);
+            return null;
+        }
+        return (await response.json());
+    }
+    static decodeHTML(encoded) {
+        const textarea = document.createElement('textarea');
+        textarea.innerHTML = encoded;
+        return textarea.value;
+    }
+    static parseMergeTemplate(template) {
+        let ret = [];
+        if (template) {
+            if (Array.isArray(template)) {
+                template.forEach((x) => {
+                    ret = [
+                        ...ret,
+                        ...PrintessSharedTools.parseMergeTemplate(x)
+                    ];
+                });
+            }
+            else {
+                if (typeof template !== "string") {
+                    ret.push(template);
+                }
+                else {
+                    try {
+                        let deserialized = JSON.parse(template);
+                        ret = [
+                            ...ret,
+                            ...PrintessSharedTools.parseMergeTemplate(deserialized)
+                        ];
+                    }
+                    catch {
+                        try {
+                            let deserialized = JSON.parse(PrintessSharedTools.decodeHTML(template));
+                            ret = [
+                                ...ret,
+                                ...PrintessSharedTools.parseMergeTemplate(deserialized)
+                            ];
+                        }
+                        catch {
+                            ret.push({
+                                templateName: template
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+    static sleepAsync(timeoutMs) {
+        return new Promise((resolve) => setTimeout(resolve, timeoutMs));
+    }
+    static queryItem(itemQuery, callback, failedCallback = null, timeout = 200, maxRetires = 20, retries = 0) {
+        if (retries >= maxRetires) {
+            if (typeof failedCallback === "function") {
+                failedCallback();
+            }
+            return;
+        }
+        const element = itemQuery();
+        if (element) {
+            callback(element);
+            return;
+        }
+        setTimeout(function () {
+            const element = itemQuery();
+            if (element) {
+                callback(element);
+            }
+            else {
+                PrintessSharedTools.queryItem(itemQuery, callback, failedCallback, timeout, maxRetires, retries + 1);
+            }
+        }, timeout);
+    }
+    static async queryItemAsync(itemQuery, timeout = 50, maxRetires = 20) {
+        return new Promise((resolve, reject) => PrintessSharedTools.queryItem(itemQuery, resolve, reject, timeout, maxRetires));
+    }
+    static forEach(items, callback) {
+        if (!items || typeof callback !== "function") {
+            return;
+        }
+        if (Array.isArray(items)) {
+            items.forEach(callback);
+        }
+        else {
+            let index = 0;
+            for (const prop in items) {
+                if (items.hasOwnProperty(prop)) {
+                    callback(items[prop], index, items, prop);
+                    ++index;
+                }
+            }
+        }
+    }
+    static map(items, callback) {
+        if (!items || typeof callback !== "function") {
+            return [];
+        }
+        if (Array.isArray(items)) {
+            return items.map(callback);
+        }
+        else {
+            const ret = [];
+            let index = 0;
+            for (const prop in items) {
+                if (items.hasOwnProperty(prop)) {
+                    ret.push(callback(items[prop], index, items, prop));
+                    ++index;
+                }
+            }
+            return ret;
+        }
+    }
+    static filter(items, callback) {
+        const ret = {};
+        PrintessSharedTools.forEach(items, (value, index, arr, key) => {
+            if (callback(value, items, key, index) === true) {
+                ret[key] = value;
+            }
+        });
+        return ret;
+    }
+    static filterAsArray(items, callback) {
+        const ret = [];
+        PrintessSharedTools.forEach(items, (value, index, arr, key) => {
+            if (callback(value, items, key, index) === true) {
+                ret.push({
+                    key: key,
+                    value: value
+                });
+            }
+        });
+        return ret;
+    }
+    static ensureHttpProtocol(domain) {
+        let ret = ((typeof domain !== "string" ? domain.apiDomain : domain) || "").trim();
+        if (ret.indexOf("http://") !== 0 && ret.indexOf("https://")) {
+            if (ret.length > 1 && ret[0] === "/" && ret[1] === "/") {
+                ret = ret.substring(2);
+            }
+            else if (ret.length > 0 && ret[0] === "/") {
+                ret = ret.substring(1);
+            }
+            ret = "https://" + ret;
+        }
+        return ret;
+    }
+    static urlConcat(url, ...parts) {
+        let ret = url || "";
+        const filteredParts = (parts || []).filter(x => x ? true : false);
+        filteredParts.forEach((part) => {
+            if (part.length > 1) {
+                if (ret && ret[ret.length - 1] !== "/") {
+                    ret += "/";
+                }
+                ret += part[0] !== "/" ? part : part.substring(1);
+            }
+            else if (part[0] !== "/") {
+                if (ret && ret[ret.length - 1] !== "/") {
+                    ret += "/";
+                }
+                ret += part;
+            }
+        });
+        return ret;
+    }
+    static sanitizeHost(host) {
+        if (host) {
+            host = host.trim();
+            if (host.endsWith("/")) {
+                return host;
+            }
+            return host + "/";
+        }
+        return host || "";
+    }
+    static async postJsonAsync(url, params, token, additionalHeaders) {
+        const headers = {
+            "Content-Type": 'application/json'
+        };
+        if (token) {
+            headers["Authorization"] = "Bearer " + token;
+        }
+        if (additionalHeaders) {
+            PrintessSharedTools.forEach(additionalHeaders, (value, index, headers, key) => {
+                if (key && value) {
+                    headers[key] = value;
+                }
+            });
+        }
+        const response = await fetch('https://api.printess.com/shop/savetoken/split', {
+            method: 'POST',
+            redirect: "follow",
+            headers: headers,
+            body: JSON.stringify(params)
+        });
+        if (!response.ok) {
+            throw `Unable to post json to ${url}: [${response.status}]: ${response.statusText}`;
+        }
+        return await response.json();
+    }
+    loadTagsAsync(settings) {
+        return PrintessSharedTools.postJsonAsync(PrintessSharedTools.urlConcat(PrintessSharedTools.ensureHttpProtocol(settings), "snippets/tags/load"), { includeGlobal: settings.includeGlobalTags === true }, settings.serviceToken);
+    }
+    static generateUUID() {
+        var d = new Date().getTime(); //Timestamp
+        var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0; //Time in microseconds since page-load or 0 if unsupported
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+            var r = Math.random() * 16; //random number between 0 and 16
+            if (d > 0) { //Use timestamp until depleted
+                r = (d + r) % 16 | 0;
+                d = Math.floor(d / 16);
+            }
+            else { //Use microseconds since page-load if supported
+                r = (d2 + r) % 16 | 0;
+                d2 = Math.floor(d2 / 16);
+            }
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
+    static getFileNameFromUrl(fileName) {
+        return (fileName || "").split('#')[0].split('?')[0].split('/').pop();
+    }
+    static async downloadImages(images) {
+        const ret = [];
+        if (Array.isArray(images)) {
+            for (let i = 0; i < images.length; ++i) {
+                const response = await fetch(images[i].value);
+                if (response.ok) {
+                    const blob = await response.blob();
+                    ret.push({
+                        name: images[i].name,
+                        data: new File([blob], this.getFileNameFromUrl(images[i].value), { type: blob.type })
+                    });
+                }
+                else {
+                    console.error("Unable to download image " + images[i].value + "; [" + response.status.toString() + "] " + response.statusText + ": " + await response.text());
+                }
+            }
+        }
+        else {
+            for (const fileName in images) {
+                if (images.hasOwnProperty(fileName)) {
+                    const fileUrl = images[fileName];
+                    const response = await fetch(fileUrl);
+                    if (response.ok) {
+                        const blob = await response.blob();
+                        ret.push({
+                            name: fileName,
+                            data: new File([blob], this.getFileNameFromUrl(fileUrl), { type: blob.type })
+                        });
+                    }
+                    else {
+                        console.error("Unable to download image " + images[fileName] + "; [" + response.status.toString() + "] " + response.statusText + ": " + await response.text());
+                    }
+                }
+            }
+        }
+        return ret;
+    }
+}
+
+const printessFocusListeners = [];
+let printessSaveReminderActive = false;
+function printessTrapFocus(root) {
     const keyboardFocusableElements = root?.querySelectorAll('a[href], button, input, textarea, select, details, [tabindex]');
     if (keyboardFocusableElements && keyboardFocusableElements.length > 0) {
         const lastFocusableElement = keyboardFocusableElements[keyboardFocusableElements.length - 1];
@@ -21,7 +299,7 @@ const printessTrapFocus = function (root) {
         lastFocusableElement?.addEventListener("keydown", tabToFirst, { signal: printessFocusListeners[printessFocusListeners.length - 1].signal });
         firstFocusableElement?.focus();
     }
-};
+}
 const printessFreeFocus = function () {
     if (printessFocusListeners.length > 0) {
         printessFocusListeners[printessFocusListeners.length - 1].abort();
@@ -461,53 +739,6 @@ const initPrintessWCEditor = function (printessSettings) {
         }
         return name;
     };
-    const decodeHTMLEntities = (encoded) => {
-        const textarea = document.createElement('textarea');
-        textarea.innerHTML = encoded;
-        return textarea.value;
-    };
-    const parseMergeTemplate = (template) => {
-        let ret = [];
-        if (template) {
-            if (Array.isArray(template)) {
-                template.forEach((x) => {
-                    ret = [
-                        ...ret,
-                        ...parseMergeTemplate(x)
-                    ];
-                });
-            }
-            else {
-                if (typeof template !== "string") {
-                    ret.push(template);
-                }
-                else {
-                    try {
-                        let deserialized = JSON.parse(template);
-                        ret = [
-                            ...ret,
-                            ...parseMergeTemplate(deserialized)
-                        ];
-                    }
-                    catch {
-                        try {
-                            let deserialized = JSON.parse(decodeHTMLEntities(template));
-                            ret = [
-                                ...ret,
-                                ...parseMergeTemplate(deserialized)
-                            ];
-                        }
-                        catch {
-                            ret.push({
-                                templateName: template
-                            });
-                        }
-                    }
-                }
-            }
-        }
-        return ret;
-    };
     const createShopContext = function (settings) {
         const context = {
             templateNameOrSaveToken: settings.templateNameOrSaveToken || settings.product.templateName,
@@ -530,13 +761,13 @@ const initPrintessWCEditor = function (printessSettings) {
                 if (settings.mergeTemplates) {
                     ret = [
                         ...ret,
-                        ...parseMergeTemplate(settings.mergeTemplates)
+                        ...PrintessSharedTools.parseMergeTemplate(settings.mergeTemplates)
                     ];
                 }
                 if (settings.product.mergeTemplates) {
                     ret = [
                         ...ret,
-                        ...parseMergeTemplate(settings.product.mergeTemplates)
+                        ...PrintessSharedTools.parseMergeTemplate(settings.product.mergeTemplates)
                     ];
                 }
                 const currentFormFieldValues = getCurrentProductOptionValues(settings.product);
@@ -544,7 +775,7 @@ const initPrintessWCEditor = function (printessSettings) {
                 if (selectedVariant && selectedVariant.templateName && selectedVariant.templateIsMergeTemplate) {
                     ret = [
                         ...ret,
-                        ...parseMergeTemplate(selectedVariant.templateName)
+                        ...PrintessSharedTools.parseMergeTemplate(selectedVariant.templateName)
                     ];
                 }
                 return ret;
@@ -898,12 +1129,15 @@ const initPrintessWCEditor = function (printessSettings) {
             },
             onSaveTimer: () => {
                 if (typeof settings.showSaveWarningAfter !== "undefined" && settings.showSaveWarningAfter > 0 && typeof context.save === "function") {
-                    this.showDialog("printess_save_reminder", "", (okClicked, value) => {
-                        value = (value || "").trim();
-                        if (okClicked) {
-                            context.save();
-                        }
-                    });
+                    if (!printessSaveReminderActive) {
+                        this.showDialog("printess_save_reminder", "", (okClicked, value) => {
+                            value = (value || "").trim();
+                            if (okClicked) {
+                                context.save();
+                            }
+                        });
+                        printessSaveReminderActive = true;
+                    }
                 }
             },
             onSave: (saveToken, thumbnailUrl) => {
@@ -1302,6 +1536,9 @@ function showDialog(prefix, initialValue, callback) {
         }
         if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
             previouslyFocused.focus();
+        }
+        if (printessSaveReminderActive) {
+            printessSaveReminderActive = false;
         }
     };
     const okCallback = (evt) => {

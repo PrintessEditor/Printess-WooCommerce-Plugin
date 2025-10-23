@@ -13,7 +13,7 @@ class PrintessApi
 	 * @throws \Exception In case the posting of data failed.
 	 */
     static function send_post_request( $url, $token, $data ) {
-        include_once("printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
         $ssl_verify = ! PrintessAdminSettings::get_debug();
         $args       = array(
@@ -47,7 +47,7 @@ class PrintessApi
 	 * @throws \Exception In case the posting of data failed.
 	 */
     static function send_get_request($url) {
-        include_once("printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/includes/printess-admin-settings.php");
 
         $ssl_verify = ! PrintessAdminSettings::get_debug();
         $args       = array(
@@ -75,7 +75,7 @@ class PrintessApi
      * Loads a list of all available printess dropshippers and the correcsponding drop ship products
      */
     static function get_dropshipping_info() {
-        include_once("printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
         $printess_host = PrintessAdminSettings::get_host();
 
@@ -140,7 +140,7 @@ class PrintessApi
     }
 
     static function get_save_token_info($save_token) {
-        include_once("printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
         $printess_host = PrintessAdminSettings::get_host();
         $service_token = PrintessAdminSettings::get_service_token();

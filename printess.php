@@ -4,18 +4,18 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.65
+ * Version: 1.6.66
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
  * Domain Path: /languages
  * Requires at least: 5.9
  * Requires PHP: 8.1
- * Tested up to: 6.8
+ * Tested up to: 6.8.3
  *
- * Woo: 10000:924023dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924024dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
- * WC tested up to: 9.8.2
+ * WC tested up to: 10.3.0
  */
 
 include_once("includes/printess-admin-settings.php");
@@ -3749,7 +3749,12 @@ function printess_validate_cart_item($validation, $product_id, $dummy1 = 1, $dum
 			return $validation;
 	}
 
-	$variation_id = $_REQUEST['variation_id'];
+	$variation_id = null;
+
+	if(array_key_exists('variation_id', $_REQUEST)) {
+		$variation_id = $_REQUEST['variation_id'];
+	}
+
 	$helper = new PrintessProductHelpers(null === $variation_id || empty($variation_id) ? $product_id : intval($variation_id) );
 	$product_template_name = $helper->get_template_name(true);
 
@@ -3936,7 +3941,8 @@ function printess_init_plugin() {
 	$repo->install_or_update_db_table();
 }
 
-if ( in_array( $printess_global_plugin_path, wp_get_active_and_valid_plugins(), true ) || in_array( $printess_global_plugin_path, wp_get_active_network_plugins(), true ) ) {
+
+if ( in_array( $printess_global_plugin_path, wp_get_active_and_valid_plugins(), true ) || (function_exists("wp_get_active_network_plugins") && in_array( $printess_global_plugin_path, wp_get_active_network_plugins(), true )) ) {
 	add_action( 'woocommerce_init', 'printess_register_hooks' );
 
 	add_action( 'admin_menu', function() { PrintessAdminSettings::register_settings();} );

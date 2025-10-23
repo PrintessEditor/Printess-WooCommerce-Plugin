@@ -598,8 +598,8 @@
         });
     }
     static async getOrGenerateBasketId(context) {
-        let ret = typeof context.getBasketId === "function" ? context.getBasketId() : "";
-        if (!ret && typeof context.getBasketIdAsync === "function") {
+        let ret = typeof context?.getBasketId === "function" ? context.getBasketId() : "";
+        if (!ret && typeof context?.getBasketIdAsync === "function") {
             ret = await context.getBasketIdAsync() || null;
         }
         if (!ret) {
@@ -648,8 +648,8 @@
         }
     }
     static closeAllHtmlDialogs() {
-        document.querySelectorAll(":not(printess-owned) dialog").forEach((x) => {
-            if (typeof x.close === "function") {
+        document.querySelectorAll(":not(.printess-owned) dialog,dialog:not(.printess-owned)").forEach((x) => {
+            if (x && !x.classList.contains("printess-owned") && typeof x.close === "function") {
                 try {
                     x.close();
                 }
@@ -706,7 +706,7 @@
         }
         if (printessComponent && printessComponent.editor) {
             printessComponent.style.display = "block";
-            await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null);
+            await printessComponent.editor.api.loadTemplateAndFormFields(context.templateNameOrSaveToken, mergeTemplates, formFields, null, null, true);
             if (!isSaveToken && pageCount !== null && pageCount > 0) {
                 await printessComponent.editor.api.setBookInsidePages(pageCount);
             }
@@ -772,6 +772,7 @@
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
                 theme: theme,
+                skipExchangeStateApplication: true,
                 addToBasketCallback: (token, thumbnailUrl) => {
                     const addToBasket = (saveToken, thumbnailUrl) => {
                         window.removeEventListener('beforeunload', closeTabListener);
@@ -996,7 +997,8 @@
                         shopUserId: await PrintessEditor.getUserId(context),
                         formFields: formFields,
                         snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
-                        mergeTemplates: mergeTemplates
+                        mergeTemplates: mergeTemplates,
+                        skipExchangeStateApplication: true
                     };
                     if (typeof context.showSplitterGridSizeButton !== "undefined" && context.showSplitterGridSizeButton !== null) {
                         attachParams["showSplitterGridSizeButton"] = context.showSplitterGridSizeButton === true || context.showSplitterGridSizeButton === "true";

@@ -2,9 +2,9 @@
 Contributors: printess
 Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
 Requires at least: 5.6
-Tested up to: 6.8
-WC Tested up to: 9.8.2
-Stable tag: 1.6.40
+Tested up to: 6.8.3
+WC Tested up to: 10.3.0
+Stable tag: 1.6.66
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -340,3 +340,9 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.65 =
 - Fixed: Fixed bug that saved a wrong variant in case the current user is not logged in and clicks on save. Before, the default variant was used instead of the current selected variant.
+
+= 1.6.66 =
+- Fixed bug that did not clear the exchange id cache when using panel Ui
+- Fixed PHP warnings with referenced printess plugin files that could not be found by replacing include_once calls with require_once.
+- Fixed broken add to cart when using specific product types or specific plugins that might chaneg the data type of product meta data
+- PanelUi is now the standard for newly created products

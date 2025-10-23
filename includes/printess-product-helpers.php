@@ -45,7 +45,7 @@ class PrintessProductHelpers {
         return PrintessProductHelpers::get_product_attributes($product);
     }
 
-    private function get_attribute_definition($attribute_name, array $attrbutes = null) {
+    private function get_attribute_definition($attribute_name, ?array $attrbutes = null) {
         if(null === $attrbutes) {
             $attributes = $this->get_attributes();
         }
@@ -129,8 +129,39 @@ class PrintessProductHelpers {
         return $ret;
     }
 
+    /** 
+     * Test if the given object is an array, check if the array has a key, produce a warning if not
+     */
+    function transform_meta_value_to_template_name(mixed $item, string $key): string {
+        if(isset($item)) {
+            if(is_array($item)) {
+                if(array_key_exists($key, $item)) {
+                    $name = $item[$key];
+
+                    if(isset($name) && is_string($name) && !empty($name)) {
+                        return $name;
+                    }
+                }
+            } else if(is_string($item) && !empty($item)) {
+                return $item;
+            }
+        }
+
+        if(isset($item) && !is_string($item)) {
+            try {
+                $logger = wc_get_logger();
+
+            } catch(\Exception $e) {
+                //Intentionally left blank, nothing to do here
+                $logger->error( 'Printess Editor Integration: Unexpected data type in printess template name meta data: ' . json_encode( $item ), array( 'source' => 'my-custom-plugin' ) );
+            }
+        }
+
+        return "";
+    }
+
     public function get_template_name($check_base_product = false): string {
-      $template_name = $this->_product->get_meta( 'printess_template', true );
+      $template_name = $this->transform_meta_value_to_template_name($this->_product->get_meta( 'printess_template', true ), "printess_template");
 
       $template_name = $template_name === null || empty($template_name) ? "" : $template_name;
 
@@ -149,7 +180,7 @@ class PrintessProductHelpers {
                             $variation_template_name = $variation["printess_template_name"];
                         }
                     } else {
-                        $variation_template_name = $variation->get_meta( 'printess_template_name', true );
+                        $variation_template_name = $this->transform_meta_value_to_template_name($variation->get_meta( 'printess_template_name', true ), "printess_template_name");
                     }
 
                     if($variation_template_name !== null && !empty($variation_template_name)) {
@@ -159,7 +190,7 @@ class PrintessProductHelpers {
                 }
 
                 if(!$variant_has_template_name) {
-                    $template_name = $this->_base_product->get_meta( 'printess_template', true );
+                    $template_name = $this->transform_meta_value_to_template_name($this->_base_product->get_meta( 'printess_template', true ), "printess_template");
                     $template_name = $template_name === null || empty($template_name) ? "" : $template_name;
                 }
             }
@@ -190,9 +221,9 @@ class PrintessProductHelpers {
      * Renders the html for the product specific options that are available inside the product configuration
      */
     public static function render_product_option_pane() {
-        include_once("includes/printess-api.php");
-        include_once("includes/printess-html-helpers.php");
-        include_once("includes/printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-api.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-html-helpers.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
         $product_helpers = new PrintessProductHelpers(get_the_ID());
 
@@ -399,10 +430,10 @@ class PrintessProductHelpers {
                 'id'          => 'printess_ui_version',
                 'value'       => get_post_meta( get_the_ID(), 'printess_ui_version', true ),
                 'label'       => __( 'Buyer side user interface', 'printess-editor' ),
-                'description' => __( 'Classical or the new PanelUi (Beta!).', 'printess-editor' ),
+                'description' => __( 'PanelUi or the old deprecated iframe intgeration', 'printess-editor' ),
                 'options'     => array(
-                    'classical'    => 'Classical',
-                    'bcui' => 'PanelUi (Beta)',
+                    'bcui' => 'PanelUi',
+                    'classical'    => 'Deprecated iframe integration',
                 ),
             )
         );

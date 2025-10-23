@@ -32,7 +32,7 @@ class PrintessTable
     }
   }
 
-  function add_row(array $values = null) {
+  function add_row(?array $values = null) {
     $new_row = array();
 
     if(null !== $values && is_array($values)) {

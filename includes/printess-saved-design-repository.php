@@ -140,7 +140,7 @@ class Printess_Saved_Design_Repository {
     return $this->add_design($design["customerId"], $design["saveToken"], $design["thumbnailUrl"], $design["productId"], $design["productName"], $design["displayName"], $design["productOptions"]);
   }
 
-  function add_design(int $customer_id, string $save_token, string $thumbnail_url, int $product_id, string $product_name, string $display_name, array $product_options = null): int {
+  function add_design(int $customer_id, string $save_token, string $thumbnail_url, int $product_id, string $product_name, string $display_name, ?array $product_options = null): int {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
     $timeOut = new DateTime();
@@ -254,7 +254,7 @@ class Printess_Saved_Design_Repository {
     }
   }
 
-  function update_design(int $customer_id, int $design_id, string $save_token, string $thumbnail_url, array $options = null): bool {
+  function update_design(int $customer_id, int $design_id, string $save_token, string $thumbnail_url, ?array $options = null): bool {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
     $liveTimeInDays = $this->get_design_live_time_in_days();
