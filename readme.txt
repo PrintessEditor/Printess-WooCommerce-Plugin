@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.8.3
 WC Tested up to: 10.3.0
-Stable tag: 1.6.66
+Stable tag: 1.6.67
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -346,3 +346,6 @@ Please check https://printess.com/pricing.html for more details.
 - Fixed PHP warnings with referenced printess plugin files that could not be found by replacing include_once calls with require_once.
 - Fixed broken add to cart when using specific product types or specific plugins that might chaneg the data type of product meta data
 - PanelUi is now the standard for newly created products
+
+= 1.6.67 =
+ - Fixed error logging for failed template name retrieval, so that it is now called in case the template name could not be retrieved due to wrong data types

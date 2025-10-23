@@ -150,10 +150,9 @@ class PrintessProductHelpers {
         if(isset($item) && !is_string($item)) {
             try {
                 $logger = wc_get_logger();
-
+                $logger->error( 'Printess Editor Integration: Unexpected data type in printess template name meta data: ' . json_encode( $item ), array( 'source' => 'printess-editor' ) );
             } catch(\Exception $e) {
                 //Intentionally left blank, nothing to do here
-                $logger->error( 'Printess Editor Integration: Unexpected data type in printess template name meta data: ' . json_encode( $item ), array( 'source' => 'my-custom-plugin' ) );
             }
         }
 
