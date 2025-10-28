@@ -349,3 +349,6 @@ Please check https://printess.com/pricing.html for more details.
 
 = 1.6.67 =
  - Fixed error logging for failed template name retrieval, so that it is now called in case the template name could not be retrieved due to wrong data types
+ 
+ = 1.6.68 =
+ - Fixed broken file include with wrong file path

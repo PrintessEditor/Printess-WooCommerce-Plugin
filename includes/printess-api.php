@@ -47,7 +47,7 @@ class PrintessApi
 	 * @throws \Exception In case the posting of data failed.
 	 */
     static function send_get_request($url) {
-        require_once(plugin_dir_path(__DIR__) . "includes/includes/printess-admin-settings.php");
+        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
         $ssl_verify = ! PrintessAdminSettings::get_debug();
         $args       = array(
