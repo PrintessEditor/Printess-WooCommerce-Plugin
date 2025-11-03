@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.68
+ * Version: 1.6.69
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8.3
  *
- * Woo: 10000:924025dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924026dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.3.0
  */
@@ -551,7 +551,10 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 																									"customizeButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>,
 																									"showPricesInEditor": <?php echo wp_json_encode( get_option( 'printess_show_prices_in_editor', 'off' ) === 'on' ); ?>,
 																									"showProductName": <?php echo wp_json_encode( get_option( 'printess_show_product_name_in_editor', 'off' ) === 'on' ); ?>,
-																									"attachParams": <?php echo wp_json_encode( $attachParams ); ?>
+																									"attachParams": <?php echo wp_json_encode( $attachParams ); ?>,
+																									"designNowButtonId": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_id() ); ?>,
+																									"hideCustomDesignNowButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::hide_internal_customize_button_classes() ); ?> || false,
+																									"writeTrackingEvents": <?php echo wp_json_encode( PrintessAdminSettings::write_tracking_events() ); ?> || false
 																									}) : null;
 
 				if(!editor) {

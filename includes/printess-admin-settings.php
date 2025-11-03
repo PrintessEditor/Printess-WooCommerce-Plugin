@@ -127,6 +127,45 @@ class PrintessAdminSettings
     }
 
     /**
+     * Gets the Printess customize button id.
+     */
+    static function get_customize_button_id() {
+        $ret = get_option( 'printess_customize_button_id', '' );
+
+        if(!isset($ret) || empty($ret)) {
+            return "printess-customize-button";
+        }
+
+        return $ret;
+    }
+
+    /**
+     * Returns true in case the internal printess customize button classes should not be rendered
+     */
+    static function hide_internal_customize_button_classes() {
+        $setting = get_option( 'printess_hide_internal_customize_button_classes', '' );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Returns true in case the plugin should send tracking events to the dom
+     */
+    static function write_tracking_events() {
+        $setting = get_option( 'printess_write_tracking_events', '' );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
      * Gets the Printess default editor theme.
      */
     static function get_default_theme() {
@@ -411,6 +450,69 @@ class PrintessAdminSettings
         );
 
         add_settings_field(
+            'printess_customize_button_class',
+            __( 'Additional classes for customize button', 'printess-editor' ),
+            function() {
+                $setting = PrintessAdminSettings::get_customize_button_class();
+
+                ?><input type="text" style="min-width: 50%;" name="printess_customize_button_class" value="<?php echo esc_attr( $setting ); ?>"><?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_hide_internal_customize_button_classes',
+            array(
+                'type'    => 'boolean',
+                'default' => true,
+            )
+        );
+
+        add_settings_field(
+            'printess_hide_internal_customize_button_classes',
+            __( 'Hide default customize button classes', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_hide_internal_customize_button_classes', 'off' );
+                $checked = '';
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_hide_internal_customize_button_classes" <?php echo esc_html( $checked ); ?>>
+
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_customize_button_id',
+            array(
+                'type'    => 'boolean',
+                'default' => true,
+            )
+        );
+
+        add_settings_field(
+            'printess_customize_button_id',
+            __( 'Customize button id', 'printess-editor' ),
+            function() {
+                $setting = PrintessAdminSettings::get_customize_button_id();
+
+                ?><input type="text" style="min-width: 50%;" name="printess_customize_button_id" value="<?php echo esc_attr( $setting ); ?>"><?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        add_settings_field(
             'printess_ids_to_hide',
             __( 'Ids to hide when showing editor', 'printess-editor' ),
             function() {
@@ -450,18 +552,6 @@ class PrintessAdminSettings
                 'type'    => 'string',
                 'default' => 'wp-site-blocks',
             )
-        );
-
-        add_settings_field(
-            'printess_customize_button_class',
-            __( 'Additional classes for customize button', 'printess-editor' ),
-            function() {
-                $setting = PrintessAdminSettings::get_customize_button_class();
-
-                ?><input type="text" style="min-width: 50%;" name="printess_customize_button_class" value="<?php echo esc_attr( $setting ); ?>"><?php
-            },
-            'printess-settings',
-            'printess_settings_section'
         );
 
         register_setting(
@@ -1378,6 +1468,36 @@ class PrintessAdminSettings
                 ?>
 
                 <input type="checkbox" name="printess_disable_basket_warning_on_unpersonalized_items" <?php echo esc_html( $checked ); ?> >
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        register_setting(
+            'printess-settings',
+            'printess_write_tracking_events',
+            array(
+                'type'    => 'boolean',
+                'default' => true,
+            )
+        );
+
+        add_settings_field(
+            'printess_write_tracking_events',
+            __( 'Write tracking events to DOM', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_write_tracking_events', 'off' );
+                $checked = '';
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_write_tracking_events" <?php echo esc_html( $checked ); ?>>
+
                 <?php
             },
             'printess-settings',
