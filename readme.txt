@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.8.3
 WC Tested up to: 10.3.0
-Stable tag: 1.6.69
+Stable tag: 1.6.70
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -355,3 +355,7 @@ Please check https://printess.com/pricing.html for more details.
 
  = 1.6.69 =
  - Added basic tracking events to dom: "printess:editor_opened_new_design", "printess:editor_opened_save_token", "printess:editor_closed_without_add_to_cart","printess:design_saved","printess:add_to_cart_clicked" are now sent to DOM via window.dispatchEvent and can be received using document.addEventListener
+
+ = 1.6.70 =
+ - Changed save token live time extension from old deprecated api call to newer api's  (internal technical change).
+ - Fixed user id forwarding to use strings instead of numbers (internal technical change).

@@ -776,7 +776,7 @@
                 //templateVersion: "publish",//"draft"
                 translationKey: "auto", //"en"
                 basketId: await PrintessEditor.getOrGenerateBasketId(),
-                shopUserId: await PrintessEditor.getUserId(),
+                shopUserId: "" + (await PrintessEditor.getUserId()),
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
                 // allowZoomAndPan: false,
                 snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
@@ -1175,7 +1175,7 @@
         }
     }
 }
-PrintessEditor.visible = false; function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
+PrintessEditor.visible = false;function initPrintessEditor(shopToken, editorUrl, editorVersion, startupLogoUrl, showStartupAnimation, theme, startupBackgroundColor = "") {
     let editorSettings;
     if (shopToken && typeof shopToken !== "string") {
         editorSettings = {
