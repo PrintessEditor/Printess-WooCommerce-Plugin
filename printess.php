@@ -1418,13 +1418,11 @@ function printess_unexpire_save_token( $save_token, $expires_at_utc ) {
 	$printess_host          = PrintessAdminSettings::get_host();
 
 	$payload = array(
-		'id'          => $save_token,
-		'expiresOn'   => $expiration_date_string,
-		'dataOnly'    => true,
-		'buyerImages' => true,
+		'saveToken' => $save_token,
+		'expiresOn'   => $expiration_date_string
 	);
 
-	$result = PrintessApi::send_post_request( "$printess_host/shop/template/unexpire", PrintessAdminSettings::get_service_token(), $payload );
+	$result = PrintessApi::send_post_request( "$printess_host/savetoken/lifetime/extend", PrintessAdminSettings::get_service_token(), $payload );
 }
 
 /**
