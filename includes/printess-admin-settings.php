@@ -358,6 +358,19 @@ class PrintessAdminSettings
     }
 
     /**
+     * Returns true in case the auto upload of images url form field valuers should be disabled
+     */
+    static function image_autoupload_disabled() {
+        $setting = get_option( 'printess_image_autoupload_disabled', '' );
+
+        if ( 'on' === $setting ) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
 	 * Adds the custom Printess settings menu to the admin menu.
 	 */
     static function register_settings() {
@@ -1328,6 +1341,40 @@ class PrintessAdminSettings
                 ?>
 
                 <textarea style="min-width: 50%;" rows="10" name="printess_acf_field_mapping" ?><?php echo esc_attr( $setting ); ?></textarea>
+                <?php
+            },
+            'printess-settings',
+            'printess_settings_section'
+        );
+
+        //printess_image_autoupload_disabled
+        register_setting(
+            'printess-settings',
+            'printess_image_autoupload_disabled',
+            array(
+                'type'    => 'boolean',
+                'default' => false,
+            )
+        );
+
+        add_settings_field(
+            'printess_image_autoupload_disabled',
+            __( 'Disable auto import of image urls in form field values', 'printess-editor' ),
+            function() {
+                $setting = get_option( 'printess_image_autoupload_disabled', false );
+                $checked = '';
+
+                if ( null === $setting || empty( $setting ) ) {
+                    $setting = false;
+                }
+
+                if ( 'on' === $setting ) {
+                    $checked = 'checked';
+                }
+
+                ?>
+
+                <input type="checkbox" name="printess_image_autoupload_disabled" <?php echo esc_html( $checked ); ?> >
                 <?php
             },
             'printess-settings',

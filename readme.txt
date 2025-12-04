@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.8.3
 WC Tested up to: 10.3.0
-Stable tag: 1.6.70
+Stable tag: 1.6.71
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -359,3 +359,8 @@ Please check https://printess.com/pricing.html for more details.
  = 1.6.70 =
  - Changed save token live time extension from old deprecated api call to newer api's  (internal technical change).
  - Fixed user id forwarding to use strings instead of numbers (internal technical change).
+
+ = 1.6.71 =
+ - Added confirmation message before deletion of saved designs
+ - Added WooCommerce logging for saving / replacing / deletion of saved designs
+ - Added option to disable auto import of image urls inside form field values

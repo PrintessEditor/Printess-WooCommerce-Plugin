@@ -56,6 +56,13 @@ class PrintessTable
     {
       $additional_classes = array_key_exists("tableClasses", $this->settings) ? $this->settings["tableClasses"] : "";
     ?>
+      <script>
+        function printessShowConfirm(message, destinationUrl) {
+          if(confirm(message) === true) {
+            window.location.replace(destinationUrl);
+          }
+        }
+      </script>
       <div class="printess_table columns_<?php echo esc_attr( count ( $this->columns ) ) ?> <?php echo esc_attr( $additional_classes ) ?>">
           <div class="header">
           <?php
@@ -87,9 +94,16 @@ class PrintessTable
                   {
                     if( array_key_exists("url", $column) )
                     {
+                        if(!array_key_exists("confirm", $column) )
+                        {
                       ?>
-                        <a class="cell link" data-column="<?php echo esc_attr( $column_name ); ?>" href="<?php echo esc_attr( $column[ "url" ] ); ?>"><?php echo array_key_exists( "label", $column) && !empty( $column["label"] ) ?  esc_html( $column["label"] ) :  esc_html( $column["url"] )  ?></a>
+                          <a class="cell link" data-column="<?php echo esc_attr( $column_name ); ?>" href="<?php echo esc_attr( $column[ "url" ] ); ?>"><?php echo array_key_exists( "label", $column) && !empty( $column["label"] ) ?  esc_html( $column["label"] ) :  esc_html( $column["url"] )  ?></a>
                       <?php
+                        } else {
+                      ?>
+                          <a class="cell link" data-column="<?php echo esc_attr( $column_name ); ?>" href="#" onclick='printessShowConfirm("<?php echo $column["confirm"] ?>", "<?php echo esc_attr( $column[ "url" ] ); ?>");'><?php echo array_key_exists( "label", $column) && !empty( $column["label"] ) ?  esc_html( $column["label"] ) :  esc_html( $column["url"] )  ?></a>
+                      <?php
+                        }
                     }
                     else if( array_key_exists("thumbnail", $column) )
                     {

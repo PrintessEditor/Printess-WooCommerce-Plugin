@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.70
+ * Version: 1.6.71
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.8.3
  *
- * Woo: 10000:924027dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924028dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.3.0
  */
@@ -526,7 +526,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 																										"theme": <?php echo wp_json_encode( $theme ); ?>
 																									},
 																									"showAlertOnTabClose": <?php echo wp_json_encode(PrintessAdminSettings::get_show_warning_on_tab_close() === true) ?>,
-																									"autoImportImageUrlsInFormFields": true,
+																									"autoImportImageUrlsInFormFields": !<?php echo wp_json_encode( PrintessAdminSettings::image_autoupload_disabled() ); ?>,
 																									"editorUrl": <?php echo wp_json_encode( PrintessAdminSettings::get_embed_html_url() ); ?>,
 																									"shopToken": <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
 																									"hidePricesInEditor": false,
@@ -1464,6 +1464,8 @@ function printess_post_add_design( $request ) {
 	$parameters = $request->get_json_params();
 	$ret        = array();
 
+  $logger = wc_get_logger();
+
 	$customer_id = printess_get_current_user_id();
 
 	if ( null === $customer_id || $customer_id < 1 ) {
@@ -1481,53 +1483,77 @@ function printess_post_add_design( $request ) {
 		|| empty( '' . $parameters['productId'] )
 	) {
 		$ret['error'] = 'Invalid request';
+
+    if(isset($logger)) {
+        $logger->error('Invalid save design request: ' . json_encode($parameters),  array('source' => 'printress-saved-designs'));
+    }
+
 		return $ret;
 	}
 
 	if ( ! ( array_key_exists( 'designId', $parameters ) && ! empty( $parameters['designId'] ) && intval( $parameters['designId'] ) > 0 ) && empty( '' . $parameters['displayName'] ) ) {
 		$ret['error'] = 'Invalid request';
+
+    if(isset($logger)) {
+       $logger->error('Invalid save design request: ' . json_encode($parameters),  array('source' => 'printress-saved-designs'));
+    }
+
 		return $ret;
 	}
 
-	$product = wc_get_product( intval( $parameters['productId'] ) );
+   try {
+    $product = wc_get_product( intval( $parameters['productId'] ) );
 
-	if ( ! isset( $product ) || false === $product ) {
-		$ret['error'] = 'Unknown product';
-		return $ret;
-	}
+    	if ( ! isset( $product ) || false === $product ) {
+    		$ret['error'] = 'Unknown product';
+    		return $ret;
+    	}
 
-	include_once 'includes/printess-saved-design-repository.php';
+    	include_once 'includes/printess-saved-design-repository.php';
 
-	$repo = new Printess_Saved_Design_Repository();
+    	$repo = new Printess_Saved_Design_Repository();
 
-	if ( array_key_exists( 'designId', $parameters ) && ! empty( '' . $parameters['designId'] ) && intval( $parameters['designId'] ) > 0 ) {
-		$design_id = intval( $parameters['designId'] );
-		$designs   = $repo->get_designs( $customer_id, '', 1, 1, $design_id );
+    	if ( array_key_exists( 'designId', $parameters ) && ! empty( '' . $parameters['designId'] ) && intval( $parameters['designId'] ) > 0 ) {
+    		$design_id = intval( $parameters['designId'] );
+    		$designs   = $repo->get_designs( $customer_id, '', 1, 1, $design_id );
 
-		if ( ! isset( $designs ) || count( $designs ) < 1 ) {
-			$ret['error'] = 'Invalid design id';
-			return $ret;
-		} else {
-			printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
+    		if ( ! isset( $designs ) || count( $designs ) < 1 ) {
+    			$ret['error'] = 'Invalid design id';
 
-			if ( array_key_exists( 'displayName', $parameters ) && null !== $parameters['displayName'] && '' !== $parameters['displayName'] && $parameters['displayName'] === $designs[0]['displayName'] ) {
-				$options = null;
+          if(isset($logger)) {
+            $logger->error('Invalid design id' . $design_id . ": Provided values: " . json_encode($parameters),  array('source' => 'printress-saved-designs'));
+          }
 
-				if ( array_key_exists( 'options', $parameters ) ) {
-					$options = json_decode( $parameters['options'], true );
-				}
+    			return $ret;
+    		} else {
+    			printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
 
-				$repo->update_design( $customer_id, $design_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $options );
-				return $design_id;
-			} else {
-					return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $designs[0]['productId'], $designs[0]['productName'], $parameters['displayName'], $designs[0]['options'] );
-			}
-		}
-	} else {
-		printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
+    			if ( array_key_exists( 'displayName', $parameters ) && null !== $parameters['displayName'] && '' !== $parameters['displayName'] && $parameters['displayName'] === $designs[0]['displayName'] ) {
+    				$options = null;
 
-		return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], intval( '' . $parameters['productId'] ), $product->get_data()['name'], $parameters['displayName'], json_decode( $parameters['options'], true ) );
-	}
+    				if ( array_key_exists( 'options', $parameters ) ) {
+    					$options = json_decode( $parameters['options'], true );
+    				}
+
+            if(isset($logger)) {
+              $logger->notice("User with id " . $customer_id . " replaced existing saved design: " . json_encode($designs[0]) . "    with values: " . json_encode($parameters), array('source' => 'printress-saved-designs'));
+            }
+
+    				$repo->update_design( $customer_id, $design_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $options );
+
+    				return $design_id;
+    			} else {
+    					return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $designs[0]['productId'], $designs[0]['productName'], $parameters['displayName'], $designs[0]['options'] );
+    			}
+    		}
+    	} else {
+    		printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
+
+    		return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], intval( '' . $parameters['productId'] ), $product->get_data()['name'], $parameters['displayName'], json_decode( $parameters['options'], true ) );
+    	}
+   } catch(\Exception $ex) {
+    $logger->error('Error while trying to store saved design: ' . json_encode($ex),  array('source' => 'printress-saved-designs'));
+   }
 }
 
 
@@ -3410,6 +3436,14 @@ function printess_render_saved_designs() {
 	$repo = new Printess_Saved_Design_Repository();
 
 	if ( $delete_design_id > 0 ) {
+     $saved_design = $repo->get_design($customer_id, $delete_design_id);
+
+     $logger = wc_get_logger();
+
+    if(isset($logger)) {
+      $logger->notice("User with id " . $customer_id . " deleted a saved design: " . json_encode($saved_design), array('source' => 'printress-saved-designs'));
+    }
+
 		$repo->delete_design( $customer_id, $delete_design_id );
 	}
 
@@ -3484,6 +3518,7 @@ function printess_render_saved_designs() {
 			array(
 				'url'   => add_query_arg( 'printess_search', $current_search, add_query_arg( 'printess_page', $current_page, add_query_arg( 'printess_delete', $design['id'], $current_url ) ) ),
 				'label' => esc_html__( 'Delete', 'printess-editor' ),
+        "confirm" => str_replace("{0}", $design['displayName'], esc_html__( 'Do you really want to delete the design {0}?', 'printess-editor' ))
 			),
 		);
 

@@ -171,9 +171,7 @@ class Printess_Saved_Design_Repository {
       return "";
     };
 
-    $wpdb->insert( 
-      $table_name, 
-      array( 
+    $object_to_write = array( 
         'customer_id' => $customer_id,
         'save_token' => $to_string($save_token),
         'thumbnail_url' => $to_string($thumbnail_url),
@@ -184,7 +182,17 @@ class Printess_Saved_Design_Repository {
         'created_at' => $to_string(new DateTime()),
         'valid_until' => $to_string($timeOut),
         'last_updated_at' => $to_string(new DateTime())
-      ),
+    );
+
+    $logger = wc_get_logger();
+
+    if(isset($logger)) {
+      $logger->notice("User with id " . $customer_id . " added a new saved design: " . json_encode($object_to_write), array('source' => 'printress-saved-designs'));
+    }
+
+    $wpdb->insert( 
+      $table_name, 
+      $object_to_write,
       array("%d", "%s", "%s", "%d", "%s", "%s", "%s", "%s", "%s", "%s")
     );
 
