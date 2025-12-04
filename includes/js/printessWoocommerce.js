@@ -701,7 +701,7 @@ const initPrintessWCEditor = function (printessSettings) {
             if (!result.ok) {
                 console.error(result.statusText);
                 if (typeof onError === "function") {
-                    onError(printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token: " + saveToken);
+                    onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token: ") + " " + saveToken);
                 }
             }
             else {
@@ -715,7 +715,7 @@ const initPrintessWCEditor = function (printessSettings) {
         }).catch(function (error) {
             console.log(error);
             if (typeof onError === "function") {
-                onError(printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token:" + saveToken);
+                onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token:") + " " + saveToken);
             }
         });
     };

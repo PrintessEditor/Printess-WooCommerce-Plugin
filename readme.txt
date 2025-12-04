@@ -2,9 +2,9 @@
 Contributors: printess
 Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
 Requires at least: 5.6
-Tested up to: 6.8.3
-WC Tested up to: 10.3.0
-Stable tag: 1.6.71
+Tested up to: 6.9
+WC Tested up to: 10.3.6
+Stable tag: 1.6.70
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -364,3 +364,6 @@ Please check https://printess.com/pricing.html for more details.
  - Added confirmation message before deletion of saved designs
  - Added WooCommerce logging for saving / replacing / deletion of saved designs
  - Added option to disable auto import of image urls inside form field values
+
+ = 1.6.72 =
+ - Added save token to error message in case saving failed on network / server level.
