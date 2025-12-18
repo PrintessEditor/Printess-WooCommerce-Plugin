@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.70
+ * Version: 1.6.73
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.9
  *
- * Woo: 10000:924027dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924030dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.3.6
  */
@@ -478,6 +478,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 		}
 
 		$itemUsage = $product->get_meta( 'printess_item_usage', true );
+    $use_record_count_as_quantity = $product->get_meta( 'printess_use_record_count_as_quantity', true );
+    $use_record_count_as_quantity = isset($use_record_count_as_quantity) && !empty($use_record_count_as_quantity) && $use_record_count_as_quantity === "yes";
 
 		if(null === $itemUsage) {
 			$itemUsage = "";
@@ -578,7 +580,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
 						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text()  ); ?>,
 						additionalAttachParams: <?php echo wp_json_encode( $additionalAttachParams, JSON_FORCE_OBJECT ); ?>,
-						enforceDisplayName: enforceDisplayName
+						enforceDisplayName: enforceDisplayName,
+            useRecordCountAsQuantity: <?php echo wp_json_encode($use_record_count_as_quantity, JSON_FORCE_OBJECT ); ?>
 					};
 
 					<?php
@@ -2732,7 +2735,7 @@ function printess_product_data_panels() {
  * @param mixed $post_id The product id.
  */
 function printess_process_product_meta( $post_id ) {
-	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files", "printess_item_usage", "printess_editor_theme", "printess_page_count_option" );
+	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', "printess_ui_version", "printess_output_files", "printess_item_usage", "printess_editor_theme", "printess_page_count_option", "printess_use_record_count_as_quantity" );
 	$number_keys = array( 'printess_dpi' );
 
 	foreach ( $keys as $key ) {

@@ -462,6 +462,9 @@
         try {
             let priceInfo = null;
             try {
+                if (typeof priceChangedInfo.pureRecordsCount !== undefined && priceChangedInfo.pureRecordsCount != null && priceChangedInfo.pureRecordsCount > 0) {
+                    PrintessEditor.currentContext.currentRecordCount = priceChangedInfo.pureRecordsCount;
+                }
                 if (typeof priceChangedInfo.pageCount !== "undefined") {
                     if (PrintessEditor.currentContext.currentPageCount !== priceChangedInfo.pageCount) {
                         PrintessEditor.currentContext.currentPageCount = priceChangedInfo.pageCount;

@@ -445,6 +445,15 @@ class PrintessProductHelpers {
                 'description' => 'The name of the theme that should be used for this product',
             )
         );
+
+        woocommerce_wp_checkbox(
+            array(
+                'id'          => 'printess_use_record_count_as_quantity',
+                'value'       => get_post_meta( get_the_ID(), 'printess_use_record_count_as_quantity', true ),
+                'label'       => 'Record count is quantity',
+                'description' => 'If checked, the data table record count will be used as basket item quantity',
+            )
+        );
         ?>
         <script>
         document.getElementById("printess-load-templates").addEventListener("click", () => {

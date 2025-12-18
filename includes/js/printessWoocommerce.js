@@ -1064,6 +1064,12 @@ const initPrintessWCEditor = function (printessSettings) {
                         usageInput.value = JSON.stringify(itemUsage);
                         cartForm.appendChild(usageInput);
                     }
+                    if (settings.useRecordCountAsQuantity === true && typeof context.currentRecordCount !== null && context.currentRecordCount != null && context.currentRecordCount > 0) {
+                        const quantiyCtrl = document.querySelector('input[name="quantity"],select[name="quantity"],input[name="qty"],select[name="qty"]');
+                        if (quantiyCtrl) {
+                            quantiyCtrl.value = context.currentRecordCount.toString();
+                        }
+                    }
                     try {
                         const globalConfig = getGlobalConfig();
                         if (globalConfig && typeof globalConfig.onAddToBasket === "function") {
@@ -1143,6 +1149,9 @@ const initPrintessWCEditor = function (printessSettings) {
                             }
                         }
                     }
+                }
+                if (settings.useRecordCountAsQuantity === true && typeof context.currentRecordCount !== "undefined" && context.currentRecordCount !== null && context.currentRecordCount > 0) {
+                    ret *= context.currentRecordCount;
                 }
                 if (globalSetting !== null && (typeof globalSetting.getPriceForFormFields !== "undefined" || typeof globalSetting.getPriceForFormFieldsAsync !== "undefined")) {
                     try {
