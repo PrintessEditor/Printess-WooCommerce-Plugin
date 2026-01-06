@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.9
 WC Tested up to: 10.3.6
-Stable tag: 1.6.73
+Stable tag: 1.6.74
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -370,3 +370,6 @@ Please check https://printess.com/pricing.html for more details.
 
  = 1.6.73 =
  - Added support for using data table record count as product quantity (quantity selector must be hidden [not removed!] from product page and hidden / removed from shopping basket)
+
+ = 1.6.74 =
+ - Added additional basket item property printess_hide_quantity for products that have use record count as quantity activated.

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.73
+ * Version: 1.6.74
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.9
  *
- * Woo: 10000:924030dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924031dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.3.6
  */
@@ -138,6 +138,7 @@ function printess_add_cart_item_data( $cart_item_data ) {
 	$design_name                    = filter_input( INPUT_POST, 'printess-design-name', FILTER_SANITIZE_SPECIAL_CHARS );
 	$additionalSettings             = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
 	$item_usage						= filter_input( INPUT_POST, 'printess_item_usage', FILTER_UNSAFE_RAW );
+  $printess_hide_quantity						= filter_input( INPUT_POST, 'printess_hide_quantity', FILTER_UNSAFE_RAW );
 	$remove_items_from_cart    = false;
 	$remove_option_value       = get_option( 'printess_show_original_product_in_basket', true );
 	$remove_basket_item_on_same_design_name = PrintessAdminSettings::get_delete_original_basket_item_only_on_same_design_name();
@@ -209,6 +210,10 @@ function printess_add_cart_item_data( $cart_item_data ) {
 
 	if ( ! empty( $item_usage ) ) {
 		$cart_item_data['printess-item-usage'] = $item_usage;
+	}
+
+	if ( ! empty( $printess_hide_quantity ) ) {
+		$cart_item_data['printess_hide_quantity'] = $printess_hide_quantity;
 	}
 
 	$cart_item_data['printess_date_added'] = ( new DateTime() )->format( 'Y-m-d H:i:s' );

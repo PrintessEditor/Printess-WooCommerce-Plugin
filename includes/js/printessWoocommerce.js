@@ -1065,6 +1065,12 @@ const initPrintessWCEditor = function (printessSettings) {
                         cartForm.appendChild(usageInput);
                     }
                     if (settings.useRecordCountAsQuantity === true && typeof context.currentRecordCount !== null && context.currentRecordCount != null && context.currentRecordCount > 0) {
+                        //Add input for basket item flag that this item should not render out quantity control
+                        const hideQuantityInput = document.createElement("input");
+                        hideQuantityInput.setAttribute("id", "printess_hide_quantity");
+                        hideQuantityInput.setAttribute("name", "printess_hide_quantity");
+                        hideQuantityInput.value = "true";
+                        cartForm.appendChild(hideQuantityInput);
                         const quantiyCtrl = document.querySelector('input[name="quantity"],select[name="quantity"],input[name="qty"],select[name="qty"]');
                         if (quantiyCtrl) {
                             quantiyCtrl.value = context.currentRecordCount.toString();
