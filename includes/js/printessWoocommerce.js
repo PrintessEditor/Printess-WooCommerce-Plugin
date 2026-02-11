@@ -306,6 +306,30 @@ const printessFreeFocus = function () {
         printessFocusListeners.pop();
     }
 };
+const addEventHelpersToDialog = (dialog) => {
+    if (dialog) {
+        dialog.eventHandlers = dialog.eventHandlers || {};
+        if (typeof dialog.removeAllEventHandlers !== "function") {
+            dialog.removeAllEventHandlers = function () {
+                for (const eventHandler in dialog.eventHandlers) {
+                    if (dialog.eventHandlers.hasOwnProperty(eventHandler) && dialog.eventHandlers[eventHandler]) {
+                        dialog.eventHandlers[eventHandler].forEach((x) => {
+                            dialog.removeEventListener(eventHandler, x);
+                        });
+                    }
+                }
+                dialog.eventHandlers = null;
+            };
+        }
+        if (typeof dialog.addEventHandler !== "function") {
+            dialog.addEventHandler = function (event, callback) {
+                dialog.eventHandlers[event] = dialog.eventHandlers[event] || [];
+                dialog.eventHandlers[event].push(callback);
+                dialog.addEventListener(event, callback);
+            };
+        }
+    }
+};
 const initPrintessWCEditor = function (printessSettings) {
     const CART_FORM_SELECTOR = "form.cart";
     const designNowButtonId = printessSettings.designNowButtonId || "printess-customize-button";
@@ -490,6 +514,73 @@ const initPrintessWCEditor = function (printessSettings) {
         }
         return ret;
     };
+    const getInvalidVariantOption = function (productOptionValues, product) {
+        let ret = null;
+        const attributeLookup = getAttributeLookup(product, true);
+        const variantSpecificValues = [];
+        const attributeValuesUsedInVariants = {};
+        if (product.variants) {
+            product.variants.forEach((variant) => {
+                if (variant.attributes) {
+                    for (const key in variant.attributes) {
+                        if (variant.attributes.hasOwnProperty(key)) {
+                            if (!attributeValuesUsedInVariants[key]) {
+                                attributeValuesUsedInVariants[key] = {};
+                            }
+                            attributeValuesUsedInVariants[key][variant.attributes[key]] = true;
+                        }
+                    }
+                }
+                ;
+            });
+        }
+        const mapValue = (name, value) => {
+            let mappedValue = value;
+            let attribute = null;
+            if (attributeLookup[name]) {
+                attribute = attributeLookup[name];
+            }
+            if (!attribute) {
+                for (const key in attributeLookup) {
+                    if (attributeLookup.hasOwnProperty(key)) {
+                        if (attributeLookup[key].name === key || attributeLookup[key].key === key) {
+                            attribute = attributeLookup[key];
+                            break;
+                        }
+                    }
+                }
+                if (attribute && attribute.valueKeys && attribute.valueKeys.length > 0) {
+                    for (let i = 0; i < attribute.values.length; ++i) {
+                        if (attribute.values[i] === value && attribute.valueKeys.length > i) {
+                            mappedValue = attribute.valueKeys[i];
+                            break;
+                        }
+                    }
+                }
+            }
+            return mappedValue;
+        };
+        for (const name in productOptionValues) {
+            const value = mapValue(name, productOptionValues[name]);
+            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name] && attributeLookup[name].usedForVariants && attributeValuesUsedInVariants[attributeLookup[name].key] && attributeValuesUsedInVariants[attributeLookup[name].key][value]) {
+                if (!attributeLookup[name].valueKeys || attributeLookup[name].valueKeys.includes(value)) {
+                    variantSpecificValues.push({ key: attributeLookup[name].key, value: value });
+                }
+            }
+        }
+        if (product.variants) {
+            let variants = product.variants;
+            variantSpecificValues.forEach((vSv) => {
+                variants = variants.filter((variant) => {
+                    return variant.attributes[vSv.key] === vSv.value;
+                });
+                if (variants.length <= 0 && !ret) {
+                    ret = vSv.key;
+                }
+            });
+        }
+        return ret;
+    };
     const updatePrintessValues = function (saveToken, thumbnailUrl, designId, designName) {
         const updateInput = function (id, value) {
             const input = document.getElementById(id);
@@ -519,6 +610,7 @@ const initPrintessWCEditor = function (printessSettings) {
         const loggedInBlock = document.getElementById("printess_show_if_not_logged_in");
         const dialog = document.getElementById("printess_overlay_background");
         let removeEventHandlers = () => { };
+        addEventHelpersToDialog(dialog);
         const cancelMouse = (e) => {
             if (!e.srcElement || e.srcElement.nodeName.toLowerCase() !== "input" && e.srcElement.closest("div.printess_overlay_background") == null) {
                 e.preventDefault();
@@ -579,11 +671,9 @@ const initPrintessWCEditor = function (printessSettings) {
                 cancelButton.removeEventListener("click", internalCancelCallback);
             }
             if (dialog) {
-                dialog.removeEventListener("mousedown", cancelMouse);
-                dialog.removeEventListener("mouseup", cancelMouse);
-                dialog.removeEventListener("mousemove", cancelMouse);
-                dialog.removeEventListener("keydown", keyUpHandler);
-                dialog.removeEventListener("keyup", keyDownHandler);
+                if (typeof dialog.removeAllEventHandlers === "function") {
+                    dialog.removeAllEventHandlers();
+                }
             }
         };
         if (loggedInBlock) {
@@ -611,11 +701,11 @@ const initPrintessWCEditor = function (printessSettings) {
             designNameEdit.value = designName || "";
         }
         if (dialog) {
-            dialog.addEventListener("mousedown", cancelMouse);
-            dialog.addEventListener("mouseup", cancelMouse);
-            dialog.addEventListener("mousemove", cancelMouse);
-            dialog.addEventListener("keydown", keyDownHandler);
-            dialog.addEventListener("keyup", keyUpHandler);
+            dialog.addEventHandler("mousedown", cancelMouse);
+            dialog.addEventHandler("mouseup", cancelMouse);
+            dialog.addEventHandler("mousemove", cancelMouse);
+            dialog.addEventHandler("keydown", keyDownHandler);
+            dialog.addEventHandler("keyup", keyUpHandler);
             if (!dialog.getAttribute("data-initialized")) {
                 document.body.appendChild(dialog);
                 dialog.setAttribute("data-initialized", "true");
@@ -1216,7 +1306,17 @@ const initPrintessWCEditor = function (printessSettings) {
                 context.cameFromSave = true;
                 context.lastSaveSaveToken = saveToken;
                 const productValues = getCurrentProductOptionValues(settings.product);
+                const unparsedProductValues = getCurrentProductOptionValues(settings.product, false);
                 const variant = getCurrentVariant(productValues, settings.product);
+                const checkForValidVariant = getCurrentVariant(unparsedProductValues, settings.product);
+                if (!checkForValidVariant && settings.product.variants && settings.product.variants.length > 0) {
+                    const invalidVariantOptionName = getInvalidVariantOption(unparsedProductValues, settings.product);
+                    if (invalidVariantOptionName) {
+                        // alert(printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName));
+                        console.warn(printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName));
+                        //return;
+                    }
+                }
                 if (printessSettings.editorMode === "admin") {
                     saveAdminSaveToken(saveToken, thumbnailUrl);
                     return;
@@ -1230,7 +1330,7 @@ const initPrintessWCEditor = function (printessSettings) {
                         return;
                     }
                     showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
-                    saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, getCurrentProductOptionValues(settings.product, false), (savedDesignName, savedDesignId) => {
+                    saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, unparsedProductValues, (savedDesignName, savedDesignId) => {
                         hideInformationOverlay();
                         context.designName = savedDesignName;
                         context.designId = savedDesignId;
@@ -1583,6 +1683,7 @@ function showDialog(prefix, initialValue, callback) {
     const bodyElement = document.querySelector("body");
     let hide = null;
     previouslyFocused = document.activeElement;
+    addEventHelpersToDialog(dlg);
     const keyUpHandler = (e) => {
         if (e.key === 'Enter' || e.keyCode === 13) {
             e.preventDefault();
@@ -1624,8 +1725,9 @@ function showDialog(prefix, initialValue, callback) {
         }
         if (dlg) {
             dlg.style.display = "none";
-            dlg.removeEventListener("keyup", keyUpHandler);
-            dlg.removeEventListener("keydown", keyDownHandler);
+            if (typeof dlg.removeAllEventHandlers === "function") {
+                dlg.removeAllEventHandlers();
+            }
             printessFreeFocus();
         }
         if (previouslyFocused && previouslyFocused instanceof HTMLElement) {
@@ -1662,8 +1764,8 @@ function showDialog(prefix, initialValue, callback) {
     }
     if (dlg) {
         dlg.style.display = "block";
-        dlg.addEventListener("keyup", keyUpHandler);
-        dlg.addEventListener("keydown", keyDownHandler);
+        dlg.addEventHandler("keyup", keyUpHandler);
+        dlg.addEventHandler("keydown", keyDownHandler);
     }
     printessTrapFocus(dlg);
 }

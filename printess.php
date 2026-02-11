@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.74
+ * Version: 1.6.77
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,9 +13,9 @@
  * Requires PHP: 8.1
  * Tested up to: 6.9
  *
- * Woo: 10000:924031dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924034dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
- * WC tested up to: 10.3.6
+ * WC tested up to: 10.4.3
  */
 
 include_once("includes/printess-admin-settings.php");
@@ -517,7 +517,8 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 				"noDisplayName": <?php echo wp_json_encode( __( 'Please provide a display name.', 'printess-editor' ) ); ?>,
 				"saveError": <?php echo wp_json_encode( __( 'There was an error while trying to save your design', 'printess-editor' ) ); ?>,
 				"savingDesign": <?php echo wp_json_encode( __( 'Saving design to your list of saved designs', 'printess-editor' ) ); ?>,
-				"closeWindow": <?php echo wp_json_encode( __( 'Please close this window or tab.', 'printess-editor' ) ); ?>
+				"closeWindow": <?php echo wp_json_encode( __( 'Please close this window or tab.', 'printess-editor' ) ); ?>,
+				"unableToSaveChangesDueToInvalidVariant": <?php echo wp_json_encode( __( 'Unable to save changes due to invalid value for {0}.', 'printess-editor' ) ); ?>
 			};
 
 			document.addEventListener("DOMContentLoaded", function() {
@@ -3546,7 +3547,7 @@ function printess_render_saved_designs() {
 				<a class="woocommerce-button woocommerce-button--previous woocommerce-Button woocommerce-Button--previous button wp-element-button printess-Button-previous" href="<?php echo esc_attr( $previous_url ); ?>"><?php echo esc_html__( 'Previous', 'printess-editor' ); ?></a>
 			<?php } ?>
 
-			<?php if ( 1 === $current_page && count( $saved_designs ) === $per_page ) { ?>
+			<?php if ( 1 <= $current_page && count( $saved_designs ) >= $per_page ) { ?>
 				<a class="woocommerce-button woocommerce-button--next woocommerce-Button woocommerce-Button--next button wp-element-button printess-Button-next" href="<?php echo esc_attr( $next_url ); ?>"><?php echo esc_html__( 'Next', 'printess-editor' ); ?></a>
 			<?php } ?>
 		</div>

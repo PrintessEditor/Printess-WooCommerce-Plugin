@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Printess Editor\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2025-12-04 14:59+0000\n"
+"POT-Creation-Date: 2026-02-06 14:21+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -20,7 +20,7 @@ msgstr ""
 msgid "Access Token"
 msgstr ""
 
-#: printess.php:2207
+#: printess.php:2216
 msgid "account page"
 msgstr ""
 
@@ -46,7 +46,7 @@ msgstr ""
 msgid "Api Domain"
 msgstr ""
 
-#: printess.php:2154
+#: printess.php:2163
 msgid "Approve and send to production."
 msgstr ""
 
@@ -54,7 +54,7 @@ msgstr ""
 msgid "Automatic"
 msgstr ""
 
-#: printess.php:3484
+#: printess.php:3493
 msgid "Available until"
 msgstr ""
 
@@ -71,11 +71,11 @@ msgstr ""
 msgid "Class names to hide when showing editor"
 msgstr ""
 
-#: printess.php:2828
+#: printess.php:2837
 msgid "Could not find line item or product..."
 msgstr ""
 
-#: printess.php:565 printess.php:2801
+#: printess.php:573 printess.php:2810
 msgid "Customize"
 msgstr ""
 
@@ -100,7 +100,7 @@ msgstr ""
 msgid "Defaults"
 msgstr ""
 
-#: printess.php:3484 printess.php:3520
+#: printess.php:3493 printess.php:3529
 msgid "Delete"
 msgstr ""
 
@@ -108,7 +108,7 @@ msgstr ""
 msgid "Delete original basket item only on same design name"
 msgstr ""
 
-#: printess.php:1772 printess.php:2008 printess.php:2468 printess.php:3768
+#: printess.php:1781 printess.php:2017 printess.php:2477 printess.php:3777
 msgid "Design Name"
 msgstr ""
 
@@ -132,12 +132,12 @@ msgstr ""
 msgid "Display line item id in order view"
 msgstr ""
 
-#: printess.php:3484
+#: printess.php:3493
 msgid "Display name"
 msgstr ""
 
-#: includes/printess-admin-settings.php:1415 
-#: includes/printess-product-helpers.php:382
+#: includes/printess-product-helpers.php:382 
+#: includes/printess-admin-settings.php:1415
 msgid "Do not use"
 msgstr ""
 
@@ -145,7 +145,7 @@ msgstr ""
 msgid "Do not use dropshipping override"
 msgstr ""
 
-#: printess.php:3521
+#: printess.php:3530
 msgid "Do you really want to delete the design {0}?"
 msgstr ""
 
@@ -163,15 +163,15 @@ msgstr ""
 msgid "Dropshipping"
 msgstr ""
 
-#: printess.php:2249 printess.php:3484 printess.php:3516 printess.php:3571
+#: printess.php:2258 printess.php:3493 printess.php:3525 printess.php:3580
 msgid "Edit"
 msgstr ""
 
-#: printess.php:2089
+#: printess.php:2098
 msgid "Edit Customer Design"
 msgstr ""
 
-#: printess.php:2079
+#: printess.php:2088
 msgid "Edit save token"
 msgstr ""
 
@@ -203,11 +203,11 @@ msgstr ""
 msgid "Enter your display name"
 msgstr ""
 
-#: printess.php:2082
+#: printess.php:2091
 msgid "Expires On:"
 msgstr ""
 
-#: printess.php:2170
+#: printess.php:2179
 msgid "Form field"
 msgstr ""
 
@@ -227,11 +227,11 @@ msgstr ""
 msgid "Ids to hide when showing editor"
 msgstr ""
 
-#: printess.php:2067
+#: printess.php:2076
 msgid "Invalid save token"
 msgstr ""
 
-#: printess.php:3085
+#: printess.php:3094
 msgid "Is merge template"
 msgstr ""
 
@@ -255,15 +255,15 @@ msgstr ""
 msgid "Json configuration for item based usage pricing"
 msgstr ""
 
-#: printess.php:1776
+#: printess.php:1785
 msgid "Line item id"
 msgstr ""
 
-#: printess.php:2107
+#: printess.php:2116
 msgid "Line item id:"
 msgstr ""
 
-#: printess.php:2915
+#: printess.php:2924
 msgid "Loading editor..."
 msgstr ""
 
@@ -283,7 +283,7 @@ msgstr ""
 msgid "Merge Template 3"
 msgstr ""
 
-#: printess.php:3542
+#: printess.php:3551
 msgid "Next"
 msgstr ""
 
@@ -292,11 +292,11 @@ msgstr ""
 msgid "No dropshipping"
 msgstr ""
 
-#: printess.php:3454
+#: printess.php:3463
 msgid "No saved designs yet"
 msgstr ""
 
-#: printess.php:3405
+#: printess.php:3414
 msgid "Not logged in"
 msgstr ""
 
@@ -304,11 +304,11 @@ msgstr ""
 msgid "Ok"
 msgstr ""
 
-#: printess.php:1852
+#: printess.php:1861
 msgid "Open"
 msgstr ""
 
-#: printess.php:1767
+#: printess.php:1776
 msgid "Open design"
 msgstr ""
 
@@ -324,7 +324,7 @@ msgstr ""
 msgid "Ordered Design lifetime (Days)"
 msgstr ""
 
-#: printess.php:2037
+#: printess.php:2046
 msgid "Original Save token:"
 msgstr ""
 
@@ -362,15 +362,15 @@ msgid ""
 "possibilities."
 msgstr ""
 
-#: printess.php:1741
+#: printess.php:1750
 msgid "Personalized products"
 msgstr ""
 
-#: printess.php:513
+#: printess.php:520
 msgid "Please close this window or tab."
 msgstr ""
 
-#: printess.php:2206
+#: printess.php:2215
 msgid "Please copy & paste the shop and service tokens from your"
 msgstr ""
 
@@ -378,7 +378,7 @@ msgstr ""
 msgid "Please provide a design name"
 msgstr ""
 
-#: printess.php:510
+#: printess.php:517
 msgid "Please provide a display name."
 msgstr ""
 
@@ -386,7 +386,7 @@ msgstr ""
 msgid "PNG"
 msgstr ""
 
-#: printess.php:3538
+#: printess.php:3547
 msgid "Previous"
 msgstr ""
 
@@ -398,15 +398,15 @@ msgstr ""
 msgid "Printess Editor"
 msgstr ""
 
-#: printess.php:2116
+#: printess.php:2125
 msgid "Printess Error Details"
 msgstr ""
 
-#: printess.php:2164
+#: printess.php:2173
 msgid "Printess Form Fields"
 msgstr ""
 
-#: printess.php:2122 printess.php:2130 printess.php:2138
+#: printess.php:2131 printess.php:2139 printess.php:2147
 msgid "Printess Production Files"
 msgstr ""
 
@@ -415,19 +415,19 @@ msgstr ""
 msgid "Printess Settings"
 msgstr ""
 
-#: printess.php:2156
+#: printess.php:2165
 msgid "Processing."
 msgstr ""
 
-#: printess.php:1756 printess.php:1923
+#: printess.php:1765 printess.php:1932
 msgid "Product"
 msgstr ""
 
-#: printess.php:3484
+#: printess.php:3493
 msgid "Product name"
 msgstr ""
 
-#: printess.php:1824
+#: printess.php:1833
 msgid "Product thumbnail"
 msgstr ""
 
@@ -447,7 +447,7 @@ msgstr ""
 msgid "Reminder to save your work"
 msgstr ""
 
-#: printess.php:2104
+#: printess.php:2113
 msgid "Reproduce item"
 msgstr ""
 
@@ -459,11 +459,11 @@ msgstr ""
 msgid "Save design"
 msgstr ""
 
-#: printess.php:2213
+#: printess.php:2222
 msgid "Save Settings"
 msgstr ""
 
-#: printess.php:2053
+#: printess.php:2062
 msgid "Save token:"
 msgstr ""
 
@@ -471,7 +471,7 @@ msgstr ""
 msgid "Saved Design lifetime (Days)"
 msgstr ""
 
-#: printess.php:3143 printess.php:3473
+#: printess.php:3152 printess.php:3482
 msgid "Saved Designs"
 msgstr ""
 
@@ -479,11 +479,11 @@ msgstr ""
 msgid "Saved designs"
 msgstr ""
 
-#: printess.php:2914
+#: printess.php:2923
 msgid "Saving design and redirecting back to order detail page..."
 msgstr ""
 
-#: printess.php:512
+#: printess.php:519
 msgid "Saving design to your list of saved designs"
 msgstr ""
 
@@ -491,11 +491,11 @@ msgstr ""
 msgid "Saving your design"
 msgstr ""
 
-#: printess.php:3476
+#: printess.php:3485
 msgid "Search"
 msgstr ""
 
-#: printess.php:3474
+#: printess.php:3483
 msgid "Search for name"
 msgstr ""
 
@@ -503,11 +503,11 @@ msgstr ""
 msgid "Service Token"
 msgstr ""
 
-#: printess.php:1918
+#: printess.php:1927
 msgid "Shipping"
 msgstr ""
 
-#: printess.php:1653 printess.php:1763 printess.php:1928
+#: printess.php:1662 printess.php:1772 printess.php:1937
 msgid "Shipping status"
 msgstr ""
 
@@ -540,11 +540,11 @@ msgstr ""
 msgid "Show warning on tab close or page reload"
 msgstr ""
 
-#: printess.php:3085
+#: printess.php:3094
 msgid "Template name"
 msgstr ""
 
-#: printess.php:3086
+#: printess.php:3095
 msgid "Template name or merge template"
 msgstr ""
 
@@ -590,15 +590,15 @@ msgstr ""
 msgid "The width of the rendered thumbnail"
 msgstr ""
 
-#: printess.php:511
+#: printess.php:518
 msgid "There was an error while trying to save your design"
 msgstr ""
 
-#: printess.php:2480
+#: printess.php:2489
 msgid "This item was edited. Consider removing it from your cart."
 msgstr ""
 
-#: printess.php:3484
+#: printess.php:3493
 msgid "Thumbnail"
 msgstr ""
 
@@ -606,12 +606,16 @@ msgstr ""
 msgid "TIF"
 msgstr ""
 
-#: printess.php:1632 printess.php:1759 printess.php:1925
+#: printess.php:1641 printess.php:1768 printess.php:1934
 msgid "Tracking"
 msgstr ""
 
-#: printess.php:1616 printess.php:1783 printess.php:1938
+#: printess.php:1625 printess.php:1792 printess.php:1947
 msgid "Tracking link"
+msgstr ""
+
+#: printess.php:521
+msgid "Unable to save changes due to invalid value for {0}."
 msgstr ""
 
 #: includes/printess-admin-settings.php:896 
@@ -629,15 +633,15 @@ msgstr ""
 msgid "Use template settings"
 msgstr ""
 
-#: printess.php:1768
+#: printess.php:1777
 msgid "Valid until"
 msgstr ""
 
-#: printess.php:2171
+#: printess.php:2180
 msgid "Value"
 msgstr ""
 
-#: printess.php:1594
+#: printess.php:1603
 msgid "View thumbnail in new window."
 msgstr ""
 
@@ -666,7 +670,7 @@ msgid ""
 "save your changes now?"
 msgstr ""
 
-#: printess.php:3805
+#: printess.php:3814
 msgid ""
 "You just added a personalized product without any personalization. Please "
 "personalize the product first."
