@@ -384,6 +384,19 @@ const initPrintessWCEditor = function (printessSettings) {
         }
         return ret;
     };
+    const removeAttributePrefix = (values) => {
+        const ret = {};
+        for (const name in values) {
+            if (values.hasOwnProperty(name)) {
+                let parsed = name;
+                if (name.indexOf("attribute_") === 0) {
+                    parsed = name.substring(10, name.length);
+                }
+                ret[parsed] = values[name];
+            }
+        }
+        return ret;
+    };
     const getAttributeLookup = (product, onlyVariantSpecific) => {
         const ret = {};
         if (product && product.attributes) {
@@ -447,8 +460,8 @@ const initPrintessWCEditor = function (printessSettings) {
             }
         });
     };
-    const getCurrentVariant = function (productOptionValues, product) {
-        let ret = product.variants ? product.variants[0] : null;
+    const getCurrentVariant = function (productOptionValues, product, returnDefaultVariant = true) {
+        let ret = returnDefaultVariant ? (product.variants ? product.variants[0] : null) : null;
         const attributeLookup = getAttributeLookup(product, true);
         const variantSpecificValues = [];
         const attributeValuesUsedInVariants = {};
@@ -517,7 +530,6 @@ const initPrintessWCEditor = function (printessSettings) {
     const getInvalidVariantOption = function (productOptionValues, product) {
         let ret = null;
         const attributeLookup = getAttributeLookup(product, true);
-        const variantSpecificValues = [];
         const attributeValuesUsedInVariants = {};
         if (product.variants) {
             product.variants.forEach((variant) => {
@@ -534,52 +546,20 @@ const initPrintessWCEditor = function (printessSettings) {
                 ;
             });
         }
-        const mapValue = (name, value) => {
-            let mappedValue = value;
-            let attribute = null;
-            if (attributeLookup[name]) {
-                attribute = attributeLookup[name];
-            }
-            if (!attribute) {
-                for (const key in attributeLookup) {
-                    if (attributeLookup.hasOwnProperty(key)) {
-                        if (attributeLookup[key].name === key || attributeLookup[key].key === key) {
-                            attribute = attributeLookup[key];
-                            break;
-                        }
-                    }
-                }
-                if (attribute && attribute.valueKeys && attribute.valueKeys.length > 0) {
-                    for (let i = 0; i < attribute.values.length; ++i) {
-                        if (attribute.values[i] === value && attribute.valueKeys.length > i) {
-                            mappedValue = attribute.valueKeys[i];
-                            break;
+        for (const optionName in productOptionValues) {
+            if (productOptionValues.hasOwnProperty(optionName)) {
+                for (const attributeName in attributeLookup) {
+                    if (attributeLookup.hasOwnProperty(attributeName)) {
+                        if (optionName === attributeName || optionName === attributeLookup[attributeName].key) {
+                            if (!attributeLookup[attributeName].valueKeys.includes(productOptionValues[optionName])) {
+                                return optionName;
+                            }
                         }
                     }
                 }
             }
-            return mappedValue;
-        };
-        for (const name in productOptionValues) {
-            const value = mapValue(name, productOptionValues[name]);
-            if (productOptionValues.hasOwnProperty(name) && attributeLookup[name] && attributeLookup[name].usedForVariants && attributeValuesUsedInVariants[attributeLookup[name].key] && attributeValuesUsedInVariants[attributeLookup[name].key][value]) {
-                if (!attributeLookup[name].valueKeys || attributeLookup[name].valueKeys.includes(value)) {
-                    variantSpecificValues.push({ key: attributeLookup[name].key, value: value });
-                }
-            }
         }
-        if (product.variants) {
-            let variants = product.variants;
-            variantSpecificValues.forEach((vSv) => {
-                variants = variants.filter((variant) => {
-                    return variant.attributes[vSv.key] === vSv.value;
-                });
-                if (variants.length <= 0 && !ret) {
-                    ret = vSv.key;
-                }
-            });
-        }
-        return ret;
+        return null;
     };
     const updatePrintessValues = function (saveToken, thumbnailUrl, designId, designName) {
         const updateInput = function (id, value) {
@@ -1306,15 +1286,15 @@ const initPrintessWCEditor = function (printessSettings) {
                 context.cameFromSave = true;
                 context.lastSaveSaveToken = saveToken;
                 const productValues = getCurrentProductOptionValues(settings.product);
-                const unparsedProductValues = getCurrentProductOptionValues(settings.product, false);
                 const variant = getCurrentVariant(productValues, settings.product);
-                const checkForValidVariant = getCurrentVariant(unparsedProductValues, settings.product);
-                if (!checkForValidVariant && settings.product.variants && settings.product.variants.length > 0) {
-                    const invalidVariantOptionName = getInvalidVariantOption(unparsedProductValues, settings.product);
+                if (settings.product.variants && settings.product.variants.length > 0) {
+                    const invalidVariantOptionName = getInvalidVariantOption(productValues, settings.product);
                     if (invalidVariantOptionName) {
-                        // alert(printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName));
-                        console.warn(printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName));
-                        //return;
+                        let message = printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName);
+                        message += "\r\nSaveToken: " + saveToken;
+                        alert(message);
+                        console.log("Current SaveToken: " + saveToken);
+                        return;
                     }
                 }
                 if (printessSettings.editorMode === "admin") {
@@ -1330,7 +1310,7 @@ const initPrintessWCEditor = function (printessSettings) {
                         return;
                     }
                     showInformationOverlay(printessSettings.userMessages && printessSettings.userMessages["savingDesign"] ? printessSettings.userMessages["savingDesign"] : "Saving design to your list of saved designs");
-                    saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, unparsedProductValues, (savedDesignName, savedDesignId) => {
+                    saveDesign(saveToken, thumbnailUrl, settings.product.id, designName, context.designId, getCurrentProductOptionValues(settings.product, false), (savedDesignName, savedDesignId) => {
                         hideInformationOverlay();
                         context.designName = savedDesignName;
                         context.designId = savedDesignId;
