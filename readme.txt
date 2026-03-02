@@ -4,7 +4,7 @@ Tags: personalization, mug, calendar, t-shirt, photo products, customization, we
 Requires at least: 5.6
 Tested up to: 6.9
 WC Tested up to: 10.4.3
-Stable tag: 1.6.81
+Stable tag: 1.6.82
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -396,3 +396,5 @@ Please check https://printess.com/pricing.html for more details.
   = 1.6.81 =
  - Now when saving and invalid product variant options are selected, an error will appear that the current state can not ber saved due to errors
 
+  = 1.6.82 =
+ - Fixed bug where the product option "Record count is quantity" could not be deactivated after beeing activated.

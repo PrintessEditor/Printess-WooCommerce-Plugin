@@ -446,12 +446,16 @@ class PrintessProductHelpers {
             )
         );
 
-        woocommerce_wp_checkbox(
+        woocommerce_wp_select(
             array(
                 'id'          => 'printess_use_record_count_as_quantity',
                 'value'       => get_post_meta( get_the_ID(), 'printess_use_record_count_as_quantity', true ),
-                'label'       => 'Record count is quantity',
-                'description' => 'If checked, the data table record count will be used as basket item quantity',
+                'label'       => __( 'Record count is quantity', 'printess-editor' ),
+                'description' => __( 'If set to yes, the data table record count will be used as basket item quantity', 'printess-editor' ),
+                'options'     => array(
+                    '' => 'No',
+                    'yes'    => 'Yes',
+                ),
             )
         );
         ?>
