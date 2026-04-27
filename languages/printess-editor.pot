@@ -3,7 +3,7 @@ msgid ""
 msgstr ""
 "Project-Id-Version: Printess Editor\n"
 "Report-Msgid-Bugs-To: \n"
-"POT-Creation-Date: 2026-02-06 14:21+0000\n"
+"POT-Creation-Date: 2026-04-27 07:40+0000\n"
 "PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
 "Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
 "Language-Team: \n"
@@ -71,6 +71,10 @@ msgstr ""
 msgid "Class names to hide when showing editor"
 msgstr ""
 
+#: printess.php:3799
+msgid "Clear the list of orphaned save tokens"
+msgstr ""
+
 #: printess.php:2837
 msgid "Could not find line item or product..."
 msgstr ""
@@ -108,7 +112,7 @@ msgstr ""
 msgid "Delete original basket item only on same design name"
 msgstr ""
 
-#: printess.php:1781 printess.php:2017 printess.php:2477 printess.php:3777
+#: printess.php:1781 printess.php:2017 printess.php:2477 printess.php:4045
 msgid "Design Name"
 msgstr ""
 
@@ -136,8 +140,8 @@ msgstr ""
 msgid "Display name"
 msgstr ""
 
-#: includes/printess-product-helpers.php:382 
-#: includes/printess-admin-settings.php:1415
+#: includes/printess-admin-settings.php:1415 
+#: includes/printess-product-helpers.php:382
 msgid "Do not use"
 msgstr ""
 
@@ -163,7 +167,7 @@ msgstr ""
 msgid "Dropshipping"
 msgstr ""
 
-#: printess.php:2258 printess.php:3493 printess.php:3525 printess.php:3580
+#: printess.php:2258 printess.php:3493 printess.php:3525 printess.php:3848
 msgid "Edit"
 msgstr ""
 
@@ -225,6 +229,12 @@ msgstr ""
 
 #: includes/printess-admin-settings.php:530
 msgid "Ids to hide when showing editor"
+msgstr ""
+
+#: includes/printess-product-helpers.php:454
+msgid ""
+"If set to yes, the data table record count will be used as basket item "
+"quantity"
 msgstr ""
 
 #: printess.php:2076
@@ -439,6 +449,10 @@ msgstr ""
 msgid "Push user fields"
 msgstr ""
 
+#: includes/printess-product-helpers.php:453
+msgid "Record count is quantity"
+msgstr ""
+
 #: includes/printess-product-helpers.php:374
 msgid "Redirect page"
 msgstr ""
@@ -449,6 +463,10 @@ msgstr ""
 
 #: printess.php:2113
 msgid "Reproduce item"
+msgstr ""
+
+#: printess.php:3734
+msgid "Restored saved designs from browser storage. Reloading page now."
 msgstr ""
 
 #: includes/printess-dialogs.php:54
@@ -546,6 +564,12 @@ msgstr ""
 
 #: printess.php:3095
 msgid "Template name or merge template"
+msgstr ""
+
+#: printess.php:3769 printess.php:3781
+msgid ""
+"The following orphaned save tokens have been found. Do you want to clear the "
+"list of orphanes save tokens now?"
 msgstr ""
 
 #: includes/printess-admin-settings.php:1028
@@ -670,7 +694,7 @@ msgid ""
 "save your changes now?"
 msgstr ""
 
-#: printess.php:3814
+#: printess.php:4082
 msgid ""
 "You just added a personalized product without any personalization. Please "
 "personalize the product first."

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.82
+ * Version: 1.6.83
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.9
  *
- * Woo: 10000:924041dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924042dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.4.3
  */
@@ -3551,6 +3551,274 @@ function printess_render_saved_designs() {
 				<a class="woocommerce-button woocommerce-button--next woocommerce-Button woocommerce-Button--next button wp-element-button printess-Button-next" href="<?php echo esc_attr( $next_url ); ?>"><?php echo esc_html__( 'Next', 'printess-editor' ); ?></a>
 			<?php } ?>
 		</div>
+    <script>
+      const printessNonce = <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>;
+
+      function printessGetStoredSaveTokens() {
+        let storedSaveTokens = [];
+
+        try {
+          const json = localStorage.getItem("printessStoredSaveTokens") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        try {
+          const json = sessionStorage.getItem("printessStoredSaveTokens") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        return storedSaveTokens;
+      }
+
+      function printessStoreSaveToken(item, loadExisting = true) {
+        let storedSaveTokens = loadExisting ? printessGetStoredSaveTokens() : [];
+
+        if(item) {
+          if(Array.isArray(item)) {
+            storedSaveTokens = [...storedSaveTokens, ...item];
+          } else {
+            storedSaveTokens.push(item);
+          }
+        }
+
+        try {
+          localStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+        } catch(e) {
+          try {
+            sessionStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+          } catch(e) {
+          
+          } 
+        }
+      }
+
+      function printessRemoveStoredSaveToken(saveToken) {
+        const storedSaveTokens = printessGetStoredSaveTokens();
+        const index = storedSaveTokens.findIndex((x) => {
+          return x === saveToken;
+        });
+
+        if(index > -1) {
+          storedSaveTokens.splice(index, 1);
+
+          printessStoreSaveToken(storedSaveTokens, false);
+        }
+      }
+
+      function printessGetStoredSavedDesigns() {
+        let storedDesigns = [];
+
+        try {
+          const json = localStorage.getItem("printessSavedDesigns") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedDesigns = [...storedDesigns, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        try {
+          const json = sessionStorage.getItem("printessSavedDesigns") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedDesigns = [...storedDesigns, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        return storedDesigns;
+      }
+
+      function printessRemoveStoredDesign(id) {
+        const storedDesigns = printessGetStoredSavedDesigns();
+        const index = storedDesigns.findIndex((x) => {
+          return x.storageId === id;
+        });
+
+        if(index > -1) {
+          if(storedDesigns[index] && storedDesigns[index].saveToken) {
+            printessRemoveStoredSaveToken(storedDesigns[index].saveToken);
+          }
+
+          storedDesigns.splice(index, 1);
+
+          printessStoreSavedDesign(storedDesigns, false);
+        }
+      }
+
+      function printessStoreSavedDesign(item, loadExisting = true) {
+        let storedDesigns = loadExisting ? printessGetStoredSavedDesigns() : [];
+
+        if(item) {
+          if(Array.isArray(item)) {
+            storedDesigns = [...storedDesigns, ...item];
+          } else {
+            storedDesigns.push(item);
+          }
+        }
+
+        try {
+          localStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+        } catch(e) {
+          try {
+            sessionStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+          } catch(e) {
+          
+          } 
+        }
+       }
+
+      async function printessPostSavedDesign(item) {
+        return fetch("/index.php/wp-json/printess/v1/design/add", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-cache",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-WP-Nonce": printessNonce
+          },
+          redirect: "follow",
+          referrerPolicy: "no-referrer",
+          body: JSON.stringify(item),
+        });
+      }
+
+      async function printessRetryFailedSaves(retryCount = 0) {
+        let storedDesigns = printessGetStoredSavedDesigns();
+        let fixedItem = storedDesigns.length > 0;
+
+        await Promise.all(storedDesigns.map(async (design) => {
+          try {
+            const response = await printessPostSavedDesign(design);
+
+            if(response.ok) {
+              printessRemoveStoredDesign(design.storageId);
+            }
+          } catch(e) {
+
+          }
+        }));
+
+        storedDesigns = printessGetStoredSavedDesigns();
+
+        if(fixedItem && storedDesigns.length === 0) {
+          alert(<?php echo wp_json_encode( __( "Restored saved designs from browser storage. Reloading page now.", 'printess-editor' ) ); ?>);
+          location.reload();
+        } else {
+          if(storedDesigns.length > 0 && retryCount < 5) {
+            printessRetryFailedSaves(retryCount + 1);
+          }
+        }
+      }
+
+      function displayStoredSaveTokens() {
+        let saveTokens = printessGetStoredSaveTokens();
+        const designs = printessGetStoredSavedDesigns();
+        const tokensToKeep = [];
+        const lookup = {};
+
+        saveTokens.forEach((x) => {
+          lookup[x] = true;
+        });
+
+        designs.forEach((x) => {
+          if(lookup[x.saveToken]) {
+            const index = saveTokens.indexOf(x.saveToken);
+            
+            if(index > -1) {
+              saveTokens.splice(index, 1);
+            }
+
+            tokensToKeep.push(x.saveToken);
+          }
+        });
+
+        if(saveTokens.length > 0) {
+          const pager = document.querySelector('div.printess-Pager');
+
+          if(!pager) {
+            if(prompt(<?php echo wp_json_encode( __( "The following orphaned save tokens have been found. Do you want to clear the list of orphanes save tokens now?", 'printess-editor' ) ); ?>, saveTokens.join()) !== null) {
+              printessStoreSaveToken(tokensToKeep, false);
+            };
+
+            return;
+          }
+
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("printess-orphaned-savetokens");
+          const label = document.createElement("div");
+          label.classList.add("label");
+          label.classList.add("printess-label");
+          label.innerText = <?php echo wp_json_encode( __( "The following orphaned save tokens have been found. Do you want to clear the list of orphanes save tokens now?", 'printess-editor' ) ); ?>;
+          wrapper.appendChild(label);
+
+          const valueEdit = document.createElement("textarea");
+          valueEdit.id="printess-stored-items";
+          const sortedArray = [...saveTokens].reverse();
+          valueEdit.value = sortedArray.join("\n\n");
+          valueEdit.rows = 10;
+          valueEdit.cols = 50;
+          valueEdit.readOnly = true;
+          wrapper.appendChild(valueEdit);
+          
+
+          const clearButton = document.createElement("button");
+          clearButton.setAttribute("type", "button");
+          clearButton.classList.add("button");
+          clearButton.classList.add("wp-element-button");
+          clearButton.classList.add("printess-clear-button");
+          clearButton.textContent = <?php echo wp_json_encode( __( "Clear the list of orphaned save tokens", 'printess-editor' ) ); ?>;
+
+          clearButton.addEventListener("click", () => {
+            printessStoreSaveToken(tokensToKeep, false);
+            valueEdit.value = "";
+            wrapper.remove();
+          });
+
+          wrapper.appendChild(clearButton);
+
+
+          pager.after(wrapper);
+        }
+
+        //<form action="<?php echo esc_attr( $current_url ); ?>" method="get" name="printess_search_form">
+      }
+
+      printessRetryFailedSaves();
+
+      window.addEventListener('load', (event) => {
+        displayStoredSaveTokens();
+      });
+    </script>
 	<?php
 }
 

@@ -620,6 +620,7 @@ const initPrintessWCEditor = function (printessSettings) {
             if (e.key === 'Enter' || e.keyCode === 13) {
                 e.preventDefault();
                 e.stopPropagation();
+                internalSaveCallback();
             }
             else if (e.key === 'Escape' || e.keyCode === 27) {
                 e.preventDefault();
@@ -736,7 +737,139 @@ const initPrintessWCEditor = function (printessSettings) {
             printessFreeFocus();
         }
     };
-    const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError) => {
+    const getStoredSaveTokens = () => {
+        let storedSaveTokens = [];
+        try {
+            const json = localStorage.getItem("printessStoredSaveTokens") || "";
+            if (json) {
+                const strorageItems = JSON.parse(json);
+                if (strorageItems && Array.isArray(strorageItems)) {
+                    storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+                }
+            }
+        }
+        catch (e) {
+        }
+        try {
+            const json = sessionStorage.getItem("printessStoredSaveTokens") || "";
+            if (json) {
+                const strorageItems = JSON.parse(json);
+                if (strorageItems && Array.isArray(strorageItems)) {
+                    storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+                }
+            }
+        }
+        catch (e) {
+        }
+        return storedSaveTokens;
+    };
+    const storeSaveToken = (item, loadExisting = true) => {
+        let storedSaveTokens = loadExisting ? getStoredSaveTokens() : [];
+        if (item) {
+            if (Array.isArray(item)) {
+                storedSaveTokens = [...storedSaveTokens, ...item];
+            }
+            else {
+                storedSaveTokens.push(item);
+            }
+        }
+        try {
+            localStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+        }
+        catch (e) {
+            try {
+                sessionStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+            }
+            catch (e) {
+            }
+        }
+    };
+    const removeStoredSaveToken = (saveToken) => {
+        const storedSaveTokens = getStoredSaveTokens();
+        const index = storedSaveTokens.findIndex((x) => {
+            return x === saveToken;
+        });
+        if (index > -1) {
+            storedSaveTokens.splice(index, 1);
+            storeSaveToken(storedSaveTokens, false);
+        }
+    };
+    const getStoredSavedDesigns = () => {
+        let storedDesigns = [];
+        try {
+            const json = localStorage.getItem("printessSavedDesigns") || "";
+            if (json) {
+                const strorageItems = JSON.parse(json);
+                if (strorageItems && Array.isArray(strorageItems)) {
+                    storedDesigns = [...storedDesigns, ...strorageItems];
+                }
+            }
+        }
+        catch (e) {
+        }
+        try {
+            const json = sessionStorage.getItem("printessSavedDesigns") || "";
+            if (json) {
+                const strorageItems = JSON.parse(json);
+                if (strorageItems && Array.isArray(strorageItems)) {
+                    storedDesigns = [...storedDesigns, ...strorageItems];
+                }
+            }
+        }
+        catch (e) {
+        }
+        return storedDesigns;
+    };
+    const storeSavedDesign = (item, loadExisting = true) => {
+        let storedDesigns = loadExisting ? getStoredSavedDesigns() : [];
+        if (item) {
+            if (Array.isArray(item)) {
+                storedDesigns = [...storedDesigns, ...item];
+            }
+            else {
+                storedDesigns.push(item);
+            }
+        }
+        try {
+            localStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+        }
+        catch (e) {
+            try {
+                sessionStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+            }
+            catch (e) {
+            }
+        }
+    };
+    const removeStoredDesign = (id) => {
+        const storedDesigns = getStoredSavedDesigns();
+        const index = storedDesigns.findIndex((x) => {
+            return x.storageId === id;
+        });
+        if (index > -1) {
+            if (storedDesigns[index] && storedDesigns[index].saveToken) {
+                removeStoredSaveToken(storedDesigns[index].saveToken);
+            }
+            storedDesigns.splice(index, 1);
+            storeSavedDesign(storedDesigns, false);
+        }
+    };
+    const postSavedDesign = async (item) => {
+        return fetch("/index.php/wp-json/printess/v1/design/add", {
+            method: "POST",
+            mode: "cors",
+            cache: "no-cache",
+            credentials: "same-origin",
+            headers: {
+                "Content-Type": "application/json",
+                "X-WP-Nonce": printessSettings.nonce
+            },
+            redirect: "follow",
+            referrerPolicy: "no-referrer",
+            body: JSON.stringify(item),
+        });
+    };
+    const saveDesign = (saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError, retryCount = 0, storageItemId) => {
         const body = {
             "saveToken": saveToken,
             "thumbnailUrl": thumbnailUrl,
@@ -755,26 +888,34 @@ const initPrintessWCEditor = function (printessSettings) {
                 body["designId"] = designId;
             }
         }
-        const response = fetch("/index.php/wp-json/printess/v1/design/add", {
-            method: "POST",
-            mode: "cors",
-            cache: "no-cache",
-            credentials: "same-origin",
-            headers: {
-                "Content-Type": "application/json",
-                "X-WP-Nonce": printessSettings.nonce
-            },
-            redirect: "follow",
-            referrerPolicy: "no-referrer",
-            body: JSON.stringify(body),
-        }).then((result) => {
+        if (!storageItemId) {
+            storageItemId = PrintessSharedTools.generateUUID();
+            const storageItem = {
+                ...body,
+                storageId: storageItemId
+            };
+            storeSavedDesign(storageItem);
+        }
+        //Test for debugging and not saving on servber side
+        const params = new URLSearchParams(window.location.search);
+        if (params.has('breakstoreddesign')) {
+            onOk(designName, -1);
+            return;
+        }
+        postSavedDesign(body).then((result) => {
             if (!result.ok) {
-                console.error(result.statusText);
-                if (typeof onError === "function") {
-                    onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token: ") + " " + saveToken);
+                if (retryCount < 5) {
+                    saveDesign(saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError, retryCount + 1, storageItemId);
+                }
+                else {
+                    console.error(result.statusText);
+                    if (typeof onError === "function") {
+                        onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token: ") + " " + saveToken);
+                    }
                 }
             }
             else {
+                removeStoredDesign(storageItemId);
                 result.json().then((json) => {
                     if (typeof onOk === "function") {
                         onOk(designName, json);
@@ -783,9 +924,14 @@ const initPrintessWCEditor = function (printessSettings) {
             }
             return result;
         }).catch(function (error) {
-            console.log(error);
-            if (typeof onError === "function") {
-                onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token:") + " " + saveToken);
+            if (retryCount < 5) {
+                saveDesign(saveToken, thumbnailUrl, productId, designName, designId, options, onOk, onError, retryCount + 1, storageItemId);
+            }
+            else {
+                console.log(error);
+                if (typeof onError === "function") {
+                    onError((printessSettings.userMessages && printessSettings.userMessages["saveError"] ? printessSettings.userMessages["saveError"] : "There was an error while trying to save your design. Your Save Token:") + " " + saveToken);
+                }
             }
         });
     };
@@ -1091,6 +1237,10 @@ const initPrintessWCEditor = function (printessSettings) {
                 });
             },
             onAddToBasket: (saveToken, thumbnailUrl) => {
+                if (!saveToken) {
+                    alert("Unable to create basket item. No SaveToken received.");
+                    return;
+                }
                 if (printessSettings.editorMode === "admin") {
                     saveAdminSaveToken(saveToken, thumbnailUrl);
                     return;
@@ -1283,6 +1433,25 @@ const initPrintessWCEditor = function (printessSettings) {
                 }
             },
             onSave: (saveToken, thumbnailUrl) => {
+                if (!saveToken) {
+                    hideInformationOverlay();
+                    alert("Unable to save design. No SaveToken received.");
+                    return;
+                }
+                try {
+                    storeSaveToken(saveToken);
+                }
+                catch (ex) {
+                    try {
+                    }
+                    catch (ex) {
+                    }
+                }
+                const params = new URLSearchParams(window.location.search);
+                if (params.has('breaksave')) {
+                    hideInformationOverlay();
+                    return;
+                }
                 context.cameFromSave = true;
                 context.lastSaveSaveToken = saveToken;
                 const productValues = getCurrentProductOptionValues(settings.product);
@@ -1292,6 +1461,7 @@ const initPrintessWCEditor = function (printessSettings) {
                     if (invalidVariantOptionName) {
                         let message = printessSettings?.userMessages && printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"] ? printessSettings.userMessages["unableToSaveChangesDueToInvalidVariant"].replace("{0}", invalidVariantOptionName) : ("Unable to save changes due to invalid value for " + invalidVariantOptionName);
                         message += "\r\nSaveToken: " + saveToken;
+                        hideInformationOverlay();
                         alert(message);
                         console.log("Current SaveToken: " + saveToken);
                         return;
@@ -1302,6 +1472,7 @@ const initPrintessWCEditor = function (printessSettings) {
                     return;
                 }
                 const cancelCallback = () => {
+                    removeStoredSaveToken(saveToken);
                 };
                 const saveDesignCallback = (designName) => {
                     if (!designName || !designName.trim()) {
@@ -1513,6 +1684,25 @@ const initPrintessWCEditor = function (printessSettings) {
         }
         return false;
     };
+    const retryFailedSaves = async (retryCount = 0) => {
+        let storedDesigns = getStoredSavedDesigns();
+        await Promise.all(storedDesigns.map(async (design) => {
+            try {
+                const response = await postSavedDesign(design);
+                if (response.ok) {
+                    removeStoredDesign(design.storageId);
+                }
+            }
+            catch (e) {
+                console.error(e);
+            }
+            return design;
+        }));
+        storedDesigns = getStoredSavedDesigns();
+        if (storedDesigns.length > 0 && retryCount < 5) {
+            retryFailedSaves(retryCount + 1);
+        }
+    };
     const editor = {
         show: function (settings) {
             //Clear item usage
@@ -1613,6 +1803,9 @@ const initPrintessWCEditor = function (printessSettings) {
         },
         initProductPage: function (product, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel = "Customize", openEditorCallback, formSelector = CART_FORM_SELECTOR, enforceDisplayName = "") {
             const productForm = document.querySelector(formSelector || CART_FORM_SELECTOR);
+            setTimeout(function () {
+                retryFailedSaves();
+            }, 0);
             if (productForm) {
                 addPrintessInputs(productForm, templateNameOrSaveToken, customizeButtonClass, customizeButtonLabel, enforceDisplayName);
                 if (templateNameOrSaveToken) {
