@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.83
+ * Version: 1.6.84
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -13,7 +13,7 @@
  * Requires PHP: 8.1
  * Tested up to: 6.9
  *
- * Woo: 10000:924042dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924043dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.4.3
  */
@@ -360,34 +360,46 @@ function printess_get_custom_formfields($user_id) {
 
 		$customer = new WC_Customer( $user_id );
 
-		if(in_array("all", $filter_lookup) || in_array("email", $filter_lookup))$form_fields["eMail"] = $customer->email;
-		if(in_array("all", $filter_lookup) || in_array("displayname", $filter_lookup))$form_fields["Displayname"] = $customer->display_name;
-		if(in_array("all", $filter_lookup) || in_array("firstname", $filter_lookup))$form_fields["Firstname"] = $customer->__get('first_name');
-		if(in_array("all", $filter_lookup) || in_array("lastname", $filter_lookup))$form_fields["Lastname"] = $customer->__get('last_name');
+		if(in_array("all", $filter_lookup) || in_array("email", $filter_lookup))$form_fields["eMail"] = $customer->get_email();
+		if(in_array("all", $filter_lookup) || in_array("displayname", $filter_lookup))$form_fields["Displayname"] = $customer->get_display_name();
+		if(in_array("all", $filter_lookup) || in_array("firstname", $filter_lookup))$form_fields["Firstname"] = $customer->get_first_name();
+		if(in_array("all", $filter_lookup) || in_array("lastname", $filter_lookup))$form_fields["Lastname"] = $customer->get_last_name();
 		if(in_array("all", $filter_lookup) || in_array("description", $filter_lookup))$form_fields["Description"] = get_user_meta($user_id, 'description', true);
 
-		if(in_array("all", $filter_lookup) || in_array("billingfirstname", $filter_lookup))$form_fields["BillingFirstname"] = $customer->billing["first_name"];
-		if(in_array("all", $filter_lookup) || in_array("billinglastname", $filter_lookup))$form_fields["BillingLastname"] = $customer->billing["last_name"];
-		if(in_array("all", $filter_lookup) || in_array("billingcompany", $filter_lookup))$form_fields["BillingCompany"] = $customer->billing["company"];
-		if(in_array("all", $filter_lookup) || in_array("billingemail", $filter_lookup))$form_fields["BillingEmail"] = $customer->billing["email"];
-		if(in_array("all", $filter_lookup) || in_array("billingphone", $filter_lookup))$form_fields["BillingPhone"] = $customer->billing["phone"];
-		if(in_array("all", $filter_lookup) || in_array("billingcity", $filter_lookup))$form_fields["BillingCity"] = $customer->billing["city"];
-		if(in_array("all", $filter_lookup) || in_array("billingstate", $filter_lookup))$form_fields["BillingState"] = $customer->billing["state"];
-		if(in_array("all", $filter_lookup) || in_array("billingpostcode", $filter_lookup))$form_fields["BillingPostcode"] = $customer->billing["postcode"];
-		if(in_array("all", $filter_lookup) || in_array("billingcountry", $filter_lookup))$form_fields["BillingCountry"] = $customer->billing["country"];
-		if(in_array("all", $filter_lookup) || in_array("billingaddress1", $filter_lookup))$form_fields["BillingAddress1"] = $customer->billing["address_1"];
-		if(in_array("all", $filter_lookup) || in_array("billingaddress2", $filter_lookup))$form_fields["BillingAddress2"] = $customer->billing["address_2"];
+		if(in_array("all", $filter_lookup) || in_array("billingfirstname", $filter_lookup))$form_fields["BillingFirstname"] = $customer->get_billing_first_name();
+		if(in_array("all", $filter_lookup) || in_array("billinglastname", $filter_lookup))$form_fields["BillingLastname"] = $customer->get_billing_last_name();
+		if(in_array("all", $filter_lookup) || in_array("billingcompany", $filter_lookup))$form_fields["BillingCompany"] = $customer->get_billing_company();
+		if(in_array("all", $filter_lookup) || in_array("billingemail", $filter_lookup))$form_fields["BillingEmail"] = $customer->get_billing_email();
+		if(in_array("all", $filter_lookup) || in_array("billingphone", $filter_lookup))$form_fields["BillingPhone"] = $customer->get_billing_phone();
+		if(in_array("all", $filter_lookup) || in_array("billingcity", $filter_lookup))$form_fields["BillingCity"] = $customer->get_billing_city();
+		if(in_array("all", $filter_lookup) || in_array("billingstate", $filter_lookup))$form_fields["BillingState"] = $customer->get_billing_state();
+		if(in_array("all", $filter_lookup) || in_array("billingpostcode", $filter_lookup))$form_fields["BillingPostcode"] = $customer->get_billing_postcode();
+		if(in_array("all", $filter_lookup) || in_array("billingcountry", $filter_lookup))$form_fields["BillingCountry"] = $customer->get_billing_country();
+		if(in_array("all", $filter_lookup) || in_array("billingaddress1", $filter_lookup))$form_fields["BillingAddress1"] = $customer->get_billing_address_1();
+		if(in_array("all", $filter_lookup) || in_array("billingaddress2", $filter_lookup))$form_fields["BillingAddress2"] = $customer->get_billing_address_2();
 
-		if(in_array("all", $filter_lookup) || in_array("shippingfirstname", $filter_lookup))$form_fields["ShippingFirstname"] = $customer->shipping["first_name"];
-		if(in_array("all", $filter_lookup) || in_array("shippinglastname", $filter_lookup))$form_fields["ShippingLastname"] = $customer->shipping["last_name"];
-		if(in_array("all", $filter_lookup) || in_array("shippingcompany", $filter_lookup))$form_fields["ShippingCompany"] = $customer->shipping["company"];
-		if(in_array("all", $filter_lookup) || in_array("shippingphone", $filter_lookup))$form_fields["ShippingPhone"] = $customer->shipping["phone"];
-		if(in_array("all", $filter_lookup) || in_array("shippingcity", $filter_lookup))$form_fields["ShippingCity"] = $customer->shipping["city"];
-		if(in_array("all", $filter_lookup) || in_array("shippingstate", $filter_lookup))$form_fields["ShippingState"] = $customer->shipping["state"];
-		if(in_array("all", $filter_lookup) || in_array("shippingpostcode", $filter_lookup))$form_fields["ShippingPostcode"] = $customer->shipping["postcode"];
-		if(in_array("all", $filter_lookup) || in_array("shippingcountry", $filter_lookup))$form_fields["ShippingCountry"] = $customer->shipping["country"];
-		if(in_array("all", $filter_lookup) || in_array("shippingaddress1", $filter_lookup))$form_fields["ShippingAddress1"] = $customer->shipping["address_1"];
-		if(in_array("all", $filter_lookup) || in_array("shippingaddress2", $filter_lookup))$form_fields["ShippingAddress2"] = $customer->shipping["address_2"];
+		if(in_array("all", $filter_lookup) || in_array("customerfirstname", $filter_lookup))$form_fields["CustomerFirstname"] = $customer->get_first_name();
+		if(in_array("all", $filter_lookup) || in_array("customerlastname", $filter_lookup))$form_fields["CustomerLastname"] = $customer->get_last_name();
+		if(in_array("all", $filter_lookup) || in_array("customercompany", $filter_lookup))$form_fields["CustomerCompany"] = $customer->get_billing_company();
+		if(in_array("all", $filter_lookup) || in_array("customeremail", $filter_lookup))$form_fields["CustomerEmail"] = $customer->get_email();
+		if(in_array("all", $filter_lookup) || in_array("customerphone", $filter_lookup))$form_fields["CustomerPhone"] = $customer->get_billing_phone();
+		if(in_array("all", $filter_lookup) || in_array("customercity", $filter_lookup))$form_fields["CustomerCity"] = $customer->get_billing_city();
+		if(in_array("all", $filter_lookup) || in_array("customerstate", $filter_lookup))$form_fields["CustomerState"] = $customer->get_billing_state();
+		if(in_array("all", $filter_lookup) || in_array("customerpostcode", $filter_lookup))$form_fields["CustomerPostcode"] = $customer->get_billing_postcode();
+		if(in_array("all", $filter_lookup) || in_array("customercountry", $filter_lookup))$form_fields["CustomerCountry"] = $customer->get_billing_country();
+		if(in_array("all", $filter_lookup) || in_array("customeraddress1", $filter_lookup))$form_fields["CustomerAddress1"] = $customer->get_billing_address();
+		if(in_array("all", $filter_lookup) || in_array("customeraddress2", $filter_lookup))$form_fields["CustomerAddress2"] = $customer->get_billing_address_2();
+
+		if(in_array("all", $filter_lookup) || in_array("shippingfirstname", $filter_lookup))$form_fields["ShippingFirstname"] = $customer->get_shipping_first_name();
+		if(in_array("all", $filter_lookup) || in_array("shippinglastname", $filter_lookup))$form_fields["ShippingLastname"] = $customer->get_shipping_last_name();
+		if(in_array("all", $filter_lookup) || in_array("shippingcompany", $filter_lookup))$form_fields["ShippingCompany"] = $customer->get_shipping_company();
+		if(in_array("all", $filter_lookup) || in_array("shippingphone", $filter_lookup))$form_fields["ShippingPhone"] = $customer->get_shipping_phone();
+		if(in_array("all", $filter_lookup) || in_array("shippingcity", $filter_lookup))$form_fields["ShippingCity"] = $customer->get_shipping_city();
+		if(in_array("all", $filter_lookup) || in_array("shippingstate", $filter_lookup))$form_fields["ShippingState"] = $customer->get_shipping_state();
+		if(in_array("all", $filter_lookup) || in_array("shippingpostcode", $filter_lookup))$form_fields["ShippingPostcode"] = $customer->get_shipping_postcode();
+		if(in_array("all", $filter_lookup) || in_array("shippingcountry", $filter_lookup))$form_fields["ShippingCountry"] = $customer->get_shipping_country();
+		if(in_array("all", $filter_lookup) || in_array("shippingaddress1", $filter_lookup))$form_fields["ShippingAddress1"] = $customer->get_shipping_address_1();
+		if(in_array("all", $filter_lookup) || in_array("shippingaddress2", $filter_lookup))$form_fields["ShippingAddress2"] = $customer->get_shipping_address_2();
 	}
 
 	//add acf field values
