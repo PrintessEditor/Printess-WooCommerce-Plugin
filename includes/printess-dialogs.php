@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessDialogs', false ) ) return;
 
 
@@ -44,7 +46,7 @@ class PrintessDialogs {
 
 					<form class="woocommerce-form">
 						<p class="woocommerce-form-row woocommerce-form-row--wide form-row form-row-wide" id="printess_save_reminder_caption">
-							<?php echo str_replace("{MINUTES}", $number_of_minutes, esc_html__( 'You did not save your work within the last {MINUTES} minutes. Do you want to save your changes now?', 'printess-editor' )) ?>
+							<?php echo esc_html(str_replace("{MINUTES}", $number_of_minutes, __( 'You did not save your work within the last {MINUTES} minutes. Do you want to save your changes now?', 'printess-editor' ))) ?>
 						</p>
 					</form>
 				</div>

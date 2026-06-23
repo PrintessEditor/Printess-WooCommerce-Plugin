@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessProductHelpers', false ) ) return;
 
 class PrintessProductHelpers {
@@ -10,7 +12,7 @@ class PrintessProductHelpers {
         $this->_product = wc_get_product($product_id);
 
         if ( ! isset( $this->_product ) || false === $this->_product ) {
-		    throw new \Exception("Unknown product id " + $product_id);
+		    throw new \Exception(esc_html("Unknown product id " + $product_id));
 	    }
 
         $parent_id = $this->_product->get_data()["parent_id"];

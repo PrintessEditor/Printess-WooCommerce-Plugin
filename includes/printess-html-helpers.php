@@ -1,5 +1,6 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 if ( class_exists( 'PrintessHtmlHelpers', false ) ) return;
 
@@ -47,11 +48,11 @@ class PrintessHtmlHelpers {
         }
 
         ?>
-            <p class="form-field <?php echo $html_id; ?>-dropdown" id="<?php echo $html_id; ?>_field" data-priority="">
-        <label for="<?php echo $html_id; ?>" class=""><?php echo esc_html( $title ); ?></label>
+            <p class="form-field <?php echo esc_attr($html_id); ?>-dropdown" id="<?php echo esc_attr($html_id); ?>_field" data-priority="">
+        <label for="<?php echo esc_attr($html_id); ?>" class=""><?php echo esc_html( $title ); ?></label>
         <span class="woocommerce-input-wrapper">
-        <select name="<?php echo $html_id; ?>" id="<?php echo $html_id; ?>" class="select " data-placeholder="" autocomplete="<?php echo $html_id; ?>">
-        <option value="<?php echo $selected_dropshipping_id; ?>"><?php echo esc_html( $selected_title ); ?></option>
+        <select name="<?php echo esc_attr($html_id); ?>" id="<?php echo esc_attr($html_id); ?>" class="select " data-placeholder="" autocomplete="<?php echo esc_attr($html_id); ?>">
+        <option value="<?php echo esc_attr($selected_dropshipping_id); ?>"><?php echo esc_html( $selected_title ); ?></option>
 
         <optgroup label="<?php echo esc_html__( 'Defaults', 'printess-editor' ); ?>">;
             <?php
@@ -76,7 +77,7 @@ class PrintessHtmlHelpers {
                 foreach ( $optgroup_options['productDefinitions'] as $option ) {
                     $selected = ( $selected_dropshipping_id ) === intval( $option['id'] ) ? ' selected="selected"' : '';
                     ?>
-                    <option value="<?php echo $option['id']; ?>" <?php echo $selected; ?>><?php echo esc_html( $option['display'] ); ?></option>
+                    <option value="<?php echo esc_attr($option['id']); ?>" <?php echo $selected; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?>><?php echo esc_html( $option['display'] ); ?></option>
                     <?php
                 }
             }

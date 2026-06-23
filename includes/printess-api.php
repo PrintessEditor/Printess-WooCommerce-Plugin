@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessApi', false ) ) return;
 
 class PrintessApi
@@ -34,7 +36,7 @@ class PrintessApi
 
         if ( is_wp_error( $response ) ) {
             $error_message = $response->get_error_message();
-            throw new \Exception( $error_message );
+            throw new \Exception( esc_html($error_message) );
         }
 
         return json_decode( wp_remote_retrieve_body( $response ), true );
@@ -65,7 +67,7 @@ class PrintessApi
 
         if ( is_wp_error( $response ) ) {
             $error_message = $response->get_error_message();
-            throw new \Exception( $error_message );
+            throw new \Exception( esc_html($error_message) );
         }
 
         return json_decode( wp_remote_retrieve_body( $response ), true );

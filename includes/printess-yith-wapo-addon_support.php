@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 //class-yith-wapo-addon.php / class-yith-wapo-addon-premium.php
 
 class PrintessYithWapoAddon

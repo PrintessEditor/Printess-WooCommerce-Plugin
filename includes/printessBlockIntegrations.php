@@ -1,7 +1,5 @@
 <?php
-//https://www.nomar.dev/extending-the-woocommerce-checkout-block-with-jquery-and-php/
-//https://woocommerce.com/document/woocommerce-store-editing/customizing-cart-and-checkout/
-//https://www.liip.ch/en/blog/how-to-extend-existing-gutenberg-blocks-in-wordpress
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
 
 use \Automattic\WooCommerce\Blocks\StoreApi\Schemas\CartItemSchema;
 
@@ -13,7 +11,9 @@ function printess_on_add_printess_cart_item_data($cart_item)
         $printess_save_token = $cart_item['printess-save-token'];
         $editLink = "";
     
+        // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hooks
         if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item["key"] ) ) {
+            // phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook
             $product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item["key"] );
             $editLink = add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink );
 

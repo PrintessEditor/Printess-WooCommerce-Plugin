@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessTable', false ) ) return;
 
 class PrintessTable
@@ -101,7 +103,7 @@ class PrintessTable
                       <?php
                         } else {
                       ?>
-                          <a class="cell link" data-column="<?php echo esc_attr( $column_name ); ?>" href="#" onclick='printessShowConfirm("<?php echo $column["confirm"] ?>", "<?php echo esc_attr( $column[ "url" ] ); ?>");'><?php echo array_key_exists( "label", $column) && !empty( $column["label"] ) ?  esc_html( $column["label"] ) :  esc_html( $column["url"] )  ?></a>
+                          <a class="cell link" data-column="<?php echo esc_attr( $column_name ); ?>" href="#" onclick='printessShowConfirm("<?php echo esc_attr($column["confirm"]) ?>", "<?php echo esc_attr( $column[ "url" ] ); ?>");'><?php echo array_key_exists( "label", $column) && !empty( $column["label"] ) ?  esc_html( $column["label"] ) :  esc_html( $column["url"] )  ?></a>
                       <?php
                         }
                     }
@@ -123,7 +125,7 @@ class PrintessTable
                   }
                   else if( is_callable( $column ) )
                   {
-                    echo $column();
+                    echo $column(); /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
                   }
                   else
                   {

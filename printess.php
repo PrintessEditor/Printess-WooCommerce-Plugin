@@ -4,18 +4,20 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.86
+ * Version: 1.6.87
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
  * Domain Path: /languages
  * Requires at least: 5.9
  * Requires PHP: 8.1
- * Tested up to: 6.9
+ * Tested up to: 7.0
+ * License: GPL-2.0-or-later
+ * License URI: https://gnu.org
  *
- * Woo: 10000:924045dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924046dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
- * WC tested up to: 10.4.3
+ * WC tested up to: 10.5.3
  */
 
 if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
@@ -46,6 +48,10 @@ function printess_render_information_overlay() {
  * Renders the dialog that pops up when klicking on save inside the printess editor
  */
 function printess_render_save_dialog() {
+    $save_design_escaped = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Save design', 'printess-editor' ) . '</span>', esc_html__( 'You are currently not logged in. To be able to save designs you need to be logged in. You will be redirected to the login page after clicking on {SAVE_DESIGN}. After logging in / account creation you will be redirected back to your current design so that you can continue working on your current design.', 'printess-editor' ) );
+    $show_if_no_design_name_escaped = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You need to provide a display name for your saved design. This name is shown on the {SAVE_DESIGN} page so that you can easily find it on future visits.', 'printess-editor' ) );
+    $saved_designs_escaped = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You can provide a new design name to store this version under a different name. This new version can then be found on your {SAVE_DESIGN} page as well.', 'printess-editor' ) );
+    $after_saving_escaped = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'After saving, your saved design can be found under {SAVE_DESIGN} on your account page.', 'printess-editor' ) );
 	?>
 		<div class="printess_overlay_background printess-owned" id="printess_overlay_background" style="display:none;">
 			<div class="printess_overlay">
@@ -54,14 +60,14 @@ function printess_render_save_dialog() {
 						<span class="title"><?php echo esc_html__( 'Saving your design', 'printess-editor' ); ?></span>
 					</div>
 
-					<p class="printess_show_if_not_logged_in" id="printess_show_if_not_logged_in"><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Save design', 'printess-editor' ) . '</span>', esc_html__( 'You are currently not logged in. To be able to save designs you need to be logged in. You will be redirected to the login page after clicking on {SAVE_DESIGN}. After logging in / account creation you will be redirected back to your current design so that you can continue working on your current design.', 'printess-editor' ) ); ?></p>
+					<p class="printess_show_if_not_logged_in" id="printess_show_if_not_logged_in"><?php echo $save_design_escaped; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
 
 					<div class="printess_show_if_no_design_name" id="printess_show_if_no_design_name">
-						<p><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You need to provide a display name for your saved design. This name is shown on the {SAVE_DESIGN} page so that you can easily find it on future visits.', 'printess-editor' ) ); ?></p>
+						<p><?php echo $show_if_no_design_name_escaped;  /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
 					</div>
 
 					<div class="printess_show_if_design_name" id="printess_show_if_design_name">
-						<p><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You can provide a new design name to store this version under a different name. This new version can then be found on your {SAVE_DESIGN} page as well.', 'printess-editor' ) ); ?></p>
+						<p><?php echo $saved_designs_escaped; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
 					</div>
 
 					<form class="woocommerce-form">
@@ -72,7 +78,7 @@ function printess_render_save_dialog() {
 					</form>
 
 
-					<p><?php echo str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'After saving, your saved design can be found under {SAVE_DESIGN} on your account page.', 'printess-editor' ) ); ?></p>
+					<p><?php echo $after_saving_escaped;  /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
 				</div>
 
 				<div class="printess_overlay_footer">
@@ -607,7 +613,7 @@ function printess_render_editor_integration( $product, $mode = 'buyer' ) {
 					<?php
 						$minutes = PrintessAdminSettings::get_save_reminder_in_minutes();
 						if(null !== $minutes && $minutes > 0) {
-							echo "settings.showSaveWarningAfter=" . $minutes . ";";
+							echo "settings.showSaveWarningAfter=" . $minutes . ";"; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/
 						}
 					?>
 
@@ -670,7 +676,7 @@ function printess_extract_yith_plugin_values($yith_meta_data) {
 	return $ret;
 }
 
-function add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payload) {
+function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payload) {
 	$produce_payload["vdp"]["form"]["itemQuantity"] = "{$line_item->get_quantity()}";
 	$produce_payload["vdp"]["form"]["itemSku"] = $product->get_sku();
 
@@ -976,7 +982,7 @@ function printess_produce( $product, $order_id, $line_item_id, $line_item, $save
 	);
 
 	$order = wc_get_order( $order_id );
-	add_production_vdp_data($order, $line_item, $product, $data);
+	printess_add_production_vdp_data($order, $line_item, $product, $data);
 
 	//In case output file config is provided
 	if(is_array($outputFilesConfig) && count($outputFilesConfig) > 0) {
@@ -1643,7 +1649,7 @@ function printess_render_dropship_table( $printess_tracking_id, $printess_tracki
 	}
 
 	?>
-	<table cellspacing="0" class="display_meta <?php echo $classes; ?>">
+	<table cellspacing="0" class="display_meta <?php echo esc_attr($classes); ?>">
 		<tbody>
 				<?php
 				if ( ( isset( $printess_tracking_id ) && ! empty( '' . $printess_tracking_id ) )
@@ -1658,7 +1664,7 @@ function printess_render_dropship_table( $printess_tracking_id, $printess_tracki
 					<?php
 					if ( isset( $printess_tracking_url ) && ! empty( '' . $printess_tracking_url ) ) {
 						?>
-										<a target=_blank href="<?php echo esc_url( $printess_tracking_url ); ?>"><?php echo $link_text; ?></a>
+										<a target=_blank href="<?php echo esc_url( $printess_tracking_url ); ?>"><?php echo $link_text; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?></a>
 						<?php
 					} else {
 						?>
@@ -1894,7 +1900,7 @@ function printess_render_personalized_products_table( $order ) {
 		$table->add_row( $content );
 	}
 
-		echo $table->render( 'css_grid' );
+		echo $table->render( 'css_grid' );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
 	?>
 	</section>
 	<?php
@@ -1982,7 +1988,7 @@ function printess_order_customer_meta_customized_display( $order ) {
 						<?php
 						if ( isset( $tracking_url ) && ! empty( '' . $tracking_url ) ) {
 							?>
-												<a target=_blank href="<?php echo esc_url( $tracking_url ); ?>"><?php echo $link_text; ?></a>
+												<a target=_blank href="<?php echo esc_url( $tracking_url ); ?>"><?php echo $link_text; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?></a>
 							<?php
 						} else {
 							?>
@@ -1993,7 +1999,7 @@ function printess_order_customer_meta_customized_display( $order ) {
 									</td>
 					<?php } ?>
 								<?php if ( $has_shipping_status ) { ?>
-									<td class="no_top_and_bottom"><span><?php echo $shipping_status; ?></span></td>
+									<td class="no_top_and_bottom"><span><?php echo esc_html($shipping_status); ?></span></td>
 								<?php } ?>
 							</tr>
 					<?php
@@ -2127,7 +2133,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 			echo '<div><a href="' . esc_url( $url ) . '">' . esc_attr__( 'Reproduce item', 'printess-editor' ) . '</a></div>';
 		}
 
-		echo ' <div>' . esc_html__( 'Line item id:', 'printess-editor' ) . "&nbsp;" . $item->get_id() . '</div>';
+		echo ' <div>' . esc_html__( 'Line item id:', 'printess-editor' ) . "&nbsp;" . $item->get_id() . '</div>'; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
 	}
 
 	printess_render_dropship_table( $printess_tracking_id, $printess_tracking_url, $printess_shipping_status );
@@ -2255,10 +2261,13 @@ function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
 		return;
 	}
 
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook
 	$product             = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
 	$printess_save_token = $cart_item['printess-save-token'];
 
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hooks
 	if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook
 		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
 		$product_permalink = add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) );
 
@@ -2881,9 +2890,9 @@ function printess_edit_order_line_item() {
 		?>
 	<html>
 		<head>
-		<script src="<?php echo plugins_url( 'includes/js/printessEditor.js', __FILE__ ); ?>"></script>
-		<script src="<?php echo plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ ); ?>"></script>
-		<link rel="stylesheet" href="<?php echo plugins_url( 'printess.css', __FILE__ ); ?>">
+		  <script src="<?php echo esc_attr(plugins_url( 'includes/js/printessEditor.js', __FILE__ )); ?>"></script> <?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript*/ ?>
+		  <script src="<?php echo esc_attr(plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ )); ?>"></script><?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript*/ ?>
+		  <link rel="stylesheet" href="<?php echo esc_attr(plugins_url( 'printess.css', __FILE__ )); ?>"><?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet*/ ?>
 		</head>
 		<body>
 			<script id="printess-integration">
@@ -3105,8 +3114,8 @@ function printess_add_custom_field_to_variations( $loop, $variation_data, $varia
 	$is_checked = "on" === get_post_meta( $variation->ID, 'printess_template_is_merge_template', "on" );
 	?>
 		<p class="form-field form-row form-row-full">
-			<label for="printess_template_name[<?php echo $loop ?>]"><?php echo __( 'Template name', 'printess-editor' ) ?> (&nbsp;&nbsp;<input type="checkbox" class="short" style="" name="printess_template_is_merge_template[<?php echo $loop ?>]" id="printess_template_is_merge_template[<?php echo $loop ?>]" <?php echo true === $is_checked ? 'checked="checked"' : "" ?>> <?php echo __( 'Is merge template', 'printess-editor' ) ?>)</label>
-			<input type="text" class="short" style="" name="printess_template_name[<?php echo $loop ?>]" id="printess_template_name[<?php echo $loop ?>]" value="<?php echo esc_attr($template_name) ?>" placeholder="<?php echo esc_attr(__( 'Template name or merge template', 'printess-editor' )) ?>">
+			<label for="printess_template_name[<?php echo esc_attr($loop) ?>]"><?php echo __( 'Template name', 'printess-editor' ) ?> (&nbsp;&nbsp;<input type="checkbox" class="short" style="" name="printess_template_is_merge_template[<?php echo esc_attr($loop) ?>]" id="printess_template_is_merge_template[<?php echo esc_attr($loop) ?>]" <?php echo true === $is_checked ? 'checked="checked"' : "" /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?>> <?php echo esc_html(__( 'Is merge template', 'printess-editor' )) ?>)</label>
+			<input type="text" class="short" style="" name="printess_template_name[<?php echo esc_attr($loop) ?>]" id="printess_template_name[<?php echo esc_attr($loop) ?>]" value="<?php echo esc_attr($template_name) ?>" placeholder="<?php echo esc_attr(__( 'Template name or merge template', 'printess-editor' )) ?>">
 		</p>
 	<?php
 }
@@ -3548,7 +3557,7 @@ function printess_render_saved_designs() {
 		$table->add_row( $content );
 	}
 
-	echo $table->render( 'css_grid' );
+	echo $table->render( 'css_grid' );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
 
 	?>
 		<div class="woocommerce-pagination woocommerce-pagination--without-numbers woocommerce-Pagination printess-Pager">
@@ -3954,7 +3963,7 @@ function printess_on_after_login_form() {
 
 	ob_end_clean();
 
-	echo str_replace( "\n", '', str_replace( "\r\n", '', $output ) );
+	echo str_replace( "\n", '', str_replace( "\r\n", '', $output ) );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
 }
 
 /**
@@ -4043,8 +4052,9 @@ function printess_load_externalscripts() {
  * Add quantity url parameetr support to product page
  */
 function printess_woocommerce_quantity_input_args($args) {
-    if ( isset( $_GET['qty'] ) && is_numeric($_GET['qty']) ) {
-        $args['input_value']    = $_GET['qty'];
+    $qty = isset( $_GET['qty'] ) ? absint( wp_unslash( $_GET['qty'] ) ) : 0;
+    if ( $qty > 0 ) {
+        $args['input_value'] = $qty;
     }
     return $args;
 }
@@ -4056,7 +4066,7 @@ function printess_woocommerce_email_order_line_item_meta_fields($item_id, $item,
 	if ( ! is_wc_endpoint_url() && $item->is_type('line_item') ) {
 		if ( isset( $item['printess-design-name'] ) ) {
 			?>
-			<div><?php echo __( "Design Name", "printess-editor" ) ?>: <?php echo __($item['printess-design-name']) ?></div>
+			<div><?php echo esc_html(__( "Design Name", "printess-editor" )) ?>: <?php echo esc_html($item['printess-design-name']) ?></div>
 
 			<?php
 			// $fields[] = array(
@@ -4079,7 +4089,7 @@ function printess_validate_cart_item($validation, $product_id, $dummy1 = 1, $dum
 	$variation_id = null;
 
 	if(array_key_exists('variation_id', $_REQUEST)) {
-		$variation_id = $_REQUEST['variation_id'];
+		$variation_id = intval( wp_unslash( $_REQUEST['variation_id'] ) );
 	}
 
 	$helper = new PrintessProductHelpers(null === $variation_id || empty($variation_id) ? $product_id : intval($variation_id) );
@@ -4260,8 +4270,6 @@ function printess_register_hooks() {
  * Initializes the plugin. Initializes the translations and makes sure the table for saved designs is created / updated
  */
 function printess_init_plugin() {
-	load_plugin_textdomain( 'printess-editor', false, 'printess-editor/languages/' );
-
 	require_once 'includes/printess-saved-design-repository.php';
 
 	$repo = new Printess_Saved_Design_Repository();

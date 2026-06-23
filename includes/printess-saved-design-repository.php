@@ -1,5 +1,7 @@
 <?php 
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessSavedDesignRepository', false ) ) return;
 
 
@@ -190,13 +192,16 @@ class Printess_Saved_Design_Repository {
       $logger->notice("User with id " . $customer_id . " added a new saved design: " . json_encode($object_to_write), array('source' => 'printress-saved-designs'));
     }
 
-    $wpdb->insert( 
-      $table_name, 
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $wpdb->insert(
+      $table_name,
       $object_to_write,
       array("%d", "%s", "%s", "%d", "%s", "%s", "%s", "%s", "%s", "%s")
     );
 
-    return $wpdb->insert_id;
+    $new_id = $wpdb->insert_id;
+    wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
+    return $new_id;
   }
 
   function get_designs(int $customer_id, string $display_name_filter, int $current_page = 1, int $results_per_page = 20, int $design_id = -1) {
@@ -231,9 +236,22 @@ class Printess_Saved_Design_Repository {
     $sql_params[] = ($current_page - 1) * $results_per_page;
     $sql = $sql . " ORDER BY last_updated_at DESC, display_name ASC LIMIT %d OFFSET %d";
 
+    // phpcs:ignore WordPress.DB.PreparedSQL.NotPrepared -- $sql is built with %d/%s placeholders above and passed through prepare()
     $sql = $wpdb->prepare(...array_merge(array($sql), $sql_params));
-    $saved_designs = $wpdb->get_results($sql);
-    
+
+    $cache_gen = wp_cache_get( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
+    if ( false === $cache_gen ) {
+      $cache_gen = 0;
+    }
+    $cache_key     = 'printess_designs_' . $customer_id . '_g' . $cache_gen . '_' . md5( $sql );
+    $saved_designs = wp_cache_get( $cache_key, 'printess_saved_designs' );
+
+    if ( false === $saved_designs ) {
+      // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+      $saved_designs = $wpdb->get_results( $sql );
+      wp_cache_set( $cache_key, $saved_designs !== null ? $saved_designs : array(), 'printess_saved_designs' );
+    }
+
     if ( $saved_designs ) {
       foreach ( $saved_designs as $pointer ) {
         $ret[] = array(
@@ -287,6 +305,7 @@ class Printess_Saved_Design_Repository {
       $update_datatypes[] = '%s';
     }
 
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
     $result = $wpdb->update( $table_name, $update_values,
         array(
               'id' => $design_id,
@@ -294,6 +313,7 @@ class Printess_Saved_Design_Repository {
         $update_datatypes,
         array( '%d', '%d' ) );
 
+    wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
     return $result != false  && $result > 0;
   }
 
@@ -307,6 +327,7 @@ class Printess_Saved_Design_Repository {
     $timeOut->add(new DateInterval('P' . $liveTimeInDays . 'D'));
     $timeOut->setTimezone(new DateTimeZone('UTC'));
 
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
     $result = $wpdb->update( $table_name, array(
                                                 'last_ordered_at' => $now->format('Y-m-d H:i:s'),
                                                 'valid_until' => $timeOut->format('Y-m-d H:i:s')),
@@ -316,6 +337,7 @@ class Printess_Saved_Design_Repository {
                                           array( '%s', "%s" ),
                                           array( '%d', '%d' ) );
 
+    wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
     return $result != false  && $result > 0;
   }
 
@@ -323,8 +345,10 @@ class Printess_Saved_Design_Repository {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
 
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
     $result = $wpdb->delete( $table_name, array( 'id' => $design_id, 'customer_id' => $customer_id ), array( '%d', '%d' ) );
 
+    wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
     return $result != false && $result > 0;
   }
 }

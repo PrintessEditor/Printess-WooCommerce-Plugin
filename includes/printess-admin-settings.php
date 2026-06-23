@@ -1,5 +1,7 @@
 <?php
 
+if ( ! defined( 'ABSPATH' ) ) exit; // Exit if accessed directly
+
 if ( class_exists( 'PrintessAdminSettings', false ) ) return;
 
 include_once("includes/printess-html-helpers.php");
@@ -383,7 +385,7 @@ class PrintessAdminSettings
             'printess-settings'
         );
 
-        register_setting( 'printess-settings', 'printess_shop_token' );
+        register_setting( 'printess-settings', 'printess_shop_token', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 
         add_settings_field(
             'printess_shop_token', // setting slug .
@@ -397,7 +399,7 @@ class PrintessAdminSettings
             'printess_settings_section'
         );
 
-        register_setting( 'printess-settings', 'printess_service_token' );
+        register_setting( 'printess-settings', 'printess_service_token', array( 'sanitize_callback' => 'sanitize_text_field' ) );
 
         add_settings_field(
             'printess_service_token',
@@ -417,6 +419,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'api.printess.com',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -438,6 +441,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'https://editor.printess.com/printess-editor/embed.html',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -459,6 +463,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -480,6 +485,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -510,6 +516,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -543,6 +550,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'wpadminbar, page',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -564,6 +572,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'wp-site-blocks',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -573,6 +582,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'auto',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -609,6 +619,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -635,6 +646,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -661,6 +673,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -691,6 +704,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -721,6 +735,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'auto',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -746,6 +761,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'auto',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -778,6 +794,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'auto',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -817,6 +834,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -847,6 +865,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => "",
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -877,6 +896,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '30',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -893,7 +913,7 @@ class PrintessAdminSettings
                 $setting = intval( $setting );
 
                 ?>
-                    <input type="number" min="0" style="min-width: 50%;" id="printess_saved_design_lifetime_in" name="printess_saved_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : $setting; ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
+                    <input type="number" min="0" style="min-width: 50%;" id="printess_saved_design_lifetime_in" name="printess_saved_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : esc_html($setting); ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
 
                     <script>
                         const lifeTimeInput = document.getElementById("printess_saved_design_lifetime_in");
@@ -937,6 +957,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '30',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -953,7 +974,7 @@ class PrintessAdminSettings
                 $setting = intval( $setting );
 
                 ?>
-                    <input type="number" min="0" style="min-width: 50%;" id="printess_ordered_design_lifetime_in" name="printess_ordered_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_ordered_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : $setting; ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
+                    <input type="number" min="0" style="min-width: 50%;" id="printess_ordered_design_lifetime_in" name="printess_ordered_design_lifetime" value="<?php echo esc_attr( $setting ); ?>"><span id="printess_ordered_days"> <?php echo 0 === $setting ? esc_html__( 'Unlimited', 'printess-editor' ) : esc_html($setting); ?> </span><span><?php echo esc_html__( 'days', 'printess-editor' ); ?></span>
 
                     <script>
                         const orderedDesignLifeTimeInput = document.getElementById("printess_ordered_design_lifetime_in");
@@ -997,6 +1018,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '0',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1020,6 +1042,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '0',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1043,6 +1066,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1068,6 +1092,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '-1',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1115,6 +1140,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1143,6 +1169,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => 'auto',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1177,6 +1204,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1207,6 +1235,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1237,6 +1266,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '',
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1264,6 +1294,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => '',
+                'sanitize_callback' => 'sanitize_textarea_field',
             )
         );
 
@@ -1291,6 +1322,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1324,6 +1356,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'string',
                 'default' => "",
+                'sanitize_callback' => 'sanitize_textarea_field',
             )
         );
 
@@ -1354,6 +1387,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1397,6 +1431,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1428,6 +1463,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1461,6 +1497,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1494,6 +1531,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => false,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 
@@ -1527,6 +1565,7 @@ class PrintessAdminSettings
             array(
                 'type'    => 'boolean',
                 'default' => true,
+                'sanitize_callback' => 'sanitize_text_field',
             )
         );
 

@@ -1,10 +1,10 @@
 === Printess Editor ===
 Contributors: printess
-Tags: personalization, mug, calendar, t-shirt, photo products, customization, web2print, photo books, canvas, avatar, photo tiles, personalized children book, greeting cards, graphic design, configurator
+Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
-Tested up to: 6.9
+Tested up to: 7.0
 WC Tested up to: 10.4.3
-Stable tag: 1.6.86
+Stable tag: 1.6.87
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -411,3 +411,6 @@ Please check https://printess.com/pricing.html for more details.
 
  = 1.6.86 =
  - Renamed _Customer prefix to "Client"
+
+ = 1.6.87 =
+ - Made plugin Wordpress 7 compatible
