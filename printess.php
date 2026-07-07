@@ -15,7 +15,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://gnu.org
  *
- * Woo: 10000:924046dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924047dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */
