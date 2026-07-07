@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.87
+ * Version: 1.6.88
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -2183,6 +2183,19 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 			echo '<a href="' . esc_url( $url ) . '">' . esc_attr__( 'Approve and send to production.', 'printess-editor' ) . '</a>';
 		} else {
 			echo '<span>' . esc_attr__( 'Processing.', 'printess-editor' ) . '</span>';
+
+      $url = add_query_arg(
+        array(
+          'action'   => 'printess_manually_check_order_status',
+          'order_id' => $order_id,
+          'item_id'  => $item_id,
+          'pst'      => $printess_save_token,
+          'nonce'    => wp_create_nonce( 'printess_manually_check_order_status' ),
+        ),
+        home_url()
+      );
+
+      echo '<br><a href="' . esc_url( $url ) . '">' . esc_html__( 'Manually check production status', 'printess-editor' ) . '</a>';
 		}
 	}
 
@@ -3036,6 +3049,102 @@ function printess_approve_order_line_item() {
 			wp_safe_redirect( $redirect );
 			die;
 	}
+}
+
+function printess_manually_check_order_status() {
+	$action = filter_input( INPUT_GET, 'action' );
+	$nonce  = filter_input( INPUT_GET, 'nonce' );
+
+  if ( isset( $action ) && isset( $nonce ) && (('printess_manually_check_order_status' === $action && wp_verify_nonce( $nonce, 'printess_manually_check_order_status' ) ) ) ) {
+    $order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+    $line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+    $printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+    $order               = new WC_Order( $order_id );
+    $item                = $order->get_item( $line_item_id );
+    $job_id              =  $item->get_meta( '_printess-job-id', true );
+
+    $printess_host = PrintessAdminSettings::get_host();
+
+    if(null !== $job_id && !empty($job_id)) {
+      $api_endpoint = '/production/status/get';
+      $response = PrintessApi::send_post_request(
+      		$printess_host . $api_endpoint,
+      		PrintessAdminSettings::get_service_token(),
+      		["jobId" => $job_id]
+      	);
+
+        if(null !== $response && false === $response["isFinalStatus"] && false === $response["isSuccess"] && null === $response["enqueuedOn"]) {
+          //this production job does not exist anymore... somehow mark it
+          echo esc_html__( "This production job does not exist anymore.", 'printess-editor' );
+          die;
+        } else {
+          $response["isFailure"] = false === $response["isSuccess"];
+
+          if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
+						$formFieldLink = $response["result"]["ff"];
+
+						if(null != $formFieldLink && !empty($formFieldLink)) {
+							$formFields = PrintessApi::send_get_request($formFieldLink);
+
+							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
+								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
+							}
+						}
+					}
+
+          $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+          $item->save_meta_data();
+        }
+    } else {
+      $order_items = array( $line_item_id => $item );
+
+      //Download production status
+      $api_endpoint = '/orders/list';
+      $response = PrintessApi::send_post_request(
+      		$printess_host . $api_endpoint,
+      		PrintessAdminSettings::get_service_token(),
+      		["saveToken" => $printess_save_token]
+      	);
+
+        if(0 == $response["count"]) {
+          echo esc_html__( "No order found for save token", 'printess-editor' );
+          die;
+        }
+
+        if(count($response["orders"]) > 0) {
+          $response = $response["orders"][0];
+
+          if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
+						$formFieldLink = $response["result"]["ff"];
+
+						if(null != $formFieldLink && !empty($formFieldLink)) {
+							$formFields = PrintessApi::send_get_request($formFieldLink);
+
+							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
+								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
+							}
+						}
+					}
+
+          $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+          $item->save_meta_data();
+        } else {
+          echo esc_html__( "No order found for save token", 'printess-editor' );
+          die;
+        }
+    }
+
+    $query_string = http_build_query(
+      array(
+        'post'   => $order_id,
+        'action' => 'edit',
+      )
+    );
+
+	  $redirect = admin_url( 'post.php?' . $query_string );
+	  wp_safe_redirect( $redirect );
+	  die;
+  }
 }
 
 function printess_update_save_token() {
@@ -4134,6 +4243,7 @@ function printess_register_hooks() {
 	add_action( 'init', 'printess_edit_order_line_item' );
 	add_action( 'init', 'printess_save_edited_order_line_item' );
 	add_action( 'init', 'printess_approve_order_line_item' );
+  add_action( 'init', 'printess_manually_check_order_status' );
 	add_action( 'init', 'printess_update_save_token' );
 
 	// CART.

@@ -414,3 +414,6 @@ Please check https://printess.com/pricing.html for more details.
 
  = 1.6.87 =
  - Made plugin Wordpress 7 compatible
+
+  = 1.6.88 =
+ - Added option to manually check for the current production status for single order line items in case the Printess Production Files view is stuck on "Processing."
