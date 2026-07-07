@@ -4,7 +4,7 @@ Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
 WC Tested up to: 10.4.3
-Stable tag: 1.6.87
+Stable tag: 1.6.88
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
