@@ -55,6 +55,20 @@ class PrintessAdminSettings
     }
 
     /**
+     * Strips the embed.html and possible query strings / anchors from the embed url
+    */
+    static function get_editor_url() {
+        $embed_url = strtok(strtok(PrintessAdminSettings::get_embed_html_url(), "#"), '?');
+        $last_slash = strrpos($embed_url, "/");
+
+        if($last_slash > 0) {
+          $embed_url = substr($embed_url, 0, $last_slash);
+        }
+
+        return $embed_url;
+    }
+
+    /**
      * Gets the html ids to hide when showing the Printess editor.
      */
     static function get_ids_to_hide() {

@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.88
+ * Version: 1.6.89
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -15,7 +15,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://gnu.org
  *
- * Woo: 10000:924047dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924048dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */
@@ -2063,7 +2063,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 		if(null !== $printess_original_save_token && !empty($printess_original_save_token)) {
 			$editUrl = "https://editor.printess.com?name=" . $printess_original_save_token;
 
-			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($editUrl) . "\" target=\"_blank\">" . esc_html($printess_original_save_token) . '</a></div>';
+			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($editUrl) . ">" . esc_html($printess_original_save_token) . '</a></div>';
 		}
 
 		if(null !== $printess_save_token && !empty($printess_save_token)) {
@@ -2853,14 +2853,12 @@ function printess_adjust_add_to_cart( $link, $product, $args = null ) {
 function printess_edit_order_line_item() {
 	$action = filter_input( INPUT_GET, 'action' );
 	$nonce  = filter_input( INPUT_GET, 'nonce' );
-	$theme = PrintessAdminSettings::get_default_theme();
 
-	if ( isset( $action ) && isset( $nonce ) && 'printess_edit_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_edit_order_line_item' ) ) {
-		$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
-		$item_id             = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
-		$printess_save_token = filter_input( INPUT_GET, 'printess_save_token', FILTER_SANITIZE_SPECIAL_CHARS );
-		$order               = new WC_Order( $order_id );
-		$product             = null;
+  if ( isset( $action ) && isset( $nonce ) && 'printess_edit_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_edit_order_line_item' ) ) {
+    $theme = PrintessAdminSettings::get_default_theme();
+    $order = new WC_Order( filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT ) );
+		$product = null;
+    $item_id = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
 
 		foreach ( $order->get_items() as $item ) {
 			if ( $item->get_id() === intval( $item_id ) ) {
@@ -2880,95 +2878,41 @@ function printess_edit_order_line_item() {
 			$theme = $productTheme;
 		}
 
-		$product_json = printess_get_product_json( $product );
 
-		wp_enqueue_style( 'printess-editor' );
-		printess_load_externalscripts();
-
-		$url = add_query_arg(
+    $url = add_query_arg(
 			array(
 				'action'   => 'printess_save_edited_order_line_item',
-				'order_id' => $order_id,
-				'item_id'  => $item_id,
+				'order_id' => filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT ),
+				'item_id'  => filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT ),
 				'nonce'    => wp_create_nonce( 'printess_save_edited_order_line_item' ),
 			),
 			home_url()
 		);
 
-		$printess_ui_version = $product->get_meta( 'printess_ui_version', true);
-
-		if(!isset($printess_ui_version) || empty($printess_ui_version)) {
-			$printess_ui_version = "classical";
-		}
-		?>
-	<html>
-		<head>
-		  <script src="<?php echo esc_attr(plugins_url( 'includes/js/printessEditor.js', __FILE__ )); ?>"></script> <?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript*/ ?>
-		  <script src="<?php echo esc_attr(plugins_url( 'includes/js/printessWoocommerce.js', __FILE__ )); ?>"></script><?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedScript*/ ?>
-		  <link rel="stylesheet" href="<?php echo esc_attr(plugins_url( 'printess.css', __FILE__ )); ?>"><?php /*phpcs:ignore WordPress.WP.EnqueuedResources.NonEnqueuedStylesheet*/ ?>
-		</head>
-		<body>
-			<script id="printess-integration">
-				let showPrintessEditor = function() {
-					const idsToHide = (<?php echo wp_json_encode( PrintessAdminSettings::get_ids_to_hide() ); ?> || "").split(",").map( (x) => x.trim());
-					const classesToHide = (<?php echo wp_json_encode( PrintessAdminSettings::get_class_names_to_hide() ); ?> || "").split(",").map( (x) => x.trim());
-					const product =  <?php echo wp_json_encode( $product_json ); ?>;
-					const editor = typeof initPrintessWCEditor !== "undefined" ? initPrintessWCEditor({
-																																																			"apiDomain:": <?php echo wp_json_encode( PrintessAdminSettings::get_domain() ); ?>,
-																																																			"uiSettings": {
-																																																				"startupLogoUrl": "",
-																																																				"showStartupAnimation": true,
-																																																				"editorUrl": <?php echo wp_json_encode( $printess_ui_version ); ?>,
-																																																				"theme": <?php echo wp_json_encode( $theme ); ?>
-																																																			},
-																																																			"editorUrl": <?php echo wp_json_encode( PrintessAdminSettings::get_embed_html_url() ); ?>,
-																																																			"shopToken": <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
-																																																			"hidePricesInEditor": true,
-																																																			"editorVersion": "",
-																																																			"shopMoneyFormat": "{{ shop.money_format }}",
-																																																			"idsToHide": idsToHide,
-																																																			"classesToHide": classesToHide,
-																																																			"addToCartAfterCustomization": false,
-																																																			"editorMode": "admin",
-																																																			"userIsLoggedIn": <?php echo wp_json_encode( is_user_logged_in() ); ?>,
-																																																			"nonce": <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>,
-																																																			"customizeButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>,
-																																																			"showPricesInEditor": false,
-																																																			"cartUrl": <?php echo wp_json_encode( wc_get_cart_url() ) ?>
-																																																		}) : null;
-
-					if(!editor) {
-						console.warn("Unable to initialize printess editor.");
-						return;
-					}
-
-					const settings = {
-						templateNameOrSaveToken: <?php echo wp_json_encode( $printess_save_token ); ?>,
-						product: product,
-						basektId: <?php echo wp_json_encode( uniqid( '', true ) ); ?>,
-						userId: <?php echo wp_json_encode( "" . $order->get_user_id() ); ?>,
-						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
-						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text() ); ?>
-					};
-
-					editor.show(settings);
-				};
-
-				document.addEventListener("DOMContentLoaded", showPrintessEditor);
-			</script>
-			<span id="printess-saving-message" style="display:none;"><?php echo esc_html__( 'Saving design and redirecting back to order detail page...', 'printess-editor' ); ?></span>
-			<span id="printess-loading-message"><?php echo esc_html__( 'Loading editor...', 'printess-editor' ); ?></span>
-			<a style="display: none;" id="printess-admin-save" href="<?php echo esc_url( $url ); ?>"></a>
-		</body>
-	</html>
-		<?php
-			die;
-	}
+?>
+<script type="module">
+   const printessLoader = await import(<?php echo wp_json_encode(PrintessAdminSettings::get_editor_url()) ?> + "/loader.js");
+    const printess = await printessLoader.load({
+      token: <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
+      templateName: <?php echo wp_json_encode( filter_input( INPUT_GET, 'printess_save_token', FILTER_SANITIZE_SPECIAL_CHARS )) ?>,
+      templateVersion: "published",
+      basketId: "Some-Unique-Basket-Or-Session-Id",
+      theme: <?php echo wp_json_encode( $theme ) ?>,
+      addToBasketCallback: (saveToken, thumbnailUrl) => 
+        { 
+          window.location.href = <?php echo wp_json_encode( $url ) ?> +  "&pst=" + saveToken + "&ptu=" + encodeURI(thumbnailUrl);
+        } 
+    })
+    
+</script>
+<?php
+    die;
+  }
 }
 
-				/**
-				 * Request handler to edit an Printess order line item.
-				 */
+/**
+ * Request handler to edit an Printess order line item.
+ */
 function printess_save_edited_order_line_item() {
 	$action = filter_input( INPUT_GET, 'action' );
 	$nonce  = filter_input( INPUT_GET, 'nonce' );
