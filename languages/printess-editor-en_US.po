@@ -3,7 +3,7 @@ msgstr ""
 "Project-Id-Version: Printess Editor\n"
 "Report-Msgid-Bugs-To: \n"
 "POT-Creation-Date: 2023-09-26 09:19+0000\n"
-"PO-Revision-Date: 2025-08-05 15:31+0000\n"
+"PO-Revision-Date: 2026-07-08 05:24+0000\n"
 "Last-Translator: \n"
 "Language-Team: English (United States)\n"
 "Language: en-US\n"
@@ -15,78 +15,87 @@ msgstr ""
 "X-Loco-Version: 2.6.6; wp-6.3.1\n"
 "X-Domain: printess-editor"
 
-#: includes/printess-admin-settings.php:798
+#: includes/printess-admin-settings.php:1051
 msgid "Access Token"
 msgstr ""
 
-#: printess.php:2138
+#: printess.php:2216
 msgid "account page"
 msgstr "account page"
 
-#: includes/printess-admin-settings.php:394
+#: includes/printess-admin-settings.php:1332
+msgid "ACF Field to Printess formfield mappings"
+msgstr ""
+
+#: includes/printess-admin-settings.php:617
 msgid "Add to cart after customization"
 msgstr "Add to cart after customization"
 
-#: includes/printess-admin-settings.php:337
+#: includes/printess-admin-settings.php:467
 msgid "Additional classes for customize button"
 msgstr "Additional classes for customize button"
 
-#: printess.php:71
+#: printess.php:73
 msgid ""
 "After saving, your saved design can be found under {SAVE_DESIGN} on your "
 "account page."
 msgstr ""
 
-#: includes/printess-admin-settings.php:253
+#: includes/printess-admin-settings.php:425
 msgid "Api Domain"
 msgstr "Api Domain"
 
-#: printess.php:2085
+#: printess.php:2163
 msgid "Approve and send to production."
 msgstr "Approve and send to production."
 
-#: includes/printess-admin-settings.php:374
+#: includes/printess-admin-settings.php:597
 msgid "Automatic"
 msgstr "Automatic"
 
-#: printess.php:3304
+#: printess.php:3493
 msgid "Available until"
 msgstr ""
 
-#: includes/printess-product-helpers.php:360
+#: includes/printess-product-helpers.php:431
 msgid "Buyer side user interface"
 msgstr ""
 
-#: printess.php:77 includes/printess-dialogs.php:25
+#: printess.php:79 includes/printess-dialogs.php:27 
+#: includes/printess-dialogs.php:55
 msgid "Cancel"
 msgstr ""
 
-#: includes/printess-admin-settings.php:316
+#: includes/printess-admin-settings.php:551
 msgid "Class names to hide when showing editor"
 msgstr "Class names to hide when showing editor"
 
-#: includes/printess-product-helpers.php:361
-msgid "Classical or the new PanelUi (Beta!)."
+#: printess.php:3799
+msgid "Clear the list of orphaned save tokens"
 msgstr ""
 
-#: printess.php:2691
+#: printess.php:2837
 msgid "Could not find line item or product..."
 msgstr ""
 
-#: printess.php:542 printess.php:2664
+#: printess.php:573 printess.php:2810
 msgid "Customize"
 msgstr "Customize"
 
-#: includes/printess-admin-settings.php:643 
-#: includes/printess-admin-settings.php:703
+#: includes/printess-admin-settings.php:518
+msgid "Customize button id"
+msgstr ""
+
+#: includes/printess-admin-settings.php:896 
+#: includes/printess-admin-settings.php:956
 msgid "days"
 msgstr ""
 
-#: includes/printess-product-helpers.php:305
+#: includes/printess-product-helpers.php:376
 msgid "Default"
 msgstr ""
 
-#: includes/printess-admin-settings.php:992
+#: includes/printess-admin-settings.php:1245
 msgid "Default Editor Theme"
 msgstr ""
 
@@ -94,32 +103,44 @@ msgstr ""
 msgid "Defaults"
 msgstr "Defaults"
 
-#: printess.php:3304 printess.php:3340
+#: printess.php:3493 printess.php:3529
 msgid "Delete"
 msgstr ""
 
-#: printess.php:1712 printess.php:1940
+#: includes/printess-admin-settings.php:1436
+msgid "Delete original basket item only on same design name"
+msgstr ""
+
+#: printess.php:1781 printess.php:2017 printess.php:2477 printess.php:4045
 msgid "Design Name"
 msgstr ""
 
-#: printess.php:65 includes/printess-dialogs.php:16
+#: printess.php:67 includes/printess-dialogs.php:18
 msgid "Design name"
 msgstr ""
 
-#: includes/printess-admin-settings.php:506
+#: includes/printess-admin-settings.php:1362
+msgid "Disable auto import of image urls in form field values"
+msgstr ""
+
+#: includes/printess-admin-settings.php:1502
+msgid "Disable unpersonalized items warning in basket"
+msgstr ""
+
+#: includes/printess-admin-settings.php:729
 msgid "Display legal info in case prices are displayed inside editor"
 msgstr ""
 
-#: includes/printess-admin-settings.php:932
+#: includes/printess-admin-settings.php:1185
 msgid "Display line item id in order view"
 msgstr ""
 
-#: printess.php:3304
+#: printess.php:3493
 msgid "Display name"
 msgstr ""
 
-#: includes/printess-product-helpers.php:311 
-#: includes/printess-admin-settings.php:1066
+#: includes/printess-admin-settings.php:1415 
+#: includes/printess-product-helpers.php:382
 msgid "Do not use"
 msgstr ""
 
@@ -127,62 +148,74 @@ msgstr ""
 msgid "Do not use dropshipping override"
 msgstr ""
 
-#: includes/printess-product-helpers.php:274
+#: printess.php:3530
+msgid "Do you really want to delete the design {0}?"
+msgstr ""
+
+#: includes/printess-product-helpers.php:345
 msgid "Document based output settings"
 msgstr ""
 
-#: includes/printess-product-helpers.php:275
+#: includes/printess-product-helpers.php:346
 msgid ""
 "Document specific output settings (e.g. different file format for different "
 "documents)"
 msgstr ""
 
-#: includes/printess-product-helpers.php:173
+#: includes/printess-product-helpers.php:244
 msgid "Dropshipping"
 msgstr "Dropshipping"
 
-#: printess.php:2178 printess.php:3304 printess.php:3336 printess.php:3384
+#: printess.php:2258 printess.php:3493 printess.php:3525 printess.php:3848
 msgid "Edit"
 msgstr "Edit"
 
-#: printess.php:2037
+#: printess.php:2098
 msgid "Edit Customer Design"
 msgstr "Edit Customer Design"
 
-#: printess.php:2029
+#: printess.php:2088
 msgid "Edit save token"
 msgstr ""
 
-#: includes/printess-admin-settings.php:274
+#: includes/printess-admin-settings.php:446
 msgid "Embed Html Url"
 msgstr "Embed Html Url"
 
-#: includes/printess-admin-settings.php:962
+#: includes/printess-admin-settings.php:1215
 msgid "Enable Debug Mode"
 msgstr "Enable Debug Mode"
 
-#: includes/printess-admin-settings.php:602
+#: includes/printess-admin-settings.php:825
 msgid "Enable saving of designs"
 msgstr ""
 
-#: includes/printess-admin-settings.php:1068
+#: includes/printess-admin-settings.php:1417
 msgid "enforce"
 msgstr ""
 
-#: includes/printess-admin-settings.php:1056
+#: includes/printess-admin-settings.php:1405
 msgid "Enforce Design Name during add to basket"
 msgstr ""
 
-#: includes/printess-dialogs.php:17
+#: includes/printess-dialogs.php:19
 msgid "Enter the design name"
 msgstr ""
 
-#: printess.php:66
+#: printess.php:68
 msgid "Enter your display name"
 msgstr ""
 
-#: printess.php:2101
+#: printess.php:2091
+msgid "Expires On:"
+msgstr ""
+
+#: printess.php:2179
 msgid "Form field"
+msgstr ""
+
+#: includes/printess-admin-settings.php:488
+msgid "Hide default customize button classes"
 msgstr ""
 
 #. Author URI of the plugin
@@ -193,63 +226,73 @@ msgstr "https://printess.com"
 msgid "https://printess.com/kb/integrations/woo-commerce/index.html"
 msgstr "https://printess.com/kb/integrations/woo-commerce/index.html"
 
-#: includes/printess-admin-settings.php:295
+#: includes/printess-admin-settings.php:530
 msgid "Ids to hide when showing editor"
 msgstr "Ids to hide when showing editor"
 
-#: printess.php:1996
+#: includes/printess-product-helpers.php:454
+msgid ""
+"If set to yes, the data table record count will be used as basket item "
+"quantity"
+msgstr ""
+
+#: printess.php:2076
 msgid "Invalid save token"
 msgstr ""
 
-#: includes/printess-product-helpers.php:287
+#: printess.php:3094
+msgid "Is merge template"
+msgstr ""
+
+#: includes/printess-product-helpers.php:358
 msgid "Item Usage"
 msgstr ""
 
-#: includes/printess-admin-settings.php:563
+#: includes/printess-admin-settings.php:786
 msgid "JPEG Compression"
 msgstr ""
 
-#: includes/printess-admin-settings.php:543
+#: includes/printess-admin-settings.php:766
 msgid "JPG"
 msgstr ""
 
-#: includes/printess-product-helpers.php:253
+#: includes/printess-product-helpers.php:324
 msgid "JPG compression"
 msgstr ""
 
-#: includes/printess-product-helpers.php:288
+#: includes/printess-product-helpers.php:359
 msgid "Json configuration for item based usage pricing"
 msgstr ""
 
-#: printess.php:1716
+#: printess.php:1785
 msgid "Line item id"
 msgstr ""
 
-#: printess.php:2034
+#: printess.php:2116
 msgid "Line item id:"
 msgstr ""
 
-#: printess.php:2778
+#: printess.php:2924
 msgid "Loading editor..."
 msgstr ""
 
-#: includes/printess-admin-settings.php:375
+#: includes/printess-admin-settings.php:598
 msgid "Manual"
 msgstr "Manual"
 
-#: includes/printess-product-helpers.php:195
+#: includes/printess-product-helpers.php:266
 msgid "Merge Template 1"
 msgstr "Merge Template 1"
 
-#: includes/printess-product-helpers.php:203
+#: includes/printess-product-helpers.php:274
 msgid "Merge Template 2"
 msgstr "Merge Template 2"
 
-#: includes/printess-product-helpers.php:211
+#: includes/printess-product-helpers.php:282
 msgid "Merge Template 3"
 msgstr "Merge Template 3"
 
-#: printess.php:3361
+#: printess.php:3551
 msgid "Next"
 msgstr ""
 
@@ -258,63 +301,67 @@ msgstr ""
 msgid "No dropshipping"
 msgstr "No dropshipping"
 
-#: printess.php:3274
+#: printess.php:3463
 msgid "No saved designs yet"
 msgstr ""
 
-#: printess.php:3233
+#: printess.php:3414
 msgid "Not logged in"
 msgstr ""
 
-#: includes/printess-dialogs.php:24
+#: includes/printess-dialogs.php:26
 msgid "Ok"
 msgstr ""
 
-#: printess.php:1791
+#: printess.php:1861
 msgid "Open"
 msgstr ""
 
-#: printess.php:1708
+#: printess.php:1776
 msgid "Open design"
 msgstr ""
 
-#: includes/printess-admin-settings.php:1067
+#: includes/printess-admin-settings.php:1416
 msgid "optional"
 msgstr ""
 
-#: includes/printess-admin-settings.php:358
+#: includes/printess-admin-settings.php:581
 msgid "Order Approval Mode"
 msgstr "Order Approval Mode"
 
-#: includes/printess-admin-settings.php:692
+#: includes/printess-admin-settings.php:945
 msgid "Ordered Design lifetime (Days)"
 msgstr ""
 
-#: printess.php:1967
+#: printess.php:2046
 msgid "Original Save token:"
 msgstr ""
 
-#: includes/printess-product-helpers.php:238
+#: includes/printess-product-helpers.php:309
 msgid "Output DPI"
 msgstr "Output DPI"
 
-#: includes/printess-admin-settings.php:531
+#: includes/printess-admin-settings.php:754
 msgid "Output Format"
 msgstr ""
 
-#: includes/printess-product-helpers.php:223
+#: includes/printess-product-helpers.php:294
 msgid "Output Type"
 msgstr "Output Type"
 
-#: includes/printess-admin-settings.php:823
+#: includes/printess-admin-settings.php:1076
 msgid "Overwrite product drop shipper in case of template mode"
 msgstr ""
 
-#: includes/printess-product-helpers.php:322
+#: includes/printess-product-helpers.php:393
 msgid "Page Count Option"
 msgstr ""
 
-#: includes/printess-admin-settings.php:541
+#: includes/printess-product-helpers.php:432
+msgid "PanelUi or the old deprecated iframe intgeration"
+msgstr ""
+
+#: includes/printess-admin-settings.php:764
 msgid "PDF"
 msgstr ""
 
@@ -326,31 +373,31 @@ msgstr ""
 "Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless "
 "possibilities."
 
-#: printess.php:1682
+#: printess.php:1750
 msgid "Personalized products"
 msgstr ""
 
-#: printess.php:494
+#: printess.php:520
 msgid "Please close this window or tab."
 msgstr "Please close this window or tab."
 
-#: printess.php:2137
+#: printess.php:2215
 msgid "Please copy & paste the shop and service tokens from your"
 msgstr "Please copy & paste the shop and service tokens from your"
 
-#: includes/printess-dialogs.php:12
+#: includes/printess-dialogs.php:13
 msgid "Please provide a design name"
 msgstr ""
 
-#: printess.php:491
+#: printess.php:517
 msgid "Please provide a display name."
 msgstr ""
 
-#: includes/printess-admin-settings.php:542
+#: includes/printess-admin-settings.php:765
 msgid "PNG"
 msgstr ""
 
-#: printess.php:3357
+#: printess.php:3547
 msgid "Previous"
 msgstr ""
 
@@ -362,220 +409,274 @@ msgstr "Printess"
 msgid "Printess Editor"
 msgstr "Printess Editor"
 
-#: printess.php:2047
+#: printess.php:2125
 msgid "Printess Error Details"
 msgstr "Printess Error Details"
 
-#: printess.php:2095
+#: printess.php:2173
 msgid "Printess Form Fields"
 msgstr ""
 
-#: printess.php:2053 printess.php:2061 printess.php:2069
+#: printess.php:2131 printess.php:2139 printess.php:2147
 msgid "Printess Production Files"
 msgstr "Printess Production Files"
 
 #. section slug .
-#: includes/printess-admin-settings.php:209
+#: includes/printess-admin-settings.php:381
 msgid "Printess Settings"
 msgstr "Printess Settings"
 
-#: printess.php:2926
-msgid "Printess Template"
-msgstr "Printess Template"
-
-#: printess.php:2087
+#: printess.php:2165
 msgid "Processing."
 msgstr "Processing."
 
-#: printess.php:1697 printess.php:1855
+#: printess.php:1765 printess.php:1932
 msgid "Product"
 msgstr "Product"
 
-#: printess.php:3304
+#: printess.php:3493
 msgid "Product name"
 msgstr ""
 
-#: printess.php:1764
+#: printess.php:1833
 msgid "Product thumbnail"
 msgstr ""
 
-#: includes/printess-admin-settings.php:870
+#: includes/printess-admin-settings.php:1123
 msgid "Provide input for design name on second save"
 msgstr ""
 
-#: includes/printess-admin-settings.php:1019
+#: includes/printess-admin-settings.php:1272
 msgid "Push user fields"
 msgstr ""
 
-#: includes/printess-product-helpers.php:303
+#: includes/printess-product-helpers.php:453
+msgid "Record count is quantity"
+msgstr ""
+
+#: includes/printess-product-helpers.php:374
 msgid "Redirect page"
 msgstr ""
 
-#: printess.php:53 printess.php:76
+#: includes/printess-dialogs.php:42
+msgid "Reminder to save your work"
+msgstr ""
+
+#: printess.php:2113
+msgid "Reproduce item"
+msgstr ""
+
+#: printess.php:3734
+msgid "Restored saved designs from browser storage. Reloading page now."
+msgstr ""
+
+#: includes/printess-dialogs.php:54
+msgid "Save"
+msgstr ""
+
+#: printess.php:55 printess.php:78
 msgid "Save design"
 msgstr ""
 
-#: printess.php:2144
+#: printess.php:2222
 msgid "Save Settings"
 msgstr "Save Settings"
 
-#: printess.php:1983
+#: printess.php:2062
 msgid "Save token:"
 msgstr ""
 
-#: includes/printess-admin-settings.php:632
+#: includes/printess-admin-settings.php:885
 msgid "Saved Design lifetime (Days)"
 msgstr ""
 
-#: printess.php:2976 printess.php:3293
+#: printess.php:3152 printess.php:3482
 msgid "Saved Designs"
 msgstr ""
 
-#: printess.php:56 printess.php:60 printess.php:71
+#: printess.php:58 printess.php:62 printess.php:73
 msgid "Saved designs"
 msgstr ""
 
-#: printess.php:2777
+#: printess.php:2923
 #, fuzzy
 #| msgid "Saving design and redirecting back to product page..."
 msgid "Saving design and redirecting back to order detail page..."
 msgstr "Saving design and redirecting back to product page..."
 
-#: printess.php:493
+#: printess.php:519
 msgid "Saving design to your list of saved designs"
 msgstr ""
 
-#: printess.php:51
+#: printess.php:52
 msgid "Saving your design"
 msgstr ""
 
-#: printess.php:3296
+#: printess.php:3485
 msgid "Search"
 msgstr ""
 
-#: printess.php:3294
+#: printess.php:3483
 msgid "Search for name"
 msgstr ""
 
-#: includes/printess-admin-settings.php:232
+#: includes/printess-admin-settings.php:404
 msgid "Service Token"
 msgstr "Service Token"
 
-#: printess.php:1850
+#: printess.php:1927
 msgid "Shipping"
 msgstr "Shipping"
 
-#: printess.php:1594 printess.php:1704 printess.php:1860
+#: printess.php:1662 printess.php:1772 printess.php:1937
 msgid "Shipping status"
 msgstr "Shipping status"
 
 #. setting slug .
-#: includes/printess-admin-settings.php:218
+#: includes/printess-admin-settings.php:390
 msgid "Shop Token"
 msgstr "Shop Token"
 
-#: includes/printess-admin-settings.php:420
+#: includes/printess-admin-settings.php:643
 msgid "Show customize button on archive page"
 msgstr "Show customize button on archive page"
 
-#: includes/printess-admin-settings.php:898
+#: includes/printess-admin-settings.php:1151
 msgid "Show original product in basket"
 msgstr ""
 
-#: includes/printess-admin-settings.php:446
+#: includes/printess-admin-settings.php:669
 msgid "Show prices inside editor"
 msgstr ""
 
-#: includes/printess-admin-settings.php:476
+#: includes/printess-admin-settings.php:699
 msgid "Show product name inside editor"
 msgstr ""
 
-#: includes/printess-admin-settings.php:775
+#: includes/printess-admin-settings.php:855
+msgid "Show save warning after x minutes"
+msgstr ""
+
+#: includes/printess-admin-settings.php:1469
+msgid "Show warning on tab close or page reload"
+msgstr ""
+
+#: printess.php:3094
+msgid "Template name"
+msgstr ""
+
+#: printess.php:3095
+msgid "Template name or merge template"
+msgstr ""
+
+#: printess.php:3769 printess.php:3781
+msgid ""
+"The following orphaned save tokens have been found. Do you want to clear the "
+"list of orphanes save tokens now?"
+msgstr ""
+
+#: includes/printess-admin-settings.php:1028
 msgid "The height of the rendered thumbnail"
 msgstr ""
 
-#: includes/printess-product-helpers.php:254
+#: includes/printess-product-helpers.php:325
 msgid "The jpg compression ratio. Defaults to 90. 0 = Use system setting"
 msgstr ""
 
-#: includes/printess-product-helpers.php:196
+#: includes/printess-product-helpers.php:267
 msgid "The name of the optional 1st merge template within Printess"
 msgstr "The name of the optional 1st merge template within Printess"
 
-#: includes/printess-product-helpers.php:204
+#: includes/printess-product-helpers.php:275
 msgid "The name of the optional 2nd merge template within Printess"
 msgstr "The name of the optional 2nd merge template within Printess"
 
-#: includes/printess-product-helpers.php:212
+#: includes/printess-product-helpers.php:283
 msgid "The name of the optional 3rd merge template within Printess"
 msgstr "The name of the optional 3rd merge template within Printess"
 
-#: includes/printess-product-helpers.php:323
+#: includes/printess-product-helpers.php:394
 msgid ""
 "The option that contains the page count for configurable book templates."
 msgstr ""
 
-#: includes/printess-product-helpers.php:224
+#: includes/printess-product-helpers.php:295
 msgid "The output file type. Defaults to output a pdf file."
 msgstr "The output file type. Defaults to output a pdf file."
 
-#: includes/printess-product-helpers.php:304
+#: includes/printess-product-helpers.php:375
 msgid ""
 "The page that should be opened after the product has been added to the cart."
 msgstr ""
 
-#: includes/printess-product-helpers.php:239
+#: includes/printess-product-helpers.php:310
 msgid "The used output dpi. Defaults to 300"
 msgstr "The used output dpi. Defaults to 300"
 
-#: includes/printess-admin-settings.php:752
+#: includes/printess-admin-settings.php:1005
 msgid "The width of the rendered thumbnail"
 msgstr ""
 
-#: printess.php:492
+#: printess.php:518
 msgid "There was an error while trying to save your design"
 msgstr ""
 
-#: printess.php:2343
+#: printess.php:2489
 msgid "This item was edited. Consider removing it from your cart."
 msgstr ""
 
-#: printess.php:3304
+#: printess.php:3493
 msgid "Thumbnail"
 msgstr ""
 
-#: includes/printess-admin-settings.php:544
+#: includes/printess-admin-settings.php:767
 msgid "TIF"
 msgstr ""
 
-#: printess.php:1573 printess.php:1700 printess.php:1857
+#: printess.php:1641 printess.php:1768 printess.php:1934
 msgid "Tracking"
 msgstr "Tracking"
 
-#: printess.php:1557 printess.php:1723 printess.php:1870
+#: printess.php:1625 printess.php:1792 printess.php:1947
 msgid "Tracking link"
 msgstr "Tracking link"
 
-#: includes/printess-admin-settings.php:643 
-#: includes/printess-admin-settings.php:653 
-#: includes/printess-admin-settings.php:703 
-#: includes/printess-admin-settings.php:713
+#: printess.php:521
+msgid "Unable to save changes due to invalid value for {0}."
+msgstr ""
+
+#: includes/printess-admin-settings.php:896 
+#: includes/printess-admin-settings.php:906 
+#: includes/printess-admin-settings.php:956 
+#: includes/printess-admin-settings.php:966
 msgid "Unlimited"
+msgstr ""
+
+#: includes/printess-admin-settings.php:1299
+msgid "Use names instead of labels for ACF fields"
 msgstr ""
 
 #: includes/printess-html-helpers.php:24 includes/printess-html-helpers.php:66
 msgid "Use template settings"
 msgstr "Use template settings"
 
-#: printess.php:2102
+#: printess.php:1777
+msgid "Valid until"
+msgstr ""
+
+#: printess.php:2180
 msgid "Value"
 msgstr ""
 
-#: printess.php:1535
+#: printess.php:1603
 msgid "View thumbnail in new window."
 msgstr "View thumbnail in new window."
 
-#: printess.php:53
+#: includes/printess-admin-settings.php:1535
+msgid "Write tracking events to DOM"
+msgstr ""
+
+#: printess.php:55
 msgid ""
 "You are currently not logged in. To be able to save designs you need to be "
 "logged in. You will be redirected to the login page after clicking on "
@@ -584,13 +685,25 @@ msgid ""
 "design."
 msgstr ""
 
-#: printess.php:60
+#: printess.php:62
 msgid ""
 "You can provide a new design name to store this version under a different "
 "name. This new version can then be found on your {SAVE_DESIGN} page as well."
 msgstr ""
 
-#: printess.php:56
+#: includes/printess-dialogs.php:47
+msgid ""
+"You did not save your work within the last {MINUTES} minutes. Do you want to "
+"save your changes now?"
+msgstr ""
+
+#: printess.php:4082
+msgid ""
+"You just added a personalized product without any personalization. Please "
+"personalize the product first."
+msgstr ""
+
+#: printess.php:58
 msgid ""
 "You need to provide a display name for your saved design. This name is shown "
 "on the {SAVE_DESIGN} page so that you can easily find it on future visits."
