@@ -1723,6 +1723,15 @@ const initPrintessWCEditor = function (printessSettings) {
                     }
                 }
             }
+            if (printessSettings.attachParams) {
+                if (!settings.additionalAttachParams) {
+                    settings.additionalAttachParams = {};
+                }
+                settings.additionalAttachParams = {
+                    ...printessSettings.attachParams,
+                    ...settings.additionalAttachParams
+                };
+            }
             if (settings && settings.additionalAttachParams && typeof settings.additionalAttachParams["pageCountFormField"] !== "undefined") {
                 settings.additionalAttachParams = JSON.parse(JSON.stringify(settings.additionalAttachParams));
                 settings.additionalAttachParams["pageCountFormField"] = mapFormFieldName(settings.product, settings.additionalAttachParams["pageCountFormField"]);

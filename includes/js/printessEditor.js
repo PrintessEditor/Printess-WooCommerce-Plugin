@@ -255,6 +255,12 @@
                     break;
                 case 'basket':
                     const addToBasket = (saveToken, thumbnailUrl) => {
+                        if (!saveToken) {
+                            setTimeout(function () {
+                                alert("It seems like the system was unable to save your changes. Please try again.");
+                            }, 0);
+                            return;
+                        }
                         window.removeEventListener('message', eventListener);
                         window.removeEventListener('beforeunload', closeTabListener);
                         window.removeEventListener('unload', closeTabListener);
@@ -589,6 +595,22 @@
             iframe.contentWindow?.postMessage({ cmd: "importImages", parameters: [userId || "", basketId] }, "*");
         }
     }
+    setFormFieldValueOnClassicEditor(iframe, formFieldName, formFieldValue) {
+        const formFields = {};
+        formFields[formFieldName] = formFieldValue;
+        const mappedFormFields = PrintessEditor.applyFormFieldMappings(formFields, PrintessEditor.currentContext.getFormFieldMappings());
+        if (mappedFormFields.length > 0) {
+            iframe.contentWindow?.postMessage({ cmd: "setFormFieldValue", parameters: [mappedFormFields[0].name, mappedFormFields[0].value] }, "*");
+        }
+    }
+    setFormFieldValueOnBcUi(editor, formFieldName, formFieldValue) {
+        const formFields = {};
+        formFields[formFieldName] = formFieldValue;
+        const mappedFormFields = PrintessEditor.applyFormFieldMappings(formFields, PrintessEditor.currentContext.getFormFieldMappings());
+        if (mappedFormFields.length > 0) {
+            editor.api.setFormFieldValue(mappedFormFields[0].name, mappedFormFields[0].value);
+        }
+    }
     static generateUUID() {
         var d = new Date().getTime(); //Timestamp
         var d2 = ((typeof performance !== 'undefined') && performance.now && (performance.now() * 1000)) || 0; //Time in microseconds since page-load or 0 if unsupported
@@ -671,7 +693,7 @@
             }
         });
     }
-    async showBcUiVersion(callbacks) {
+    async showBcUiVersion(context, callbacks) {
         const that = this;
         const priceInfo = PrintessEditor.currentContext.getPriceInfo();
         let isSaveToken = PrintessEditor.currentContext.templateNameOrSaveToken && PrintessEditor.currentContext.templateNameOrSaveToken.indexOf("st:") === 0;
@@ -719,6 +741,9 @@
         if (printessComponent && printessComponent.editor) {
             printessComponent.style.display = "block";
             await printessComponent.editor.api.loadTemplateAndFormFields(PrintessEditor.currentContext.templateNameOrSaveToken, mergeTemplates, formFields, null, null, true);
+            context.setFormFieldValue = (formFieldName, formFieldValue) => {
+                that.setFormFieldValueOnBcUi(printessComponent.editor, formFieldName, formFieldValue);
+            };
             if (!isSaveToken && pageCount !== null && pageCount > 0) {
                 await printessComponent.editor.api.setBookInsidePages(pageCount);
             }
@@ -777,7 +802,7 @@
                 token: that.Settings.shopToken,
                 templateName: PrintessEditor.currentContext.templateNameOrSaveToken, // "Premier Test-3",// "test Trigger Dialog",  // "price-tester", // "Premier Test", //  "Children's book", // "Label FF Test", //"test Trigger Dialog",   "test Trigger Dialog", // "Bathrobe Man", //
                 //templateVersion: "publish",//"draft"
-                translationKey: "auto", //"en"
+                translationKey: that.Settings.translationKey || "auto", //"en"
                 basketId: await PrintessEditor.getOrGenerateBasketId(),
                 shopUserId: "" + (await PrintessEditor.getUserId()),
                 // mobileMargin: {left: 20, right: 40, top: 30, bottom: 40},
@@ -786,11 +811,29 @@
                 theme: theme,
                 skipExchangeStateApplication: true,
                 addToBasketCallback: (token, thumbnailUrl) => {
+                    const addToBasketParams = {};
+                    const editor = that.getPrintessComponent()?.editor;
+                    if (editor) {
+                        const pageInfo = editor.api.getAllDocsAndSpreads(true).find(x => x.isBook === true);
+                        if (pageInfo) {
+                            if (typeof pageInfo.pageCount !== undefined && pageInfo.pageCount > 0) {
+                                addToBasketParams.pageCount = pageInfo.pageCount;
+                                addToBasketParams.additionalPages = Math.abs(pageInfo.pageCount - pageInfo.minPages);
+                                addToBasketParams.minPages = pageInfo.minPages;
+                            }
+                        }
+                    }
                     const addToBasket = (saveToken, thumbnailUrl) => {
+                        if (!saveToken) {
+                            setTimeout(function () {
+                                alert("It seems like the system was unable to save your changes. Please try again.");
+                            }, 0);
+                            return;
+                        }
                         window.removeEventListener('beforeunload', closeTabListener);
                         window.removeEventListener('unload', closeTabListener);
                         if (callbacks && typeof callbacks.onAddToBasketAsync === "function") {
-                            callbacks.onAddToBasketAsync(token, thumbnailUrl).then(() => { });
+                            callbacks.onAddToBasketAsync(token, thumbnailUrl, addToBasketParams).then(() => { });
                         }
                     };
                     if (typeof PrintessEditor.currentContext.onAllowAddToBasket === "function") {
@@ -844,6 +887,13 @@
                     }
                 }
             };
+            if (context.additionalAttachParams) {
+                for (const property in context.additionalAttachParams) {
+                    if (context.additionalAttachParams.hasOwnProperty(property)) {
+                        attachParams[property] = context.additionalAttachParams[property];
+                    }
+                }
+            }
             if (typeof PrintessEditor.currentContext.showSplitterGridSizeButton !== "undefined" && PrintessEditor.currentContext.showSplitterGridSizeButton !== null) {
                 attachParams["showSplitterGridSizeButton"] = PrintessEditor.currentContext.showSplitterGridSizeButton === true || PrintessEditor.currentContext.showSplitterGridSizeButton === "true";
             }
@@ -857,6 +907,9 @@
             const printess = await printessLoader.load(attachParams);
             printessComponent = that.getPrintessComponent();
             printessComponent.editor = printess;
+            context.setFormFieldValue = (formFieldName, formFieldValue) => {
+                that.setFormFieldValueOnBcUi(printessComponent.editor, formFieldName, formFieldValue);
+            };
             setTimeout(async function () {
                 const printessComponent = that.getPrintessComponent();
                 if (!printessComponent) {
@@ -912,13 +965,19 @@
             onBack: () => {
                 that.hide(true);
             },
-            onAddToBasketAsync: async (saveToken, thumbnailUrl) => {
+            onAddToBasketAsync: async (saveToken, thumbnailUrl, params) => {
+                if (!saveToken) {
+                    setTimeout(function () {
+                        alert("It seems like the system was unable to save your changes. Please try again.");
+                    }, 0);
+                    return;
+                }
                 let result = null;
                 if (typeof PrintessEditor.currentContext.onAddToBasketAsync === "function") {
-                    result = await PrintessEditor.currentContext.onAddToBasketAsync(saveToken, thumbnailUrl);
+                    result = await PrintessEditor.currentContext.onAddToBasketAsync(saveToken, thumbnailUrl, params);
                 }
                 else {
-                    result = PrintessEditor.currentContext.onAddToBasket(saveToken, thumbnailUrl);
+                    result = PrintessEditor.currentContext.onAddToBasket(saveToken, thumbnailUrl, params);
                 }
                 if (result && result.waitUntilClosingMS) {
                     setTimeout(function () {
@@ -978,7 +1037,7 @@
             that.save(callbacks);
         };
         if (this.usePanelUi()) {
-            that.showBcUiVersion(callbacks);
+            await that.showBcUiVersion(shopContext, callbacks);
         }
         else {
             const priceInfo = PrintessEditor.currentContext.getPriceInfo();
@@ -1012,7 +1071,8 @@
                         formFields: formFields,
                         snippetPriceCategoryLabels: priceInfo && priceInfo.snippetPrices ? priceInfo.snippetPrices : null,
                         mergeTemplates: mergeTemplates,
-                        skipExchangeStateApplication: true
+                        skipExchangeStateApplication: true,
+                        translationKey: that.Settings.translationKey || "auto", //"en"
                     };
                     if (typeof PrintessEditor.currentContext.showSplitterGridSizeButton !== "undefined" && PrintessEditor.currentContext.showSplitterGridSizeButton !== null) {
                         attachParams["showSplitterGridSizeButton"] = PrintessEditor.currentContext.showSplitterGridSizeButton === true || PrintessEditor.currentContext.showSplitterGridSizeButton === "true";
@@ -1082,6 +1142,9 @@
                     cmd: "loadTemplateAndFormFields",
                     parameters: [loadParams.templateNameOrToken, loadParams.mergeTemplates, loadParams.formFields, loadParams.snippetPriceCategoryLabels, loadParams.formFieldProperties, loadParams.clearExchangeCaches]
                 }, '*');
+                shopContext.setFormFieldValue = (formFieldName, formFieldValue) => {
+                    that.setFormFieldValueOnClassicEditor(iFrame, formFieldName, formFieldValue);
+                };
                 setTimeout(function () { iFrame.contentWindow.focus(); }, 0);
                 if (!isSaveToken && pageCount !== null && pageCount > 0) {
                     setTimeout(function () {
@@ -1115,6 +1178,7 @@
                 }
             }, 30000);
         }
+        return true;
     }
     hide(closeButtonClicked) {
         if (!PrintessEditor.visible) {
@@ -1188,6 +1252,7 @@ PrintessEditor.visible = false;function initPrintessEditor(shopToken, editorUrl,
             editorVersion: shopToken["editorVersion"] ? shopToken["editorVersion"] : "",
             attachParams: shopToken["attachParams"] ? shopToken["attachParams"] : "",
             showAlertOnTabClose: typeof shopToken["showTabClosingAlert"] !== "undefined" && shopToken["showTabClosingAlert"] !== null ? shopToken["showTabClosingAlert"] === true : false,
+            translationKey: shopToken["translationKey"] ? shopToken["translationKey"] : "",
             uiSettings: {
                 showStartupAnimation: typeof shopToken["showStartupAnimation"] !== "undefined" && shopToken["showStartupAnimation"] !== null ? shopToken["showStartupAnimation"] === true : true,
                 startupBackgroundColor: shopToken["startupBackgroundColor"] || "#ffffff",

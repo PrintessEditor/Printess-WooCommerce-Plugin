@@ -4,7 +4,7 @@ Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
 WC Tested up to: 10.4.3
-Stable tag: 1.6.89
+Stable tag: 1.6.90
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -417,3 +417,6 @@ Please check https://printess.com/pricing.html for more details.
 
   = 1.6.89 =
  - Editing of order line items is now using the PanelUi as editor.
+
+  = 1.6.90 =
+ - Fixed missing forwarding of max basket thumbnail width / height to Printess PanelUi
