@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.90
+ * Version: 1.6.91
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -15,7 +15,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://gnu.org
  *
- * Woo: 10000:924049dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924050dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */
@@ -98,7 +98,7 @@ function printess_render_save_dialog() {
  * @param string $cart_item_key The cart item key.
  * @param mixed  $values        The values of the cart item.
  */
-function printess_add_save_token_to_order_items( $item, $cart_item_key, $values ) {
+function printess_add_save_token_to_order_items( $item, $cart_item_key, $values, $order = null) {
 	if ( empty( $values['printess-save-token'] ) ) {
 		return;
 	}
@@ -127,9 +127,23 @@ function printess_add_save_token_to_order_items( $item, $cart_item_key, $values 
 		$item->add_meta_data( '_printess-dropshipping', $product->get_meta( 'printess_dropshipping' ), true );
 	}
 
-	$time_out = printess_create_new_unexpiration_date( true );
+  include_once 'includes/printess-saved-design-repository.php';
+
+	$time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
+
+  if(false === printess_unexpire_save_token( $values['printess-save-token'], $time_out)) {
+      $time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+  }
 
 	$item->add_meta_data( '_printess-valid-until', $time_out->format( 'Y-m-d H:i:s' ), true );
+
+  try {
+    if(isset($order)) {
+      Printess_Saved_Design_Repository::update_valid_until($order->get_user_id(), $values['printess-save-token'], $time_out);
+    }
+  } catch(\Exception $ex) {
+
+  }
 }
 
 /**
@@ -1108,6 +1122,7 @@ function printess_handle_order_items( &$order, &$order_items ) {
 	$non_dropship_items = array();
 	$order_id           = $order->get_id();
 
+  include_once 'includes/printess-saved-design-repository.php';
 	$repo = new Printess_Saved_Design_Repository();
 
 	// Seperates dropshipping and non drop shipping products.
@@ -1133,9 +1148,13 @@ function printess_handle_order_items( &$order, &$order_items ) {
 			$value->save_meta_data();
 
 			if ( $design_id ) {
-				printess_unexpire_save_token( $save_token, printess_create_new_unexpiration_date( true ) );
+        $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-				$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ) );
+        if(false === printess_unexpire_save_token( $save_token, $valid_until)) {
+          $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+        }
+
+				$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $valid_until);
 			}
 		}
 	}
@@ -1219,9 +1238,13 @@ function printess_handle_order_items( &$order, &$order_items ) {
 				$value->save_meta_data();
 
 				if ( $design_id ) {
-					printess_unexpire_save_token( $save_token, printess_create_new_unexpiration_date( true ) );
+          $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-					$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ) );
+          if(false === printess_unexpire_save_token( $save_token, $valid_until)) {
+            $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+          }
+
+          $repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $valid_until);
 				}
 			}
 		}
@@ -1451,37 +1474,18 @@ function printess_unexpire_save_token( $save_token, $expires_at_utc ) {
 		'expiresOn'   => $expiration_date_string
 	);
 
-	$result = PrintessApi::send_post_request( "$printess_host/savetoken/lifetime/extend", PrintessAdminSettings::get_service_token(), $payload );
-}
+  try {
+    PrintessApi::send_post_request( "$printess_host/savetoken/lifetime/extend", PrintessAdminSettings::get_service_token(), $payload, true );
+  } catch(\Exception $ex) {
+    $logger = wc_get_logger();
 
-/**
- * Creates a new expiration date using the admin settings for expiration days
- *
- * @param bool $use_order_date Use the ordered design expiration instead.
- * @return DateTime The new expiration date
- */
-function printess_create_new_unexpiration_date( $use_order_date = false ) {
-	$setting = get_option( 'printess_saved_design_lifetime', 30 );
+    if(isset($logger)) {
+      $logger->error('Unable to extend save token live time for save token: ' . json_encode($save_token) . "; Error: " . json_encode($ex),  array('source' => 'printress-saved-designs'));
+      return false;
+    }
+  }
 
-	if ( true === $use_order_date ) {
-		$setting = get_option( 'printess_ordered_design_lifetime', 30 );
-	}
-
-	if ( ! isset( $setting ) || empty( $setting ) ) {
-		$setting = 30;
-	}
-
-	$setting = intval( $setting );
-
-	if ( $setting < 1 ) {
-		return null;
-	}
-
-	$dt = new DateTime();
-	$dt->add( new DateInterval( 'P' . $setting . 'D' ) );
-	$dt->setTimezone( new DateTimeZone( 'UTC' ) );
-
-	return $dt;
+  return true;
 }
 
 /**
@@ -1555,7 +1559,11 @@ function printess_post_add_design( $request ) {
 
     			return $ret;
     		} else {
-    			printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
+          $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
+
+    		  if(false === printess_unexpire_save_token( $parameters['saveToken'], $valid_until)) {
+            $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+          }
 
     			if ( array_key_exists( 'displayName', $parameters ) && null !== $parameters['displayName'] && '' !== $parameters['displayName'] && $parameters['displayName'] === $designs[0]['displayName'] ) {
     				$options = null;
@@ -1568,17 +1576,21 @@ function printess_post_add_design( $request ) {
               $logger->notice("User with id " . $customer_id . " replaced existing saved design: " . json_encode($designs[0]) . "    with values: " . json_encode($parameters), array('source' => 'printress-saved-designs'));
             }
 
-    				$repo->update_design( $customer_id, $design_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $options );
+    				$repo->update_design( $customer_id, $design_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $options, $valid_until);
 
     				return $design_id;
     			} else {
-    					return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $designs[0]['productId'], $designs[0]['productName'], $parameters['displayName'], $designs[0]['options'] );
+    					return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $designs[0]['productId'], $designs[0]['productName'], $parameters['displayName'], $designs[0]['options'], $valid_until);
     			}
     		}
     	} else {
-    		printess_unexpire_save_token( $parameters['saveToken'], printess_create_new_unexpiration_date() );
+        $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
+        
+        if(false === printess_unexpire_save_token( $parameters['saveToken'], $valid_until)) {
+          $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+        }
 
-    		return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], intval( '' . $parameters['productId'] ), $product->get_data()['name'], $parameters['displayName'], json_decode( $parameters['options'], true ) );
+    		return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], intval( '' . $parameters['productId'] ), $product->get_data()['name'], $parameters['displayName'], json_decode( $parameters['options'], true ), $valid_until);
     	}
    } catch(\Exception $ex) {
     $logger->error('Error while trying to store saved design: ' . json_encode($ex),  array('source' => 'printress-saved-designs'));
@@ -2063,7 +2075,7 @@ function printess_order_meta_customized_display( $item_id, $item ) {
 		if(null !== $printess_original_save_token && !empty($printess_original_save_token)) {
 			$editUrl = "https://editor.printess.com?name=" . $printess_original_save_token;
 
-			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . "&nbsp;<a href=\"" . esc_url($editUrl) . ">" . esc_html($printess_original_save_token) . '</a></div>';
+			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . '&nbsp;<a href=\"' . esc_url($editUrl) . ">" . esc_html($printess_original_save_token) . '</a></div>';
 		}
 
 		if(null !== $printess_save_token && !empty($printess_save_token)) {
@@ -3116,11 +3128,21 @@ function printess_update_save_token() {
 			die;
 		}
 
+    include_once 'includes/printess-saved-design-repository.php';
+
 		if  (null !== $printess_save_token && !empty($printess_save_token) && null !== $original_save_token && !empty($original_save_token) && $printess_save_token === $original_save_token) {
 			//Set the current save token to the original save token and remove original save token property
+      $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
+
+      if(false === printess_unexpire_save_token($printess_save_token, $valid_until)) {
+        $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+      }
+
 			wc_update_order_item_meta($item->get_id(), '_printess-save-token', $printess_save_token);
 			wc_delete_order_item_meta($item->get_id(), '_printess-original-save-token');
-			printess_unexpire_save_token( $printess_save_token, printess_create_new_unexpiration_date( true ) );
+      wc_update_order_item_meta($item->get_id(), '_printess-valid-until', $valid_until->format( 'Y-m-d H:i:s' ));
+
+      Printess_Saved_Design_Repository::update_valid_until($order->get_customer_id(), $printess_save_token, $valid_until);
 
 			$query_string = http_build_query(array(
 				'post'   => $order_id,
@@ -3141,7 +3163,17 @@ function printess_update_save_token() {
 		}
 
 		wc_update_order_item_meta($item->get_id(), '_printess-save-token', $printess_save_token);
-		printess_unexpire_save_token( $printess_save_token, printess_create_new_unexpiration_date( true ) );
+
+
+    $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
+
+    if(false === printess_unexpire_save_token($printess_save_token, $valid_until)) {
+        $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+    }
+
+    wc_update_order_item_meta($item->get_id(), '_printess-valid-until', $valid_until->format( 'Y-m-d H:i:s' ));
+
+    Printess_Saved_Design_Repository::update_valid_until($order->get_customer_id(), $printess_save_token, $valid_until);
 
 		$query_string = http_build_query(array(
 											'post'   => $order_id,
@@ -3424,7 +3456,11 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 
 				$repo = new Printess_Saved_Design_Repository();
 
-				printess_unexpire_save_token( $save_token, printess_create_new_unexpiration_date() );
+				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
+
+        if(false === printess_unexpire_save_token( $design['saveToken'], $valid_until)) {
+          $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
+        }
 
 				$product_options = json_decode( stripslashes( $options ), true );
 				$product_attributes = printess_get_product_options_and_slugs($product);
@@ -3440,7 +3476,7 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 					}
 				}
 
-				$design_id = $repo->add_design( $user_id, $save_token, $thumbnail_url, intval( '' . $product_id ), $product->get_data()['name'], $display_name, $variant_options);
+				$design_id = $repo->add_design( $user_id, $save_token, $thumbnail_url, intval( '' . $product_id ), $product->get_data()['name'], $display_name, $variant_options, $valid_until);
 
 				$design = $repo->get_design( $user_id, $design_id );
 
@@ -4172,7 +4208,7 @@ function printess_register_hooks() {
 
 	add_filter( 'woocommerce_loop_add_to_cart_link', 'printess_adjust_add_to_cart', 10, 3 );
 
-	add_action( 'woocommerce_checkout_create_order_line_item', 'printess_add_save_token_to_order_items', 10, 3 );
+	add_action( 'woocommerce_checkout_create_order_line_item', 'printess_add_save_token_to_order_items', 10, 4 );
 	add_filter( 'woocommerce_get_item_data', 'printess_get_item_data', 10, 2 );
 
 	// ORDERS.

@@ -420,3 +420,6 @@ Please check https://printess.com/pricing.html for more details.
 
   = 1.6.90 =
  - Fixed missing forwarding of max basket thumbnail width / height to Printess PanelUi
+
+  = 1.6.91 =
+ - Fixed issues with stored save token life time on saved designs that have not been updated correctly on all save token updates.

@@ -9,7 +9,7 @@ global $printess_saved_designs_db_version;
 $printess_saved_designs_db_version = '1.2';
 
 class Printess_Saved_Design_Repository {
-  private function get_design_live_time_in_days($for_orders = false) {
+  private static function get_design_live_time_in_days($for_orders = false) {
     $setting = get_option( 'printess_saved_design_lifetime', 30 );
 
     if($for_orders === true) {
@@ -23,12 +23,37 @@ class Printess_Saved_Design_Repository {
     $setting = intval( $setting );
 
     if($setting < 0) {
-      return 30;
+      $days = 10950;//30 years should be enough
     }
     else {
       return $setting;
     }
   }
+
+  /**
+   * Creates a new expiration date using the admin settings for expiration days
+   *
+   * @param bool $use_order_date Use the ordered design expiration instead.
+   * @return DateTime The new expiration date
+   */
+  public static function create_new_unexpiration_date( $use_order_date = false, ?int $live_time = null) {
+    $days = Printess_Saved_Design_Repository::get_design_live_time_in_days($use_order_date);
+
+    if(isset($live_time)) {
+      $days = $live_time;
+    }
+
+    if ( $days < 1 ) {
+		  $days = 10950;//30 years should be enough
+	  }
+
+	  $dt = new DateTime();
+	  $dt->add( new DateInterval( 'P' . $days . 'D' ) );
+	  $dt->setTimezone( new DateTimeZone( 'UTC' ) );
+
+	  return $dt;
+  }
+
 
   private function install_db_table(): void {
     global $wpdb;
@@ -138,24 +163,14 @@ class Printess_Saved_Design_Repository {
     }
   }
 
-  function add_serialized_design(array $design): int {
-    return $this->add_design($design["customerId"], $design["saveToken"], $design["thumbnailUrl"], $design["productId"], $design["productName"], $design["displayName"], $design["productOptions"]);
-  }
-
-  function add_design(int $customer_id, string $save_token, string $thumbnail_url, int $product_id, string $product_name, string $display_name, ?array $product_options = null): int {
+  function add_design(int $customer_id, string $save_token, string $thumbnail_url, int $product_id, string $product_name, string $display_name, ?array $product_options = null, ?DateTime $expiration_date = null): int {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
-    $timeOut = new DateTime();
-    $liveTimeInDays = get_option( 'printess_saved_design_lifetime', 30 );
+    $timeOut = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
 
-    if(!isset($liveTimeInDays) || empty($liveTimeInDays)) {
-      $liveTimeInDays = 30;
-    } else if(intval($liveTimeInDays) < 1) {
-      $liveTimeInDays = 10950;//30 years should be enough
+    if(isset($expiration_date)) {
+      $timeOut = $expiration_date;
     }
-
-
-    $timeOut->add(new DateInterval('P' . intval($liveTimeInDays) . 'D'));
 
     $to_string = function($value): string {
       if($value != null) {
@@ -280,25 +295,38 @@ class Printess_Saved_Design_Repository {
     }
   }
 
-  function update_design(int $customer_id, int $design_id, string $save_token, string $thumbnail_url, ?array $options = null): bool {
+  function update_design(int $customer_id, int $design_id, string $save_token, string $thumbnail_url, ?array $options = null, ?DateTime $expiration_date = null): bool {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
-    $liveTimeInDays = $this->get_design_live_time_in_days();
-    $timeOut = new DateTime();
+    $timeOut = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
     $now = new DateTime();
     $now->setTimezone(new DateTimeZone('UTC'));
 
-    $timeOut->add(new DateInterval('P' . $liveTimeInDays . 'D'));
-    $timeOut->setTimezone(new DateTimeZone('UTC'));
+    if(isset($expiration_date)) {
+      $timeOut = $expiration_date;
+    }
 
-    $update_values = array(
-      'save_token' => $save_token,
-      'thumbnail_url' => $thumbnail_url,
-      'valid_until' => $timeOut->format('Y-m-d H:i:s'),
-      'last_updated_at' => $now->format('Y-m-d H:i:s')
-    );
+    $update_values = null;
+    $update_datatypes = null;
 
-    $update_datatypes = array( '%s', '%s', '%s', '%s' );
+    if(false === $update_life_time) {
+      $update_values = array(
+        'save_token' => $save_token,
+        'thumbnail_url' => $thumbnail_url,
+        'last_updated_at' => $now->format('Y-m-d H:i:s')
+      );
+
+      $update_datatypes = array( '%s', '%s', '%s' );
+    } else {
+      $update_values = array(
+        'save_token' => $save_token,
+        'thumbnail_url' => $thumbnail_url,
+        'valid_until' => $timeOut->format('Y-m-d H:i:s'),
+        'last_updated_at' => $now->format('Y-m-d H:i:s')
+      );
+
+      $update_datatypes = array( '%s', '%s', '%s', '%s' );
+    }
 
     if(null != $options && count($options) > 0) {
       $update_values['product_options'] = wp_json_encode($options);
@@ -317,15 +345,16 @@ class Printess_Saved_Design_Repository {
     return $result != false  && $result > 0;
   }
 
-  function update_last_ordered(int $customer_id, int $design_id): bool {
+  function update_last_ordered(int $customer_id, int $design_id, ?DateTime $expiration_date = null): bool {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
     $now = new DateTime();
     $now->setTimezone(new DateTimeZone('UTC'));
-    $liveTimeInDays = $this->get_design_live_time_in_days(true);
-    $timeOut = new DateTime();
-    $timeOut->add(new DateInterval('P' . $liveTimeInDays . 'D'));
-    $timeOut->setTimezone(new DateTimeZone('UTC'));
+    $timeOut = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
+
+    if(isset($expiration_date)) {
+      $timeOut = $expiration_date;
+    }
 
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
     $result = $wpdb->update( $table_name, array(
@@ -336,6 +365,30 @@ class Printess_Saved_Design_Repository {
                                                 'customer_id' => $customer_id ),
                                           array( '%s', "%s" ),
                                           array( '%d', '%d' ) );
+
+    wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
+    return $result != false  && $result > 0;
+  }
+
+  static function update_valid_until(int $customer_id, $save_token, ?DateTime $expiration_date = null): bool {
+    global $wpdb;
+    $table_name = $wpdb->prefix . "printess_saved_designs";
+    $now = new DateTime();
+    $now->setTimezone(new DateTimeZone('UTC'));
+    $timeOut = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
+
+    if(isset($expiration_date)) {
+      $timeOut = $expiration_date;
+    }
+
+    // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
+    $result = $wpdb->update( $table_name, array(
+                                                'valid_until' => $timeOut->format('Y-m-d H:i:s')),
+                                          array(
+                                                'save_token' => $save_token,
+                                                'customer_id' => $customer_id ),
+                                          array( '%s' ),
+                                          array( '%s', '%d' ) );
 
     wp_cache_delete( 'printess_designs_gen_' . $customer_id, 'printess_saved_designs' );
     return $result != false  && $result > 0;
