@@ -4,7 +4,7 @@ Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
 WC Tested up to: 10.4.3
-Stable tag: 1.6.90
+Stable tag: 1.6.92
 Requires PHP: 8.1
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
@@ -423,3 +423,6 @@ Please check https://printess.com/pricing.html for more details.
 
   = 1.6.91 =
  - Fixed issues with stored save token life time on saved designs that have not been updated correctly on all save token updates.
+
+  = 1.6.92 =
+ - Fixed issues with saved designs where the life time of an ordered saved design was updated inside the database but the original underlying save token was not extended.

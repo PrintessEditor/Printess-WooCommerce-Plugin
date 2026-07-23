@@ -165,6 +165,37 @@ class PrintessApi
 
         return null;
     }
+
+    /**
+     * Sets a new expiration date on printess template via printess api
+     *
+     * @param string $save_token The save token containing the latest changes.
+     * @param string $expires_at_utc The new expiration date.
+     */
+    static function unexpire_save_token( $save_token, $expires_at_utc ) {
+      require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
+
+    	$expiration_date_string = null === $expires_at_utc ? null : str_replace( ' ', 'T', $expires_at_utc->format( 'Y-m-d H:i:s' ) ) . 'Z';
+    	$printess_host          = PrintessAdminSettings::get_host();
+
+    	$payload = array(
+    		'saveToken' => $save_token,
+    		'expiresOn'   => $expiration_date_string
+    	);
+
+      try {
+        PrintessApi::send_post_request( "$printess_host/savetoken/lifetime/extend", PrintessAdminSettings::get_service_token(), $payload, true );
+      } catch(\Exception $ex) {
+        $logger = wc_get_logger();
+
+        if(isset($logger)) {
+          $logger->error('Unable to extend save token live time for save token: ' . json_encode($save_token) . "; Error: " . json_encode($ex),  array('source' => 'printress-saved-designs'));
+          return false;
+        }
+      }
+
+      return true;
+    }
 }
 
 

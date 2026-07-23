@@ -9,7 +9,7 @@ global $printess_saved_designs_db_version;
 $printess_saved_designs_db_version = '1.2';
 
 class Printess_Saved_Design_Repository {
-  private static function get_design_live_time_in_days($for_orders = false) {
+  public static function get_design_live_time_in_days($for_orders = false) {
     $setting = get_option( 'printess_saved_design_lifetime', 30 );
 
     if($for_orders === true) {
@@ -345,7 +345,7 @@ class Printess_Saved_Design_Repository {
     return $result != false  && $result > 0;
   }
 
-  function update_last_ordered(int $customer_id, int $design_id, ?DateTime $expiration_date = null): bool {
+  function update_last_ordered(int $customer_id, int $design_id, string $saveToken, ?DateTime $expiration_date = null): bool {
     global $wpdb;
     $table_name = $wpdb->prefix . "printess_saved_designs";
     $now = new DateTime();
@@ -354,6 +354,14 @@ class Printess_Saved_Design_Repository {
 
     if(isset($expiration_date)) {
       $timeOut = $expiration_date;
+    }
+
+    $stored_design = $this->get_design($customer_id, $design_id);
+
+    if(isset($stored_design) && $stored_design["saveToken"] !== $save_token) {
+      require_once(plugin_dir_path(__DIR__) . "includes/printess-api.php");
+
+      PrintessApi::unexpire_save_token($stored_design["saveToken"], $timeOut);
     }
 
     // phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery

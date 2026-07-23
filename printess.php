@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.91
+ * Version: 1.6.92
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -15,7 +15,7 @@
  * License: GPL-2.0-or-later
  * License URI: https://gnu.org
  *
- * Woo: 10000:924050dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924051dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */
@@ -131,7 +131,7 @@ function printess_add_save_token_to_order_items( $item, $cart_item_key, $values,
 
 	$time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-  if(false === printess_unexpire_save_token( $values['printess-save-token'], $time_out)) {
+  if(false === PrintessApi::unexpire_save_token( $values['printess-save-token'], $time_out)) {
       $time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
   }
 
@@ -1150,11 +1150,11 @@ function printess_handle_order_items( &$order, &$order_items ) {
 			if ( $design_id ) {
         $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-        if(false === printess_unexpire_save_token( $save_token, $valid_until)) {
+        if(false === PrintessApi::unexpire_save_token( $save_token, $valid_until)) {
           $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
         }
 
-				$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $valid_until);
+				$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $save_token, $valid_until);
 			}
 		}
 	}
@@ -1240,11 +1240,11 @@ function printess_handle_order_items( &$order, &$order_items ) {
 				if ( $design_id ) {
           $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-          if(false === printess_unexpire_save_token( $save_token, $valid_until)) {
+          if(false === PrintessApi::unexpire_save_token( $save_token, $valid_until)) {
             $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
           }
 
-          $repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $valid_until);
+          $repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $save_token, $valid_until);
 				}
 			}
 		}
@@ -1460,35 +1460,6 @@ function printess_post_status_changed( $request ) {
 }
 
 /**
- * Sets a new expiration date on printess template via printess api
- *
- * @param string $save_token The save token containing the latest changes.
- * @param string $expires_at_utc The new expiration date.
- */
-function printess_unexpire_save_token( $save_token, $expires_at_utc ) {
-	$expiration_date_string = null === $expires_at_utc ? null : str_replace( ' ', 'T', $expires_at_utc->format( 'Y-m-d H:i:s' ) ) . 'Z';
-	$printess_host          = PrintessAdminSettings::get_host();
-
-	$payload = array(
-		'saveToken' => $save_token,
-		'expiresOn'   => $expiration_date_string
-	);
-
-  try {
-    PrintessApi::send_post_request( "$printess_host/savetoken/lifetime/extend", PrintessAdminSettings::get_service_token(), $payload, true );
-  } catch(\Exception $ex) {
-    $logger = wc_get_logger();
-
-    if(isset($logger)) {
-      $logger->error('Unable to extend save token live time for save token: ' . json_encode($save_token) . "; Error: " . json_encode($ex),  array('source' => 'printress-saved-designs'));
-      return false;
-    }
-  }
-
-  return true;
-}
-
-/**
  * Incoming api call to create a new saved design database entry
  *
  * @param mixed $request The incoming web request.
@@ -1559,9 +1530,14 @@ function printess_post_add_design( $request ) {
 
     			return $ret;
     		} else {
+          $original_timeout = new DateTime($designs[0]["validUntil"]);
           $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
 
-    		  if(false === printess_unexpire_save_token( $parameters['saveToken'], $valid_until)) {
+          if($valid_until < $original_timeout) {
+            $valid_until = $original_timeout;
+          }
+
+          if(false === PrintessApi::unexpire_save_token( $parameters['saveToken'], $valid_until)) {
             $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
           }
 
@@ -1586,7 +1562,7 @@ function printess_post_add_design( $request ) {
     	} else {
         $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
         
-        if(false === printess_unexpire_save_token( $parameters['saveToken'], $valid_until)) {
+        if(false === PrintessApi::unexpire_save_token( $parameters['saveToken'], $valid_until)) {
           $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
         }
 
@@ -3134,7 +3110,7 @@ function printess_update_save_token() {
 			//Set the current save token to the original save token and remove original save token property
       $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-      if(false === printess_unexpire_save_token($printess_save_token, $valid_until)) {
+      if(false === PrintessApi::unexpire_save_token($printess_save_token, $valid_until)) {
         $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
       }
 
@@ -3167,7 +3143,7 @@ function printess_update_save_token() {
 
     $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(true);
 
-    if(false === printess_unexpire_save_token($printess_save_token, $valid_until)) {
+    if(false === PrintessApi::unexpire_save_token($printess_save_token, $valid_until)) {
         $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
     }
 
@@ -3458,7 +3434,7 @@ function printess_redirect_after_login( $redirect, $user = null ) {
 
 				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false);
 
-        if(false === printess_unexpire_save_token( $design['saveToken'], $valid_until)) {
+        if(false === PrintessApi::unexpire_save_token( $design['saveToken'], $valid_until)) {
           $valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date(false, 30);
         }
 
