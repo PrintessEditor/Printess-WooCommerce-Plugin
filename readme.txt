@@ -426,3 +426,6 @@ Please check https://printess.com/pricing.html for more details.
 
   = 1.6.92 =
  - Fixed issues with saved designs where the life time of an ordered saved design was updated inside the database but the original underlying save token was not extended.
+
+  = 1.6.93 =
+ - Added error handling around getting drop ship info to prevent breaking the product page.

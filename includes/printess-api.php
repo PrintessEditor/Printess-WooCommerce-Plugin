@@ -83,53 +83,63 @@ class PrintessApi
      * Loads a list of all available printess dropshippers and the correcsponding drop ship products
      */
     static function get_dropshipping_info() {
-        require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
+        try {
+            require_once(plugin_dir_path(__DIR__) . "includes/printess-admin-settings.php");
 
-        $printess_host = PrintessAdminSettings::get_host();
+            $printess_host = PrintessAdminSettings::get_host();
 
-        $dropshippers = PrintessApi::send_post_request(
-            "$printess_host/dropshippers/load",
-            PrintessAdminSettings::get_service_token(),
-            array(
-                'default' => '',
-            )
-        );
+            $dropshippers = PrintessApi::send_post_request(
+                "$printess_host/dropshippers/load",
+                PrintessAdminSettings::get_service_token(),
+                array(
+                    'default' => '',
+                )
+            );
 
-        if ( ! isset( $dropshippers ) || count( $dropshippers ) < 1 ) {
-            return array();
-        }
-
-        usort(
-            $dropshippers,
-            function ( $a, $b ) {
-                return strcmp( $a['display'], $b['display'] );
+            if ( ! isset( $dropshippers ) || count( $dropshippers ) < 1 ) {
+                return array();
             }
-        );
 
-        $products = PrintessApi::send_post_request(
-            "$printess_host/productDefinitions/load",
-            PrintessAdminSettings::get_service_token(),
-            array(
-                'default' => '',
-            )
-        );
+            usort(
+                $dropshippers,
+                function ( $a, $b ) {
+                    return strcmp( $a['display'], $b['display'] );
+                }
+            );
 
-        if ( isset( $dropshippers ) && count( $dropshippers ) > 0 ) {
-            // Add product definitions to drop shippers.
-            foreach ( $products['productDefinitions'] as &$value ) {
-                foreach ( $dropshippers as &$dropshipper ) {
-                    if ( $dropshipper['id'] === $value['dropshipperId'] ) {
-                        if ( ! isset( $dropshipper['productDefinitions'] ) ) {
-                            $dropshipper['productDefinitions'] = array();
+            $products = PrintessApi::send_post_request(
+                "$printess_host/productDefinitions/load",
+                PrintessAdminSettings::get_service_token(),
+                array(
+                    'default' => '',
+                )
+            );
+
+            if ( isset( $dropshippers ) && count( $dropshippers ) > 0 ) {
+                // Add product definitions to drop shippers.
+                foreach ( $products['productDefinitions'] as &$value ) {
+                    foreach ( $dropshippers as &$dropshipper ) {
+                        if ( $dropshipper['id'] === $value['dropshipperId'] ) {
+                            if ( ! isset( $dropshipper['productDefinitions'] ) ) {
+                                $dropshipper['productDefinitions'] = array();
+                            }
+
+                            $dropshipper['productDefinitions'][] = $value;
                         }
-
-                        $dropshipper['productDefinitions'][] = $value;
                     }
                 }
             }
-        }
 
-        return $dropshippers;
+            return $dropshippers;
+        } catch ( \Exception $ex ) {
+            $logger = wc_get_logger();
+
+            if ( isset( $logger ) ) {
+                $logger->info( 'Unable to load dropshipping info: ' . json_encode( $ex ), array( 'source' => 'printress-saved-designs' ) );
+            }
+
+            return array();
+        }
     }
 
     /**
