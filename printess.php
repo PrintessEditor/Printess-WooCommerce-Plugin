@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.93
+ * Version: 1.6.94
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -12,10 +12,10 @@
  * Requires at least: 5.9
  * Requires PHP: 8.1
  * Tested up to: 7.0
- * License: GPL-2.0-or-later
- * License URI: https://gnu.org
+ * License: MIT
+ * License URI: https://opensource.org/licenses/MIT
  *
- * Woo: 10000:924052dfsfhsf8429842386wdff234sfd
+ * Woo: 10000:924053dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */
@@ -690,6 +690,19 @@ function printess_extract_yith_plugin_values($yith_meta_data) {
 	return $ret;
 }
 
+/**
+ * Tests if an order line item meta key holds internal plugin or WooCommerce bookkeeping data that
+ * must not be forwarded to Printess as a vdp form field. WooCommerce marks hidden meta with a
+ * leading underscore; "printess-additional-settings" is the one internal key written without one.
+ */
+function printess_is_internal_line_item_meta_key($meta_key) {
+	if(!is_string($meta_key)) {
+		return false;
+	}
+
+	return str_starts_with($meta_key, "_") || "printess-additional-settings" === $meta_key;
+}
+
 function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$produce_payload) {
 	$produce_payload["vdp"]["form"]["itemQuantity"] = "{$line_item->get_quantity()}";
 	$produce_payload["vdp"]["form"]["itemSku"] = $product->get_sku();
@@ -820,18 +833,17 @@ function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$pro
 		$meta_data = $line_item->get_meta_data();
 
 		foreach($meta_data as $key => $value) {
-			$mapped_name_value = $product_helper->map_attribute_name_and_value($value->key, $value->value);
-
 			if("_ywapo_meta_data" === $value->key) {
 				$yith_values = printess_extract_yith_plugin_values($value);
 
-				foreach($yith_values as $label => $value) {
+				foreach($yith_values as $label => $yith_value) {
 					$name = $onlyCharAndNumber($label);
 					if(!array_key_exists($name, $produce_payload["vdp"]["form"])) {
-						$produce_payload["vdp"]["form"][$name] = $value;
+						$produce_payload["vdp"]["form"][$name] = $yith_value;
 					}
 				}
-			} else if(!str_starts_with($value->key, "ywapo-")) {
+			} else if(!str_starts_with($value->key, "ywapo-") && !printess_is_internal_line_item_meta_key($value->key)) {
+				$mapped_name_value = $product_helper->map_attribute_name_and_value($value->key, $value->value);
 				$name = $onlyCharAndNumber($mapped_name_value["name"]);
 				if(!array_key_exists($name, $produce_payload["vdp"]["form"])) {
 					$produce_payload["vdp"]["form"][$name] = $mapped_name_value["value"];
@@ -839,8 +851,12 @@ function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$pro
 			}
 		}
 	}
-	catch(ex) {
+	catch(\Throwable $ex) {
+		$logger = wc_get_logger();
 
+		if(isset($logger)) {
+			$logger->error( 'Printess Editor Integration: Unable to add order item meta to the production payload: ' . $ex->getMessage(), array( 'source' => 'printess-editor' ) );
+		}
 	}
 
 	$productAttributes = $product_helper->get_attributes();
@@ -887,8 +903,12 @@ function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$pro
 				}
 			}
 		}
-	} catch(ex) {
+	} catch(\Throwable $ex) {
+		$logger = wc_get_logger();
 
+		if(isset($logger)) {
+			$logger->error( 'Printess Editor Integration: Unable to add product attributes to the production payload: ' . $ex->getMessage(), array( 'source' => 'printess-editor' ) );
+		}
 	}
 }
 

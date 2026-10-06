@@ -4,10 +4,10 @@ Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
 WC Tested up to: 10.4.3
-Stable tag: 1.6.92
+Stable tag: 1.6.94
 Requires PHP: 8.1
-License: GPLv2 or later
-License URI: https://www.gnu.org/licenses/gpl-2.0.html
+License: MIT
+License URI: https://opensource.org/licenses/MIT
 
 Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
 
@@ -429,3 +429,6 @@ Please check https://printess.com/pricing.html for more details.
 
   = 1.6.93 =
  - Added error handling around getting drop ship info to prevent breaking the product page.
+
+ = 1.6.94 =
+ - Fixed silently swallowed error messages.

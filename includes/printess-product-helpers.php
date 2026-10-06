@@ -12,7 +12,7 @@ class PrintessProductHelpers {
         $this->_product = wc_get_product($product_id);
 
         if ( ! isset( $this->_product ) || false === $this->_product ) {
-		    throw new \Exception(esc_html("Unknown product id " + $product_id));
+		    throw new \Exception(esc_html("Unknown product id " . $product_id));
 	    }
 
         $parent_id = $this->_product->get_data()["parent_id"];
@@ -47,17 +47,30 @@ class PrintessProductHelpers {
         return PrintessProductHelpers::get_product_attributes($product);
     }
 
-    private function get_attribute_definition($attribute_name, ?array $attrbutes = null) {
-        if(null === $attrbutes) {
+    private function get_attribute_definition($attribute_name, ?array $attributes = null) {
+        if(null === $attributes) {
             $attributes = $this->get_attributes();
         }
 
-        if(array_key_exists($attribute_name, $attributes)) {
-            return $attributes[$attribute_name];
+        if(!is_array($attributes)) {
+            return null;
         }
 
-        foreach($attrbutes as $key => $value) {
-            if($value["name"] === $attribute_name) {
+        $candidates = array($attribute_name);
+
+        //Order line items may store a variation key as "attribute_pa_color" instead of "pa_color"
+        if(is_string($attribute_name) && str_starts_with($attribute_name, "attribute_")) {
+            $candidates[] = substr($attribute_name, strlen("attribute_"));
+        }
+
+        foreach($candidates as $candidate) {
+            if(array_key_exists($candidate, $attributes)) {
+                return $attributes[$candidate];
+            }
+        }
+
+        foreach($attributes as $value) {
+            if(is_array($value) && isset($value["name"]) && in_array($value["name"], $candidates, true)) {
                 return $value;
             }
         }

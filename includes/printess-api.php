@@ -42,7 +42,7 @@ class PrintessApi
         $response_code = wp_remote_retrieve_response_code( $response );
 
         if ( $response_code < 200 || $response_code >= 300 || (true === $expect_200 && $response_code !== 200) ) {
-            throw new \Exception( esc_html("Unsuccessful HTTP response code: " . $response . " for request: " . $url . " and payload " . json_encode($data) . "; Response: " . wp_remote_retrieve_body( $response ) ));
+            throw new \Exception( esc_html("Unsuccessful HTTP response code: " . $response_code . " for request: " . $url . " and payload " . json_encode($data) . "; Response: " . wp_remote_retrieve_body( $response ) ));
         }
 
         return json_decode( wp_remote_retrieve_body( $response ), true );
