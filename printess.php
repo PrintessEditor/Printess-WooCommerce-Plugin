@@ -4,7 +4,7 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.94
+ * Version: 1.6.95
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
@@ -15,7 +15,6 @@
  * License: MIT
  * License URI: https://opensource.org/licenses/MIT
  *
- * Woo: 10000:924053dfsfhsf8429842386wdff234sfd
  * WC requires at least: 5.8
  * WC tested up to: 10.5.3
  */

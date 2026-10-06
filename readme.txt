@@ -3,8 +3,8 @@ Contributors: printess
 Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
-WC Tested up to: 10.4.3
-Stable tag: 1.6.94
+WC Tested up to: 10.5.3
+Stable tag: 1.6.95
 Requires PHP: 8.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -432,3 +432,7 @@ Please check https://printess.com/pricing.html for more details.
 
  = 1.6.94 =
  - Fixed silently swallowed error messages.
+
+ = 1.6.95 =
+ - Fixed inconsistent version metadata that stopped WordPress from offering the latest update.
+ - Removed the WooCommerce.com marketplace header, which caused misleading "connect your store" notices on the plugins screen.
