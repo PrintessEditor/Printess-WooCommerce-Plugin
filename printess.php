@@ -4,13 +4,14 @@
  * Description: Personalize anything! Friendship mugs, t-shirts, greeting cards. Limitless possibilities.
  * Plugin URI: https://printess.com/kb/integrations/woo-commerce/index.html
  * Developer: Bastian Kröger (support@printess.com); Alexander Oser (support@printess.com)
- * Version: 1.6.95
+ * Version: 1.6.98
  * Author: Printess
  * Author URI: https://printess.com
  * Text Domain: printess-editor
  * Domain Path: /languages
  * Requires at least: 5.9
  * Requires PHP: 8.1
+ * Requires Plugins: woocommerce
  * Tested up to: 7.0
  * License: MIT
  * License URI: https://opensource.org/licenses/MIT
@@ -912,6 +913,111 @@ function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$pro
 }
 
 	/**
+	 * Shortens an api error for the order note and the admin notice.
+	 *
+	 * A non 2xx error from the Printess api carries the whole production payload, which is far too
+	 * much for a notice or an order note. The full text stays in the log.
+	 *
+	 * @param string $message The exception message.
+	 * @param int    $limit   The maximum number of characters to keep.
+	 */
+function printess_shorten_failure_message( $message, $limit = 300 ) {
+	$message = trim( preg_replace( '/\s+/', ' ', (string) $message ) );
+
+	if ( strlen( $message ) <= $limit ) {
+		return $message;
+	}
+
+	return substr( $message, 0, $limit ) . '…';
+}
+
+	/**
+	 * Records a failed Printess request where support and the merchant can both find it:
+	 * the WooCommerce log, and a note on the order itself.
+	 *
+	 * The Printess api throws on a transport failure and on any non 2xx response. Every request
+	 * handler that can reach it has to end up here instead of letting the exception escape, because
+	 * an uncaught exception in a hook is a fatal error and the merchant only sees a blank page.
+	 *
+	 * @param string $context    Where the failure happened.
+	 * @param string $message    What went wrong, in words a merchant can act on.
+	 * @param mixed  $order      The order, or null when it could not be loaded.
+	 * @param mixed  $item_id    The order line item id, or null when it is not known.
+	 * @param mixed  $save_token The Printess save token, or null when it is not known.
+	 */
+function printess_log_production_failure( $context, $message, $order = null, $item_id = null, $save_token = null ) {
+	$logger = wc_get_logger();
+
+	if ( isset( $logger ) ) {
+		$logger->error(
+			'Printess Editor Integration: ' . $context . ': ' . $message
+			. ' (order: ' . ( $order instanceof WC_Order ? $order->get_id() : 'unknown' )
+			. ', line item: ' . ( ! empty( $item_id ) ? $item_id : 'unknown' )
+			. ', save token: ' . ( ! empty( $save_token ) ? $save_token : 'unknown' ) . ')',
+			array( 'source' => 'printess-editor' )
+		);
+	}
+
+	if ( $order instanceof WC_Order ) {
+		/* translators: %s: the reason the Printess request failed. */
+		$order->add_order_note( sprintf( __( 'Printess: %s', 'printess-editor' ), printess_shorten_failure_message( $message ) ) );
+	}
+}
+
+	/**
+	 * Remembers a message for the next admin screen this user opens.
+	 *
+	 * @param string $message The message to show.
+	 */
+function printess_set_admin_notice( $message ) {
+	$user_id = get_current_user_id();
+
+	if ( $user_id > 0 ) {
+		set_transient( 'printess_admin_notice_' . $user_id, $message, MINUTE_IN_SECONDS );
+	}
+}
+
+	/**
+	 * Prints and clears the message stored by printess_set_admin_notice().
+	 */
+function printess_render_admin_notice() {
+	$user_id = get_current_user_id();
+
+	if ( $user_id <= 0 ) {
+		return;
+	}
+
+	$key     = 'printess_admin_notice_' . $user_id;
+	$message = get_transient( $key );
+
+	if ( false === $message || empty( $message ) ) {
+		return;
+	}
+
+	delete_transient( $key );
+
+	echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+}
+
+	/**
+	 * Sends the merchant back to the order they came from.
+	 *
+	 * @param mixed $order_id The order id.
+	 */
+function printess_redirect_to_order( $order_id ) {
+	$query_string = http_build_query(
+		array(
+			'post'   => $order_id,
+			'action' => 'edit',
+		)
+	);
+
+	$redirect = admin_url( 'post.php?' . $query_string );
+	wp_safe_redirect( $redirect );
+	die;
+}
+
+	/**
 	 * Sends the order line item to the Printess api for production.
 	 *
 	 * @param WC_Product $product           The product.
@@ -920,8 +1026,14 @@ function printess_add_production_vdp_data(&$order, &$line_item, &$product, &$pro
 	 * @param mixed      $save_token        The save token.
 	 * @param mixed      $dropship_data_dto The dropship data.
 	 * @param int        $copies The number of copies that should be produced (quantity).
+	 * @throws \Exception In case the line item cannot be produced.
 	 */
 function printess_produce( $product, $order_id, $line_item_id, $line_item, $save_token, $dropship_data_dto = null, $copies = 1 ) {
+	if ( ! $product ) {
+		// get_product() returns false once the catalogue product behind the line has been deleted.
+		throw new \Exception( esc_html__( 'The product of this order line no longer exists, so it cannot be sent to production.', 'printess-editor' ) );
+	}
+
 	$printess_host  = PrintessAdminSettings::get_host();
 	$site_url       = get_site_url();
 	$callback_url   = "$site_url/wp-json/printess/v1/job/finished";
@@ -1054,6 +1166,11 @@ function printess_produce( $product, $order_id, $line_item_id, $line_item, $save
 		PrintessAdminSettings::get_service_token(),
 		$data
 	);
+
+	if ( ! is_array( $response ) || ! isset( $response['jobId'] ) || empty( $response['jobId'] ) ) {
+		// Storing an empty job id would leave the line looking queued forever, so fail loudly.
+		throw new \Exception( esc_html__( 'Printess accepted the production request but did not return a job id.', 'printess-editor' ) );
+	}
 
 	return $response['jobId'];
 }
@@ -1283,10 +1400,21 @@ function printess_send_to_printess_api( $order_id ) {
 		return;
 	}
 
-	$order = new WC_Order( $order_id );
-	$items = $order->get_items();
+	$order = null;
 
-	printess_handle_order_items( $order, $items );
+	try {
+		$order = new WC_Order( $order_id );
+		$items = $order->get_items();
+
+		printess_handle_order_items( $order, $items );
+	} catch ( \Throwable $ex ) {
+		/*
+		 * This runs while the order changes to processing, so it can sit inside a payment gateway's
+		 * callback. A Printess failure must never break that transition: log it, note it on the
+		 * order, and let the merchant send the line to production by hand from the order screen.
+		 */
+		printess_log_production_failure( 'Unable to send an order to production', $ex->getMessage(), $order, null, null );
+	}
 }
 
 	/**
@@ -2934,32 +3062,35 @@ function printess_save_edited_order_line_item() {
 			$printess_save_token    = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
 			$printess_thumbnail_url = filter_input( INPUT_GET, 'ptu', FILTER_SANITIZE_URL );
 
+			$order = null;
+
+		try {
 			$order         = new WC_Order( $order_id );
 			$item          = $order->get_item( $line_item_id );
 			$approval_mode = PrintessAdminSettings::get_approval_mode();
 
-		if ( 'manual' === $approval_mode ) {
-			$item->delete_meta_data( '_printess-job-id' );
-		} else {
-			$order_items = array( $line_item_id => $item );
-			printess_handle_order_items( $order, $order_items );
-		}
+			if ( ! $item ) {
+				throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+			}
+
+			if ( 'manual' === $approval_mode ) {
+				$item->delete_meta_data( '_printess-job-id' );
+			} else {
+				$order_items = array( $line_item_id => $item );
+				printess_handle_order_items( $order, $order_items );
+			}
 
 			$item->delete_meta_data( '_printess-result' );
 			$item->update_meta_data( '_printess-save-token', $printess_save_token, true );
 			$item->update_meta_data( '_printess-thumbnail-url', $printess_thumbnail_url, true );
 			$item->save_meta_data();
+		} catch ( \Throwable $ex ) {
+			printess_log_production_failure( 'Unable to save an edited order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+			/* translators: %s: the reason the Printess request failed. */
+			printess_set_admin_notice( sprintf( __( 'Printess could not save the edited order line: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
+		}
 
-		$query_string = http_build_query(
-			array(
-				'post'   => $order_id,
-				'action' => 'edit',
-			)
-		);
-
-			$redirect = admin_url( 'post.php?' . $query_string );
-			wp_safe_redirect( $redirect );
-			die;
+			printess_redirect_to_order( $order_id );
 	}
 }
 
@@ -2971,34 +3102,37 @@ function printess_approve_order_line_item() {
 	$nonce  = filter_input( INPUT_GET, 'nonce' );
 
 	if ( isset( $action ) && isset( $nonce ) && (('printess_approve_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_approve_order_line_item' )) || ('printess_reproduce_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_reproduce_order_line_item' )))  ) {
-									$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
-									$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
-									$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
-									$order               = new WC_Order( $order_id );
-									$item                = $order->get_item( $line_item_id );
+			$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+			$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+			$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+			$order               = null;
 
-									$job_id = $item->get_meta( '_printess-job-id', true );
+		try {
+			$order = new WC_Order( $order_id );
+			$item  = $order->get_item( $line_item_id );
 
-									if(null !== $job_id && !empty($job_id)) {
-										$item->delete_meta_data( '_printess-job-id');
-									}
+			if ( ! $item ) {
+				throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+			}
 
-									$order_items = array( $line_item_id => $item );
-									printess_handle_order_items( $order, $order_items );
+			$job_id = $item->get_meta( '_printess-job-id', true );
 
-									$item->delete_meta_data( '_printess-result' );
-									$item->save_meta_data();
+			if ( null !== $job_id && ! empty( $job_id ) ) {
+				$item->delete_meta_data( '_printess-job-id' );
+			}
 
-									$query_string = http_build_query(
-										array(
-											'post'   => $order_id,
-											'action' => 'edit',
-										)
-									);
+			$order_items = array( $line_item_id => $item );
+			printess_handle_order_items( $order, $order_items );
 
-			$redirect = admin_url( 'post.php?' . $query_string );
-			wp_safe_redirect( $redirect );
-			die;
+			$item->delete_meta_data( '_printess-result' );
+			$item->save_meta_data();
+		} catch ( \Throwable $ex ) {
+			printess_log_production_failure( 'Unable to approve an order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+			/* translators: %s: the reason the Printess request failed. */
+			printess_set_admin_notice( sprintf( __( 'Printess could not send this order line to production: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
+		}
+
+			printess_redirect_to_order( $order_id );
 	}
 }
 
@@ -3010,91 +3144,103 @@ function printess_manually_check_order_status() {
     $order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
     $line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
     $printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
-    $order               = new WC_Order( $order_id );
-    $item                = $order->get_item( $line_item_id );
-    $job_id              =  $item->get_meta( '_printess-job-id', true );
+    $order               = null;
 
-    $printess_host = PrintessAdminSettings::get_host();
+    try {
+      $order               = new WC_Order( $order_id );
+      $item                = $order->get_item( $line_item_id );
 
-    if(null !== $job_id && !empty($job_id)) {
-      $api_endpoint = '/production/status/get';
-      $response = PrintessApi::send_post_request(
-      		$printess_host . $api_endpoint,
-      		PrintessAdminSettings::get_service_token(),
-      		["jobId" => $job_id]
-      	);
+      if ( ! $item ) {
+        throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+      }
 
-        if(null !== $response && false === $response["isFinalStatus"] && false === $response["isSuccess"] && null === $response["enqueuedOn"]) {
-          //this production job does not exist anymore... somehow mark it
-          echo esc_html__( "This production job does not exist anymore.", 'printess-editor' );
-          die;
-        } else {
-          $response["isFailure"] = false === $response["isSuccess"];
+      $job_id              =  $item->get_meta( '_printess-job-id', true );
 
-          if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
-						$formFieldLink = $response["result"]["ff"];
+      $printess_host = PrintessAdminSettings::get_host();
 
-						if(null != $formFieldLink && !empty($formFieldLink)) {
-							$formFields = PrintessApi::send_get_request($formFieldLink);
+      if(null !== $job_id && !empty($job_id)) {
+        $api_endpoint = '/production/status/get';
+        $response = PrintessApi::send_post_request(
+        		$printess_host . $api_endpoint,
+        		PrintessAdminSettings::get_service_token(),
+        		["jobId" => $job_id]
+        	);
 
-							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
-								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
-							}
-						}
-					}
+          if ( ! is_array( $response ) ) {
+            throw new \Exception( esc_html__( 'Printess returned an unexpected production status.', 'printess-editor' ) );
+          }
 
-          $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
-          $item->save_meta_data();
-        }
-    } else {
-      $order_items = array( $line_item_id => $item );
+          if(false === ($response["isFinalStatus"] ?? null) && false === ($response["isSuccess"] ?? null) && null === ($response["enqueuedOn"] ?? null)) {
+            //this production job does not exist anymore... somehow mark it
+            printess_set_admin_notice( __( 'This production job does not exist anymore.', 'printess-editor' ) );
+            printess_redirect_to_order( $order_id );
+          } else {
+            $response["isFailure"] = false === ($response["isSuccess"] ?? null);
 
-      //Download production status
-      $api_endpoint = '/orders/list';
-      $response = PrintessApi::send_post_request(
-      		$printess_host . $api_endpoint,
-      		PrintessAdminSettings::get_service_token(),
-      		["saveToken" => $printess_save_token]
-      	);
+            if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
+  						$formFieldLink = $response["result"]["ff"];
 
-        if(0 == $response["count"]) {
-          echo esc_html__( "No order found for save token", 'printess-editor' );
-          die;
-        }
+  						if(null != $formFieldLink && !empty($formFieldLink)) {
+  							$formFields = PrintessApi::send_get_request($formFieldLink);
 
-        if(count($response["orders"]) > 0) {
-          $response = $response["orders"][0];
+  							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
+  								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
+  							}
+  						}
+  					}
 
-          if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
-						$formFieldLink = $response["result"]["ff"];
+            $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+            $item->save_meta_data();
+          }
+      } else {
+        $order_items = array( $line_item_id => $item );
 
-						if(null != $formFieldLink && !empty($formFieldLink)) {
-							$formFields = PrintessApi::send_get_request($formFieldLink);
+        //Download production status
+        $api_endpoint = '/orders/list';
+        $response = PrintessApi::send_post_request(
+        		$printess_host . $api_endpoint,
+        		PrintessAdminSettings::get_service_token(),
+        		["saveToken" => $printess_save_token]
+        	);
 
-							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
-								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
-							}
-						}
-					}
+          if ( ! is_array( $response ) ) {
+            throw new \Exception( esc_html__( 'Printess returned an unexpected production status.', 'printess-editor' ) );
+          }
 
-          $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
-          $item->save_meta_data();
-        } else {
-          echo esc_html__( "No order found for save token", 'printess-editor' );
-          die;
-        }
+          if(0 == ($response["count"] ?? 0)) {
+            printess_set_admin_notice( __( 'No order found for save token', 'printess-editor' ) );
+            printess_redirect_to_order( $order_id );
+          }
+
+          if(is_array($response["orders"] ?? null) && count($response["orders"]) > 0) {
+            $response = $response["orders"][0];
+
+            if(array_key_exists("result", $response) && array_key_exists("ff", $response["result"])) {
+  						$formFieldLink = $response["result"]["ff"];
+
+  						if(null != $formFieldLink && !empty($formFieldLink)) {
+  							$formFields = PrintessApi::send_get_request($formFieldLink);
+
+  							if(null != $formFields && is_array($formFields) && array_key_exists("environment", $formFields)) {
+  								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $formFields["environment"] ), true );
+  							}
+  						}
+  					}
+
+            $item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+            $item->save_meta_data();
+          } else {
+            printess_set_admin_notice( __( 'No order found for save token', 'printess-editor' ) );
+            printess_redirect_to_order( $order_id );
+          }
+      }
+    } catch ( \Throwable $ex ) {
+      printess_log_production_failure( 'Unable to check the production status of an order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+      /* translators: %s: the reason the Printess request failed. */
+      printess_set_admin_notice( sprintf( __( 'Printess could not check the production status: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
     }
 
-    $query_string = http_build_query(
-      array(
-        'post'   => $order_id,
-        'action' => 'edit',
-      )
-    );
-
-	  $redirect = admin_url( 'post.php?' . $query_string );
-	  wp_safe_redirect( $redirect );
-	  die;
+    printess_redirect_to_order( $order_id );
   }
 }
 
@@ -3214,8 +3360,8 @@ function printess_save_custom_field_variations( $variation_id, $i ) {
 										return;
 	}
 
-	$template_name = $template_names[ $i ];
-	$is_merge_template = $is_merge_template[ $i ];
+	$template_name     = $template_names[ $i ] ?? null;
+	$is_merge_template = $is_merge_template[ $i ] ?? null;
 
 	if ( isset( $template_name ) ) {
 		update_post_meta( $variation_id, 'printess_template_name', esc_attr( $template_name ) );
@@ -4228,6 +4374,8 @@ function printess_register_hooks() {
 	add_action( 'woocommerce_cart_loaded_from_session', 'printess_cart_loaded_from_session', 10, 1 );
 	add_filter( 'woocommerce_add_to_cart_redirect', 'printess_add_to_cart_redirect', 10, 2 );
 	add_filter('woocommerce_add_to_cart_validation', 'printess_validate_cart_item', 10, 2);
+
+	add_action( 'admin_notices', 'printess_render_admin_notice' );
 
 	// PRODUCT.
 	add_action( 'admin_head', 'printess_admin_head' );

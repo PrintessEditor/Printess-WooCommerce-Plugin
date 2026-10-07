@@ -4,7 +4,7 @@ Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
 Tested up to: 7.0
 WC Tested up to: 10.5.3
-Stable tag: 1.6.95
+Stable tag: 1.6.98
 Requires PHP: 8.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -436,3 +436,14 @@ Please check https://printess.com/pricing.html for more details.
  = 1.6.95 =
  - Fixed inconsistent version metadata that stopped WordPress from offering the latest update.
  - Removed the WooCommerce.com marketplace header, which caused misleading "connect your store" notices on the plugins screen.
+
+ = 1.6.96 =
+ - Declared WooCommerce as a required plugin (WordPress 6.5+), so the plugin can only be activated while WooCommerce is active.
+
+ = 1.6.97 =
+ - Fixed a PHP warning ("Trying to access array offset on null") logged when saving a variable product whose variations have no merge template ticked.
+
+ = 1.6.98 =
+ - Fixed a blank page when approving an order line, checking its production status or saving an edited one: a failing Printess request (network error, expired service token, deleted product) threw an uncaught exception.
+ - Added: such failures are now written to the WooCommerce log under "printess-editor", added as an order note, and shown as an error notice on the order screen, instead of breaking the page.
+ - Fixed: a Printess failure while an order moves to processing can no longer break that status change.
