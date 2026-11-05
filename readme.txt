@@ -459,6 +459,8 @@ Please check https://printess.com/pricing.html for more details.
  - Fixed: a design saved during login (save first, then log in) is kept for the configured lifetime instead of 30 days.
  - Fixed: on shops with HPOS, the production data now includes the customer's account address (the Customer… fields), as it already did on shops without HPOS.
  - Fixed: the Edit link in the mini-cart now carries the design name.
+ - Fixed: saving a design from the editor did nothing on variable products whose attributes are defined on the product itself (custom attributes); the browser reported "Cannot read properties of null (reading 'includes')".
+ - Fixed: after a design in the cart was edited and added again, removing a cart line could break the cart and mini-cart blocks with an error message ("Unexpected token"). The note "This item was edited. Consider removing it from your cart." is now shown as a normal cart detail on the original line, in the classic cart as well as the cart and mini-cart blocks.
  - Removed: code that nothing used.
 
 == Upgrade Notice ==

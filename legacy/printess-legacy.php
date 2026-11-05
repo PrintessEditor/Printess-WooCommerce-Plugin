@@ -2457,6 +2457,7 @@ function printess_cart_loaded_from_session( $cart ) {
 		if ( ! isset( $cart_item['printess-was-edited'] ) && isset( $cart_item['printess-save-token'] ) && in_array( $cart_item['printess-save-token'], $edited_save_tokens, true ) ) {
 			$cart_item['printess-was-edited']          = 1;
 			WC()->cart->cart_contents[ $cart_item_id ] = $cart_item;
+			$cart_contents[ $cart_item_id ]            = $cart_item; // The sort below works on this copy.
 			$update_cart                               = true;
 		}
 	}
@@ -2648,15 +2649,16 @@ function printess_get_item_data( $item_data, $cart_item ) {
 		);
 	}
 
-	if ( ! isset( $cart_item['printess-was-edited'] ) ) {
-		return $item_data;
+	// A cart detail line like the design name, so every cart shows it: the classic cart, the cart and
+	// mini-cart blocks (Store API). 1.6.98 echoed it from this filter, which put HTML in front of the
+	// Store API's JSON and broke the cart block.
+	if ( isset( $cart_item['printess-was-edited'] ) ) {
+		$item_data[] = array(
+			'key'     => __( 'Note', 'printess-editor' ),
+			'value'   => __( 'This item was edited. Consider removing it from your cart.', 'printess-editor' ),
+			'display' => '',
+		);
 	}
-
-	?>
-	<dl class="variation">
-		<?php echo esc_html__( 'This item was edited. Consider removing it from your cart.', 'printess-editor' ); ?>
-	</dl>
-	<?php
 
 	return $item_data;
 }

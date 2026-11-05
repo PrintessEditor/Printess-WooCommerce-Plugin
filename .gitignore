@@ -1,2 +1,3 @@
 vendor/
 .vscode/launch.json
+js-src/dist/

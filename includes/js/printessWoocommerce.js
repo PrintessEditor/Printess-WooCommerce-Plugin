@@ -20,7 +20,7 @@
         textarea.innerHTML = encoded;
         return textarea.value;
     }
-    static parseMergeTemplate(template) {
+    static parseMergeTemplate(template, globalMergeModeOverwrite) {
         let ret = [];
         if (template) {
             if (Array.isArray(template)) {
@@ -59,6 +59,11 @@
                     }
                 }
             }
+        }
+        if (globalMergeModeOverwrite) {
+            ret.forEach((mergeTemplate) => {
+                mergeTemplate.mergeMode = globalMergeModeOverwrite;
+            });
         }
         return ret;
     }
@@ -130,7 +135,7 @@
         const ret = {};
         PrintessSharedTools.forEach(items, (value, index, arr, key) => {
             if (callback(value, items, key, index) === true) {
-                ret[key] = value;
+                ret[key || ""] = value;
             }
         });
         return ret;
@@ -140,7 +145,7 @@
         PrintessSharedTools.forEach(items, (value, index, arr, key) => {
             if (callback(value, items, key, index) === true) {
                 ret.push({
-                    key: key,
+                    key: key || "",
                     value: value
                 });
             }
@@ -234,7 +239,7 @@
         });
     }
     static getFileNameFromUrl(fileName) {
-        return (fileName || "").split('#')[0].split('?')[0].split('/').pop();
+        return (fileName || "").split('#')[0].split('?')[0].split('/').pop() || "";
     }
     static async downloadImages(images) {
         const ret = [];
@@ -551,7 +556,9 @@ const initPrintessWCEditor = function (printessSettings) {
                 for (const attributeName in attributeLookup) {
                     if (attributeLookup.hasOwnProperty(attributeName)) {
                         if (optionName === attributeName || optionName === attributeLookup[attributeName].key) {
-                            if (!attributeLookup[attributeName].valueKeys.includes(productOptionValues[optionName])) {
+                            // Custom (non-taxonomy) product attributes have no valueKeys; they cannot be checked
+                            // here, as in getCurrentVariant(). Without this, saving crashed on such products.
+                            if (attributeLookup[attributeName].valueKeys && !attributeLookup[attributeName].valueKeys.includes(productOptionValues[optionName])) {
                                 return optionName;
                             }
                         }

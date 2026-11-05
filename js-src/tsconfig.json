@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "module": "ES2020",
+    "target": "es2020",
+    "outDir": "dist",
+    "sourceMap": false,
+    "strict": false
+  },
+  "files": [
+    "printessSharedTools.ts",
+    "printessEditor.ts",
+    "printessWoocommerce.ts"
+  ]
+}
