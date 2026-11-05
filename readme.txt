@@ -2,9 +2,9 @@
 Contributors: printess
 Tags: personalization, customizer, configurator, web2print, photo books
 Requires at least: 5.9
-Tested up to: 7.0
-WC Tested up to: 10.5.3
-Stable tag: 1.6.98
+Tested up to: 7.1
+WC Tested up to: 11.1.2
+Stable tag: 1.7.0
 Requires PHP: 8.1
 License: MIT
 License URI: https://opensource.org/licenses/MIT
@@ -447,3 +447,21 @@ Please check https://printess.com/pricing.html for more details.
  - Fixed a blank page when approving an order line, checking its production status or saving an edited one: a failing Printess request (network error, expired service token, deleted product) threw an uncaught exception.
  - Added: such failures are now written to the WooCommerce log under "printess-editor", added as an order note, and shown as an error notice on the order screen, instead of breaking the page.
  - Fixed: a Printess failure while an order moves to processing can no longer break that status change.
+ = 1.7.0 =
+ - Changed: the plugin's code was reorganised into a "legacy" folder and brought to the WordPress coding standards. Settings, products, orders, saved designs and the storefront work exactly as before.
+ - Changed: the plugin's JavaScript and CSS files now carry the plugin version, so browsers load the new files after an update instead of a cached copy.
+ - Added: saved designs that expired more than 30 days ago are now deleted once a week (WooCommerce → Status → Scheduled Actions, "printess-editor"). On a shop with many old saved designs, the first run removes all of the expired ones at once.
+ - Fixed: HTTPS certificate checks are no longer turned off when the debug setting is on.
+ - Fixed: the Printess icon in the admin menu.
+ - Fixed: ordering a saved design extended its lifetime at Printess twice.
+ - Fixed: the admin order screen and the customer's order view no longer break when Printess cannot be reached or refuses the service token; the save token's expiry date is then left empty.
+ - Fixed: a malformed link token after login, or a Printess callback for an order or line that no longer exists, caused a fatal error.
+ - Fixed: a design saved during login (save first, then log in) is kept for the configured lifetime instead of 30 days.
+ - Fixed: on shops with HPOS, the production data now includes the customer's account address (the Customer… fields), as it already did on shops without HPOS.
+ - Fixed: the Edit link in the mini-cart now carries the design name.
+ - Removed: code that nothing used.
+
+== Upgrade Notice ==
+
+= 1.7.0 =
+Internal restructuring with no change in behaviour. New: a weekly job deletes saved designs that expired more than 30 days ago.

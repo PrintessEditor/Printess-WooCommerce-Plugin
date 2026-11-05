@@ -1,0 +1,4417 @@
+<?php
+/**
+ * The MIT License (MIT)
+ *
+ * Copyright (c) 2026 Printess GmbH & Co. KG
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ *
+ * Modification is permitted under the terms above. Printess GmbH & Co. KG
+ * supports only the official releases of this plugin and does not provide
+ * support for modified copies.
+ *
+ * @package PrintessEditor
+ */
+
+/**
+ * Version 1 of the Printess WooCommerce integration (the legacy engine), loaded by printess.php.
+ *
+ * Kept as it was in 1.6.98 apart from file locations: the plugin's public URL comes from
+ * PRINTESS_LEGACY_URL and the plugin file from PRINTESS_EDITOR_FILE, both defined by printess.php,
+ * because the magic file constant here no longer names the plugin's main file.
+ */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	exit; // Exit if accessed directly.
+}
+
+include_once 'includes/printess-admin-settings.php';
+include_once 'includes/printess-api.php';
+include_once 'includes/printess-html-helpers.php';
+include_once 'includes/printess-product-helpers.php';
+
+$printess_global_plugin_path = trailingslashit( WP_PLUGIN_DIR ) . 'woocommerce/woocommerce.php';
+
+/**
+ * Renders the status overlay that is displayed
+ */
+function printess_render_information_overlay() {
+	?>
+	<div class="printess_overlay_background printess-owned" id="printess_information_overlay_background" style="display:none;">
+		<div class="printess_overlay printess_information_overlay">
+			<div class="printess_overlay_content progress">
+				<p id="printess_information_overlay_text"><p>
+			</div>
+		</div>
+	</div>
+	<?php
+}
+
+/**
+ * Renders the dialog that pops up when klicking on save inside the printess editor
+ */
+function printess_render_save_dialog() {
+	$save_design_escaped            = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Save design', 'printess-editor' ) . '</span>', esc_html__( 'You are currently not logged in. To be able to save designs you need to be logged in. You will be redirected to the login page after clicking on {SAVE_DESIGN}. After logging in / account creation you will be redirected back to your current design so that you can continue working on your current design.', 'printess-editor' ) );
+	$show_if_no_design_name_escaped = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You need to provide a display name for your saved design. This name is shown on the {SAVE_DESIGN} page so that you can easily find it on future visits.', 'printess-editor' ) );
+	$saved_designs_escaped          = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'You can provide a new design name to store this version under a different name. This new version can then be found on your {SAVE_DESIGN} page as well.', 'printess-editor' ) );
+	$after_saving_escaped           = str_replace( '{SAVE_DESIGN}', '<span class="highlight">' . esc_html__( 'Saved designs', 'printess-editor' ) . '</span>', esc_html__( 'After saving, your saved design can be found under {SAVE_DESIGN} on your account page.', 'printess-editor' ) );
+	?>
+		<div class="printess_overlay_background printess-owned" id="printess_overlay_background" style="display:none;">
+			<div class="printess_overlay">
+				<div class="printess_overlay_content">
+					<div class="header">
+						<span class="title"><?php echo esc_html__( 'Saving your design', 'printess-editor' ); ?></span>
+					</div>
+
+					<p class="printess_show_if_not_logged_in" id="printess_show_if_not_logged_in"><?php echo $save_design_escaped; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
+
+					<div class="printess_show_if_no_design_name" id="printess_show_if_no_design_name">
+						<p><?php echo $show_if_no_design_name_escaped;  /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
+					</div>
+
+					<div class="printess_show_if_design_name" id="printess_show_if_design_name">
+						<p><?php echo $saved_designs_escaped; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
+					</div>
+
+					<form class="woocommerce-form">
+						<p class="woocommerce-form-row woocommerce-form-row--wide form-row form-row-wide">
+							<label for="printess_designnameedit"><?php echo esc_html__( 'Design name', 'printess-editor' ); ?></label>
+							<input type="text" class="woocommerce-Input woocommerce-Input--text input-text" name="printess_designnameedit" id="printess_designnameedit" value="" placeholder="<?php echo esc_html__( 'Enter your display name', 'printess-editor' ); ?>">
+						</p>
+					</form>
+
+
+					<p><?php echo $after_saving_escaped;  /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/ ?></p>
+				</div>
+
+				<div class="printess_overlay_footer">
+					<span></span>
+					<button id="printess_save_design_button" class="button alt wp-element-button"><?php echo esc_html__( 'Save design', 'printess-editor' ); ?></button>
+					<button id="printess_cancel_button" class="button wp-element-button"><?php echo esc_html__( 'Cancel', 'printess-editor' ); ?></button>
+				</div>
+			</div>
+		</div>
+	<?php
+}
+
+/**
+ * Adds the necessary Printess values to the order line items.
+ *
+ * @param mixed  $item          The order line item.
+ * @param string $cart_item_key The cart item key.
+ * @param mixed  $values        The values of the cart item.
+ * @param mixed  $order         The order, when WooCommerce passes it.
+ */
+function printess_add_save_token_to_order_items( $item, $cart_item_key, $values, $order = null ) {
+	if ( empty( $values['printess-save-token'] ) ) {
+		return;
+	}
+
+	$item->add_meta_data( '_printess-save-token', $values['printess-save-token'], true );
+
+	if ( ! empty( $values['printess-thumbnail-url'] ) ) {
+		$item->add_meta_data( '_printess-thumbnail-url', $values['printess-thumbnail-url'], true );
+	}
+
+	if ( ! empty( $values['printess-design-id'] ) ) {
+		$item->add_meta_data( '_printess-design-id', $values['printess-design-id'], true );
+	}
+
+	if ( ! empty( $values['printess-design-name'] ) ) {
+		$item->add_meta_data( '_printess-design-name', $values['printess-design-name'], true );
+	}
+
+	if ( ! empty( $values['printess-additional-settings'] ) ) {
+		$item->add_meta_data( 'printess-additional-settings', $values['printess-additional-settings'], true );
+	}
+
+	$product = wc_get_product( $values['product_id'] );
+
+	if ( isset( $product ) ) {
+		$item->add_meta_data( '_printess-dropshipping', $product->get_meta( 'printess_dropshipping' ), true );
+	}
+
+	include_once 'includes/printess-saved-design-repository.php';
+
+	$time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date( true );
+
+	if ( false === PrintessApi::unexpire_save_token( $values['printess-save-token'], $time_out ) ) {
+		$time_out = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+	}
+
+	$item->add_meta_data( '_printess-valid-until', $time_out->format( 'Y-m-d H:i:s' ), true );
+
+	try {
+		if ( isset( $order ) ) {
+			Printess_Saved_Design_Repository::update_valid_until( $order->get_user_id(), $values['printess-save-token'], $time_out );
+		}
+	} catch ( \Exception $ex ) {
+		// Ignored on purpose: the saved-design row is bookkeeping, the order line is already complete.
+	}
+}
+
+/**
+ * Adds the Printess specific values to the cart items.
+ *
+ * @param mixed $cart_item_data The cart item data.
+ * @return mixed the modified cart item data
+ */
+function printess_add_cart_item_data( $cart_item_data ) {
+	$save_token                             = filter_input( INPUT_POST, 'printess-save-token', FILTER_SANITIZE_SPECIAL_CHARS );
+	$save_token_to_remove_from_cart         = filter_input( INPUT_POST, 'printess-save-token-to-remove-from-cart', FILTER_SANITIZE_SPECIAL_CHARS );
+	$thumbnail_url                          = filter_input( INPUT_POST, 'printess-thumbnail-url', FILTER_VALIDATE_URL );
+	$design_id                              = filter_input( INPUT_POST, 'printess-design-id', FILTER_SANITIZE_SPECIAL_CHARS );
+	$design_name                            = filter_input( INPUT_POST, 'printess-design-name', FILTER_SANITIZE_SPECIAL_CHARS );
+	$additional_settings                    = filter_input( INPUT_POST, 'printess-additional-settings', FILTER_SANITIZE_SPECIAL_CHARS );
+	$item_usage                             = filter_input( INPUT_POST, 'printess_item_usage', FILTER_UNSAFE_RAW );
+	$printess_hide_quantity                 = filter_input( INPUT_POST, 'printess_hide_quantity', FILTER_UNSAFE_RAW );
+	$remove_items_from_cart                 = false;
+	$remove_option_value                    = get_option( 'printess_show_original_product_in_basket', true );
+	$remove_basket_item_on_same_design_name = PrintessAdminSettings::get_delete_original_basket_item_only_on_same_design_name();
+
+	if ( isset( $remove_option_value ) && ( empty( $remove_option_value ) || 'off' === $remove_option_value ) ) {
+		$remove_items_from_cart = true;
+	}
+
+	if ( empty( $save_token ) || strlen( $save_token ) !== 89 ) {
+		return $cart_item_data;
+	}
+
+	// In case we have a save token to delete, remove it from the basket.
+	if ( null !== $save_token_to_remove_from_cart && ! empty( $save_token_to_remove_from_cart ) ) {
+		// Get all cart items and check the ones with save tokens if it can be found.
+		$cart_contents = WC()->cart->get_cart();
+
+		foreach ( $cart_contents as $item_key => &$item ) {
+			if ( array_key_exists( 'printess-save-token', $item ) && array_key_exists( 'printess-design-name', $item ) ) {
+				$item_save_token  = $item['printess-save-token'];
+				$item_design_name = $item['printess-design-name'];
+
+				if ( $item_save_token === $save_token_to_remove_from_cart ) {
+					if ( null !== $design_name && ! empty( $design_name ) && null !== $item_design_name && ! empty( $item_design_name ) && $design_name === $item_design_name ) {
+						if ( true === $remove_basket_item_on_same_design_name ) {
+							WC()->cart->remove_cart_item( $item_key );
+						}
+					} elseif ( true === $remove_items_from_cart ) {
+							WC()->cart->remove_cart_item( $item_key );
+					} else {
+						$item['printess-was-edited']           = 1;
+						$cart_item_data['printess-was-edited'] = 1;
+					}
+
+					WC()->cart->set_session();
+
+					break;
+				}
+			}
+		}
+	}
+
+	$cart_item_data['printess-save-token'] = $save_token;
+
+	if ( ! empty( $save_token_to_remove_from_cart ) && strlen( $save_token_to_remove_from_cart ) === 89 ) {
+		$cart_item_data['printess-save-token-to-remove-from-cart'] = $save_token_to_remove_from_cart;
+	}
+
+	if ( ! empty( $thumbnail_url ) ) {
+		$cart_item_data['printess-thumbnail-url'] = $thumbnail_url;
+	}
+
+	if ( ! empty( $additional_settings ) ) {
+		$cart_item_data['printess-additional-settings'] = $additional_settings;
+	}
+
+	if ( ! empty( $design_id ) ) {
+		$cart_item_data['printess-design-id'] = $design_id;
+	}
+
+	if ( ! empty( $design_name ) ) {
+		$cart_item_data['printess-design-name'] = $design_name;
+	}
+
+	if ( ! empty( $item_usage ) ) {
+		$cart_item_data['printess-item-usage'] = $item_usage;
+	}
+
+	if ( ! empty( $printess_hide_quantity ) ) {
+		$cart_item_data['printess_hide_quantity'] = $printess_hide_quantity;
+	}
+
+	$cart_item_data['printess_date_added'] = ( new DateTime() )->format( 'Y-m-d H:i:s' );
+
+	return $cart_item_data;
+}
+
+/**
+ * Changes the cart item thumbnail to use the one from the customized Printess product.
+ *
+ * @param mixed $item_data The cart item data.
+ * @param mixed $cart_item The cart item.
+ */
+function printess_get_thumbnail( $item_data, $cart_item ) {
+	if ( ! empty( $cart_item['printess-thumbnail-url'] ) ) {
+		return '<img src="' . $cart_item['printess-thumbnail-url'] . '" style="background-color: #ffffff;" />';
+	}
+
+	return $item_data;
+}
+
+/**
+ * Returns the current price format options as json string
+ */
+function printess_get_price_format_options() {
+	return array(
+		'decimalSeperator'         => wc_get_price_decimal_separator(),
+		'thousandsSeperator'       => wc_get_price_thousand_separator(),
+		'decimals'                 => wc_get_price_decimals(),
+		'priceFormat'              => get_woocommerce_price_format(),
+		'currencySymbol'           => html_entity_decode( get_woocommerce_currency_symbol() ),
+		'currencySymbolOnLeftSide' => get_option( 'woocommerce_currency_pos' ) === 'left',
+	);
+}
+
+/**
+ * Returns an array containing all required product details
+ *
+ * @param mixed $product The product db object the information is pulled from.
+ */
+function printess_get_product_json( $product ) {
+	$parent_id = $product->get_data()['parent_id'];
+	if ( $parent_id > 0 ) {
+		$product = wc_get_product( $parent_id );
+	}
+
+	$js_product = array(
+		'id'               => $product->get_id(),
+		'name'             => $product->get_name(),
+		'templateName'     => $product->get_meta( 'printess_template', true ),
+		'mergeTemplates'   => array(),
+		'attributes'       => array(),
+		'attributesLookup' => array(),
+		'variants'         => array(),
+		'regular_price'    => $product->get_regular_price(),
+		'sale_price'       => $product->get_sale_price(),
+		'price'            => $product->get_price(),
+		'available'        => false === $product->get_data()['manage_stock'] || $product->get_stock_quantity() > 0,
+	);
+
+	$js_product['mergeTemplates'] = array_filter(
+		array( $product->get_meta( 'printess_merge_template_1', true ), $product->get_meta( 'printess_merge_template_2', true ), $product->get_meta( 'printess_merge_template_3', true ) ),
+		function ( $template ) {
+			return ! empty( $template );
+		}
+	);
+
+	$js_product['attributes'] = PrintessProductHelpers::get_product_attributes( $product );
+
+	$product_variation_ids = $product->get_children();
+
+	if ( isset( $product_variation_ids ) && count( $product_variation_ids ) > 0 ) {
+		foreach ( $product_variation_ids as $id ) {
+			$variation  = wc_get_product( $id );
+			$js_variant = array(
+				'attributes'              => array(),
+				'id'                      => $id,
+				'templateName'            => $variation->get_meta( 'printess_template_name', true ),
+				'templateIsMergeTemplate' => 'on' === $variation->get_meta( 'printess_template_is_merge_template', true ),
+				'parentId'                => $variation->get_data()['parent_id'],
+				'regularPrice'            => $variation->get_regular_price(),
+				'salePrice'               => $variation->get_sale_price(),
+				'price'                   => $variation->get_price(),
+				'available'               => false === $variation->get_data()['manage_stock'] || $variation->get_stock_quantity() > 0,
+			);
+
+			foreach ( $variation->get_attributes() as $key => $value ) {
+				$js_variant['attributes'][ $key ] = $value;
+			}
+
+			$js_product['variants'][] = $js_variant;
+		}
+	}
+
+	if ( method_exists( $product, 'get_meta' ) ) {
+		$redirect_page = $product->get_meta( 'printess_cart_redirect_page', true );
+
+		if ( null !== $redirect_page && '' !== $redirect_page ) {
+			$pages = printess_get_available_pages( true );
+
+			if ( array_key_exists( $redirect_page, $pages ) ) {
+				$result = get_permalink( $pages[ $redirect_page ] );
+
+				if ( false === $result ) {
+					$js_product['redirectUrl'] = site_url( $redirect_page );
+				} else {
+					$js_product['redirectUrl'] = $result;
+				}
+			} else {
+				$js_product['redirectUrl'] = site_url( $redirect_page );
+			}
+		}
+	}
+
+	$js_product['ajaxEnabled'] = 'yes' === get_option( 'woocommerce_enable_ajax_add_to_cart', '' ) || 'on' === get_option( 'woocommerce_enable_ajax_add_to_cart', '' );
+
+	return $js_product;
+}
+
+/**
+ * Renders a list of key value pairs that should be pulled in as form fields automatically
+ *
+ * @param mixed $user_id The user id of the current logged in user.
+ */
+function printess_get_custom_formfields( $user_id ) {
+	$form_fields       = array();
+	$filter_lookup     = array();
+	$user_field_filter = PrintessAdminSettings::get_user_fields();
+
+	if ( null !== $user_field_filter && ! empty( $user_field_filter ) ) {
+		foreach ( explode( ',', str_replace( "\r", ',', str_replace( "\n", ',', str_replace( "\r\n", ',', $user_field_filter ) ) ) ) as $value ) {// , seperator or new line supported
+			$value = strtolower( trim( $value ) );
+
+			if ( ! empty( $value ) ) {
+				$filter_lookup[] = $value;
+			}
+		}
+	}
+
+	// Add user details.
+	if ( $user_id > 0 ) {
+		$current_user = wp_get_current_user();
+
+		$customer = new WC_Customer( $user_id );
+
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'email', $filter_lookup ) ) {
+			$form_fields['eMail'] = $customer->get_email();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'displayname', $filter_lookup ) ) {
+			$form_fields['Displayname'] = $customer->get_display_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'firstname', $filter_lookup ) ) {
+			$form_fields['Firstname'] = $customer->get_first_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'lastname', $filter_lookup ) ) {
+			$form_fields['Lastname'] = $customer->get_last_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'description', $filter_lookup ) ) {
+			$form_fields['Description'] = get_user_meta( $user_id, 'description', true );
+		}
+
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingfirstname', $filter_lookup ) ) {
+			$form_fields['BillingFirstname'] = $customer->get_billing_first_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billinglastname', $filter_lookup ) ) {
+			$form_fields['BillingLastname'] = $customer->get_billing_last_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingcompany', $filter_lookup ) ) {
+			$form_fields['BillingCompany'] = $customer->get_billing_company();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingemail', $filter_lookup ) ) {
+			$form_fields['BillingEmail'] = $customer->get_billing_email();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingphone', $filter_lookup ) ) {
+			$form_fields['BillingPhone'] = $customer->get_billing_phone();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingcity', $filter_lookup ) ) {
+			$form_fields['BillingCity'] = $customer->get_billing_city();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingstate', $filter_lookup ) ) {
+			$form_fields['BillingState'] = $customer->get_billing_state();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingpostcode', $filter_lookup ) ) {
+			$form_fields['BillingPostcode'] = $customer->get_billing_postcode();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingcountry', $filter_lookup ) ) {
+			$form_fields['BillingCountry'] = $customer->get_billing_country();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingaddress1', $filter_lookup ) ) {
+			$form_fields['BillingAddress1'] = $customer->get_billing_address_1();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'billingaddress2', $filter_lookup ) ) {
+			$form_fields['BillingAddress2'] = $customer->get_billing_address_2();
+		}
+
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientfirstname', $filter_lookup ) ) {
+			$form_fields['ClientFirstname'] = $customer->get_first_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientlastname', $filter_lookup ) ) {
+			$form_fields['ClientLastname'] = $customer->get_last_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientcompany', $filter_lookup ) ) {
+			$form_fields['ClientCompany'] = $customer->get_billing_company();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientemail', $filter_lookup ) ) {
+			$form_fields['ClientEmail'] = $customer->get_email();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientphone', $filter_lookup ) ) {
+			$form_fields['ClientPhone'] = $customer->get_billing_phone();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientcity', $filter_lookup ) ) {
+			$form_fields['ClientCity'] = $customer->get_billing_city();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientstate', $filter_lookup ) ) {
+			$form_fields['ClientState'] = $customer->get_billing_state();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientpostcode', $filter_lookup ) ) {
+			$form_fields['ClientPostcode'] = $customer->get_billing_postcode();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientcountry', $filter_lookup ) ) {
+			$form_fields['ClientCountry'] = $customer->get_billing_country();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientaddress1', $filter_lookup ) ) {
+			$form_fields['ClientAddress1'] = $customer->get_billing_address();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'clientaddress2', $filter_lookup ) ) {
+			$form_fields['ClientAddress2'] = $customer->get_billing_address_2();
+		}
+
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingfirstname', $filter_lookup ) ) {
+			$form_fields['ShippingFirstname'] = $customer->get_shipping_first_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippinglastname', $filter_lookup ) ) {
+			$form_fields['ShippingLastname'] = $customer->get_shipping_last_name();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingcompany', $filter_lookup ) ) {
+			$form_fields['ShippingCompany'] = $customer->get_shipping_company();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingphone', $filter_lookup ) ) {
+			$form_fields['ShippingPhone'] = $customer->get_shipping_phone();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingcity', $filter_lookup ) ) {
+			$form_fields['ShippingCity'] = $customer->get_shipping_city();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingstate', $filter_lookup ) ) {
+			$form_fields['ShippingState'] = $customer->get_shipping_state();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingpostcode', $filter_lookup ) ) {
+			$form_fields['ShippingPostcode'] = $customer->get_shipping_postcode();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingcountry', $filter_lookup ) ) {
+			$form_fields['ShippingCountry'] = $customer->get_shipping_country();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingaddress1', $filter_lookup ) ) {
+			$form_fields['ShippingAddress1'] = $customer->get_shipping_address_1();
+		}
+		if ( in_array( 'all', $filter_lookup ) || in_array( 'shippingaddress2', $filter_lookup ) ) {
+			$form_fields['ShippingAddress2'] = $customer->get_shipping_address_2();
+		}
+	}
+
+	// Add ACF field values.
+	if ( $user_id > 0 && function_exists( 'get_field_objects' ) ) {
+		$acf_fields = get_field_objects( 'user_' . $user_id );
+
+		if ( null !== $acf_fields && false !== $acf_fields && is_array( $acf_fields ) ) {
+			$acf_label_property = PrintessAdminSettings::get_use_acf_name_instead_of_label() ? 'name' : 'label';
+			$acf_mappings       = PrintessAdminSettings::get_acf_field_mappings();
+
+			foreach ( $acf_fields as $key => &$field ) {
+				if ( is_array( $field ) && array_key_exists( $acf_label_property, $field ) && array_key_exists( 'value', $field ) && ( in_array( 'all', $filter_lookup ) || in_array( strtolower( $field[ $acf_label_property ] ), $filter_lookup ) ) ) {
+					$key   = $field[ $acf_label_property ];
+					$value = $field['value'];
+
+					if ( count( $acf_mappings ) > 0 && array_key_exists( $key, $acf_mappings ) ) {
+						$key = $acf_mappings[ $key ];
+					}
+
+					$form_fields[ $key ] = $value;
+				}
+			}
+		}
+	}
+
+	return $form_fields;
+}
+
+/**
+ * Renders all the required html + javascript required for the editor integration inside the product page
+ *
+ * @param mixed  $product The product for which the editor should be used.
+ * @param string $mode Indicator if this method was called from within the admin pages or from the product page (Buyer = Product page).
+ */
+function printess_render_editor_integration( $product, $mode = 'buyer' ) {
+	$printess_attribute       = '';
+	$cart_id                  = WC()->session->get( 'printess-cart-id' );
+	$attach_params            = array();
+	$additional_attach_params = array();
+	$theme                    = PrintessAdminSettings::get_default_theme();
+	$printess_helpers         = new PrintessProductHelpers( $product->get_id() );
+	$page_count_form_field    = $printess_helpers->get_page_count_option();
+
+	if ( empty( $cart_id ) ) {
+		$cart_id = uniqid( '', true );
+
+		WC()->session->set( 'printess-cart-id', $cart_id );
+	}
+
+	wp_enqueue_style( 'printess-editor' );
+
+	if ( isset( $product ) ) {
+		$printess_attribute = $product->get_meta( 'printess_template', true );
+
+		$product_theme = $product->get_meta( 'printess_editor_theme', true );
+
+		if ( null !== $product_theme && ! empty( $product_theme ) ) {
+			$theme = $product_theme;
+		}
+	}
+
+	$attach_params['basketThumbnailMaxWidth']  = PrintessAdminSettings::get_thumbnail_width();
+	$attach_params['basketThumbnailMaxHeight'] = PrintessAdminSettings::get_thumbnail_height();
+
+	if ( ! empty( $page_count_form_field ) ) {
+		$additional_attach_params['pageCountFormField'] = $page_count_form_field;
+	}
+
+	if ( ! empty( $printess_attribute ) ) {
+		$prod_id     = $product->get_id();
+		$account_url = get_permalink( wc_get_page_id( 'myaccount' ) ); // Account page which will force login on open.
+		$account_url = add_query_arg( 'productId', '__ProductId__', $account_url );
+		$account_url = add_query_arg( 'saveToken', '__SaveToken__', $account_url );
+		$account_url = add_query_arg( 'thumbnailUrl', '__ThumbnailUrl__', $account_url );
+		$account_url = add_query_arg( 'variantId', '__VariantId__', $account_url );
+		$account_url = add_query_arg( 'options', '__Options__', $account_url );
+		$account_url = add_query_arg( 'token', rawurlencode( printess_create_url_token( $prod_id ) ), $account_url );
+		$account_url = add_query_arg( 'displayName', '__DisplayName__', $account_url );
+		$js_product  = printess_get_product_json( $product );
+
+		printess_render_save_dialog();
+		printess_render_information_overlay();
+
+		include_once 'includes/printess-dialogs.php';
+		PrintessDialogs::render_display_name_dialog();
+		PrintessDialogs::render_save_reminder_dialog( PrintessAdminSettings::get_save_reminder_in_minutes() );
+
+		$printess_ui_version = $product->get_meta( 'printess_ui_version', true );
+
+		if ( ! isset( $printess_ui_version ) || empty( $printess_ui_version ) ) {
+			$printess_ui_version = 'classical';
+		}
+
+		$item_usage                   = $product->get_meta( 'printess_item_usage', true );
+		$use_record_count_as_quantity = $product->get_meta( 'printess_use_record_count_as_quantity', true );
+		$use_record_count_as_quantity = isset( $use_record_count_as_quantity ) && ! empty( $use_record_count_as_quantity ) && 'yes' === $use_record_count_as_quantity;
+
+		if ( null === $item_usage ) {
+			$item_usage = '';
+		}
+
+		$form_fields = printess_get_custom_formfields( get_current_user_id() );
+		?>
+
+		<script id="printess-integration">
+			var printessGlobalConfig = {};
+			let itemUsage = <?php echo( ! empty( $item_usage ) ? wp_json_encode( $item_usage ) : '""' ); ?>;
+
+			try {
+				printessGlobalConfig.pricePerUsageFields = JSON.parse(itemUsage);
+			} catch(ex) {
+
+			}
+
+			<?php
+			if ( count( $form_fields ) > 0 ) {
+				?>
+						printessGlobalConfig.formFields = <?php echo wp_json_encode( $form_fields ); ?>;
+					<?php
+			}
+			?>
+
+
+			let showPrintessEditor = function() {};
+			const userMessages = {
+				"noDisplayName": <?php echo wp_json_encode( __( 'Please provide a display name.', 'printess-editor' ) ); ?>,
+				"saveError": <?php echo wp_json_encode( __( 'There was an error while trying to save your design', 'printess-editor' ) ); ?>,
+				"savingDesign": <?php echo wp_json_encode( __( 'Saving design to your list of saved designs', 'printess-editor' ) ); ?>,
+				"closeWindow": <?php echo wp_json_encode( __( 'Please close this window or tab.', 'printess-editor' ) ); ?>,
+				"unableToSaveChangesDueToInvalidVariant": <?php echo wp_json_encode( __( 'Unable to save changes due to invalid value for {0}.', 'printess-editor' ) ); ?>
+			};
+
+			document.addEventListener("DOMContentLoaded", function() {
+				const idsToHide = (<?php echo wp_json_encode( PrintessAdminSettings::get_ids_to_hide() ); ?> || "").split(",").map( (x) => x.trim());
+				const classesToHide = (<?php echo wp_json_encode( PrintessAdminSettings::get_class_names_to_hide() ); ?> || "").split(",").map( (x) => x.trim());
+				const product =  <?php echo wp_json_encode( $js_product ); ?>;
+				const editor = typeof initPrintessWCEditor !== "undefined" ? initPrintessWCEditor({
+																									"apiDomain:": <?php echo wp_json_encode( PrintessAdminSettings::get_domain() ); ?>,
+																									"uiSettings": {
+																										"startupLogoUrl": "",
+																										"showStartupAnimation": true,
+																										"uiVersion": <?php echo wp_json_encode( $printess_ui_version ); ?>,
+																										"theme": <?php echo wp_json_encode( $theme ); ?>
+																									},
+																									"showAlertOnTabClose": <?php echo wp_json_encode( PrintessAdminSettings::get_show_warning_on_tab_close() === true ); ?>,
+																									"autoImportImageUrlsInFormFields": !<?php echo wp_json_encode( PrintessAdminSettings::image_autoupload_disabled() ); ?>,
+																									"editorUrl": <?php echo wp_json_encode( PrintessAdminSettings::get_embed_html_url() ); ?>,
+																									"shopToken": <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
+																									"hidePricesInEditor": false,
+																									"editorVersion": "",
+																									"priceFormatOptions": <?php echo wp_json_encode( printess_get_price_format_options() ); ?>,
+																									"idsToHide": idsToHide,
+																									"classesToHide": classesToHide,
+																									"addToCartAfterCustomization": <?php echo wp_json_encode( PrintessAdminSettings::get_add_to_cart_after_customization() ); ?>,
+																									"cartUrl": <?php echo wp_json_encode( wc_get_cart_url() ); ?>,
+																									"editorMode": <?php echo wp_json_encode( $mode ); ?>,
+																									"userIsLoggedIn": <?php echo wp_json_encode( is_user_logged_in() ); ?>,
+																									"accountPageUrl": <?php echo wp_json_encode( $account_url ); ?>,
+																									"nonce": <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>,
+																									"urlToken": <?php echo wp_json_encode( printess_create_url_token( $product->get_id() ) ); ?>,
+																									"userMessages": userMessages,
+																									"askForNameOnResave":
+																									<?php
+																									$show_dlg = get_option( 'printess_ask_for_name_on_resave', 'wpadminbar, page' );
+																									echo wp_json_encode( true === $show_dlg || 'true' === $show_dlg || 'on' === $show_dlg );
+																									?>
+																									,
+																									"customizeButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>,
+																									"showPricesInEditor": <?php echo wp_json_encode( get_option( 'printess_show_prices_in_editor', 'off' ) === 'on' ); ?>,
+																									"showProductName": <?php echo wp_json_encode( get_option( 'printess_show_product_name_in_editor', 'off' ) === 'on' ); ?>,
+																									"attachParams": <?php echo wp_json_encode( $attach_params ); ?>,
+																									"designNowButtonId": <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_id() ); ?>,
+																									"hideCustomDesignNowButtonClasses": <?php echo wp_json_encode( PrintessAdminSettings::hide_internal_customize_button_classes() ); ?> || false,
+																									"writeTrackingEvents": <?php echo wp_json_encode( PrintessAdminSettings::write_tracking_events() ); ?> || false
+																									}) : null;
+
+				if(!editor) {
+					console.warn("Unable to initialize printess editor.");
+					return;
+				}
+
+				const buttonLabelHtml = <?php echo wp_json_encode( esc_html__( 'Customize', 'printess-editor' ) ); ?>;
+				const enforceDisplayName = <?php echo json_encode( PrintessAdminSettings::get_enforce_design_name() ); ?>;
+
+				showPrintessEditor = function(saveToken = null, basketItemId = null) {
+					const pageCountFormFieldOption = <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text() ); ?>;
+					basketItemId = basketItemId || null;
+
+					const settings = {
+						templateNameOrSaveToken: saveToken || product.templateName,
+						product: product,
+						basketItemId: basketItemId,
+						basektId: <?php echo wp_json_encode( $cart_id ); ?>,
+						userId: <?php echo wp_json_encode( '' . get_current_user_id() ); ?>,
+						optionValueMappings: <?php echo wp_json_encode( $product->get_meta( 'printess_custom_formfield_mappings', true ) ); ?>,
+						legalText: <?php echo wp_json_encode( PrintessAdminSettings::get_legal_text() ); ?>,
+						additionalAttachParams: <?php echo wp_json_encode( $additional_attach_params, JSON_FORCE_OBJECT ); ?>,
+						enforceDisplayName: enforceDisplayName,
+            useRecordCountAsQuantity: <?php echo wp_json_encode( $use_record_count_as_quantity, JSON_FORCE_OBJECT ); ?>
+					};
+
+					<?php
+						$minutes = PrintessAdminSettings::get_save_reminder_in_minutes();
+					if ( null !== $minutes && $minutes > 0 ) {
+						echo 'settings.showSaveWarningAfter=' . $minutes . ';'; /*phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped*/
+					}
+					?>
+
+					editor.show(settings);
+				};
+
+				editor.initProductPage(product, product.templateName, <?php echo wp_json_encode( PrintessAdminSettings::get_customize_button_class() ); ?>, buttonLabelHtml, showPrintessEditor, "form.cart"/* product: IWooCommerceProduct, saveToken: string, customizeButtonClass: string, designNowButtonLabel: string = "Customize", formSelector: string = "form.cart" */, enforceDisplayName);
+			});
+		</script>
+		<?php
+	}
+}
+
+	/**
+	 * Registers the needed hooks for the single product view to handle Printess products.
+	 */
+function printess_show_printess_view_if_printess_product() {
+	global $product;
+
+	if ( isset( $product ) ) {
+		$printess_attribute = $product->get_meta( 'printess_template', true );
+	}
+
+	if ( ! empty( $printess_attribute ) ) {
+		printess_render_editor_integration( $product, 'buyer' );
+	}
+}
+
+/**
+ * Reads the add-on values YITH WooCommerce Product Add-Ons stored on an order line.
+ *
+ * @param mixed $yith_meta_data The line item meta entry "_ywapo_meta_data".
+ * @return array Label => value pairs.
+ */
+function printess_extract_yith_plugin_values( $yith_meta_data ) {
+	$ret = array();
+
+	$data = $yith_meta_data->get_data();
+
+	if ( isset( $data ) && array_key_exists( 'value', $data ) ) {
+		$values = $data['value'];
+
+		foreach ( $values as $x => $y ) {
+			foreach ( $y as $key => $value ) {
+				if ( is_string( $value ) ) {
+					break;
+				}
+
+				$label = $value['display_label'];
+
+				if ( str_contains( $value['display_value'], ': ' ) ) {
+					$index = strpos( $value['display_value'], ': ' );
+
+					if ( false !== $index && $index >= 0 ) {
+						$ret[ $label ] = substr( $value['display_value'], $index + 2 );
+					}
+				} else {
+					$ret[ $label ] = $value['display_value'];
+				}
+
+				break;
+			}
+		}
+	}
+
+	return $ret;
+}
+
+/**
+ * Tests if an order line item meta key holds internal plugin or WooCommerce bookkeeping data that
+ * must not be forwarded to Printess as a vdp form field. WooCommerce marks hidden meta with a
+ * leading underscore; "printess-additional-settings" is the one internal key written without one.
+ *
+ * @param mixed $meta_key The meta key.
+ * @return bool True for a key that is not forwarded.
+ */
+function printess_is_internal_line_item_meta_key( $meta_key ) {
+	if ( ! is_string( $meta_key ) ) {
+		return false;
+	}
+
+	return str_starts_with( $meta_key, '_' ) || 'printess-additional-settings' === $meta_key;
+}
+
+/**
+ * Adds the order, address, product, category, tag, line meta and attribute values to the
+ * production payload's vdp form fields.
+ *
+ * @param WC_Order              $order           The order.
+ * @param WC_Order_Item_Product $line_item       The order line item.
+ * @param WC_Product            $product         The line's product.
+ * @param array                 $produce_payload The production payload, extended in place.
+ */
+function printess_add_production_vdp_data( &$order, &$line_item, &$product, &$produce_payload ) {
+	$produce_payload['vdp']['form']['itemQuantity'] = "{$line_item->get_quantity()}";
+	$produce_payload['vdp']['form']['itemSku']      = $product->get_sku();
+
+	try {
+		$produce_payload['vdp']['form']['orderDate'] = $order->get_date_created()->format( 'c' );
+	} catch ( \Exception $ex ) {
+		// Ignored on purpose: without a creation date the field is simply left out.
+	}
+
+	$produce_payload['vdp']['form']['productName'] = $product->get_name();
+
+	$produce_payload['vdp']['form']['ShippingFirstName'] = $order->get_shipping_first_name();
+	$produce_payload['vdp']['form']['ShippingLastName']  = $order->get_shipping_last_name();
+	$produce_payload['vdp']['form']['ShippingName']      = $order->get_shipping_first_name() . ' ' . $order->get_shipping_last_name();
+	$produce_payload['vdp']['form']['ShippingAddress1']  = $order->get_shipping_address_1();
+	$produce_payload['vdp']['form']['ShippingAddress2']  = $order->get_shipping_address_2();
+	$produce_payload['vdp']['form']['ShippingCity']      = $order->get_shipping_city();
+	$produce_payload['vdp']['form']['ShippingCompany']   = $order->get_shipping_company();
+	$produce_payload['vdp']['form']['ShippingCountry']   = $order->get_shipping_country();
+	$produce_payload['vdp']['form']['ShippingProvince']  = $order->get_shipping_state();
+	$produce_payload['vdp']['form']['ShippingZip']       = $order->get_shipping_postcode();
+	$produce_payload['vdp']['form']['ShippingPhone']     = $order->get_shipping_phone();
+
+	$produce_payload['vdp']['form']['BillingFirstName'] = $order->get_billing_first_name();
+	$produce_payload['vdp']['form']['BillingLastName']  = $order->get_billing_last_name();
+	$produce_payload['vdp']['form']['BillingName']      = $order->get_billing_first_name() . ' ' . $order->get_billing_last_name();
+	$produce_payload['vdp']['form']['BillingAddress1']  = $order->get_billing_address_1();
+	$produce_payload['vdp']['form']['BillingAddress2']  = $order->get_billing_address_2();
+	$produce_payload['vdp']['form']['BillingCity']      = $order->get_billing_city();
+	$produce_payload['vdp']['form']['BillingCompany']   = $order->get_billing_company();
+	$produce_payload['vdp']['form']['BillingCountry']   = $order->get_billing_country();
+	$produce_payload['vdp']['form']['BillingProvince']  = $order->get_billing_state();
+	$produce_payload['vdp']['form']['BillingZip']       = $order->get_billing_postcode();
+	$produce_payload['vdp']['form']['BillingPhone']     = $order->get_billing_phone();
+
+	// Through the order CRUD: under HPOS the order has no post meta, and the fields stayed empty.
+	$user_id = $order->get_customer_id();
+
+	try {
+		if ( isset( $user_id ) && $user_id > 0 ) {
+			$produce_payload['vdp']['form']['CustomerFirstName'] = get_user_meta( $user_id, 'shipping_first_name', true );
+			$produce_payload['vdp']['form']['CustomerLastName']  = get_user_meta( $user_id, 'shipping_last_name', true );
+			$produce_payload['vdp']['form']['CustomerName']      = get_user_meta( $user_id, 'shipping_first_name', true ) . ' ' . get_user_meta( $user_id, 'shipping_last_name', true );
+			$produce_payload['vdp']['form']['CustomerAddress1']  = get_user_meta( $user_id, 'shipping_address_1', true );
+			$produce_payload['vdp']['form']['CustomerAddress2']  = get_user_meta( $user_id, 'shipping_address_2', true );
+			$produce_payload['vdp']['form']['CustomerCity']      = get_user_meta( $user_id, 'shipping_city', true );
+			$produce_payload['vdp']['form']['CustomerCompany']   = get_user_meta( $user_id, 'shipping_company', true );
+			$produce_payload['vdp']['form']['CustomerCountry']   = get_user_meta( $user_id, 'shipping_country', true );
+			$produce_payload['vdp']['form']['CustomerPhone']     = get_user_meta( $user_id, 'shipping_phone', true );
+			$produce_payload['vdp']['form']['CustomerProvince']  = get_user_meta( $user_id, 'shipping_state', true );
+			$produce_payload['vdp']['form']['CustomerZip']       = get_user_meta( $user_id, 'shipping_postcode', true );
+		}
+	} catch ( \Exception $ex ) {
+		// Ignored on purpose: the customer fields are optional extras of the payload.
+	}
+
+	// Categories and tags needs to be read from parent product in case of variant.
+	$parent_id      = $product->get_parent_id();
+	$parent_product = $product;
+
+	if ( isset( $parent_id ) && 0 < $parent_id ) {
+		$ppt = wc_get_product( $parent_id );
+
+		if ( isset( $ppt ) ) {
+			$parent_product = $ppt;
+		}
+	}
+
+	$product_categories = get_the_terms( $parent_product->get_id(), 'product_cat' );
+
+	$category_list = '';
+	$cslug_list    = '';
+	if ( is_array( $product_categories ) && count( $product_categories ) > 0 ) {
+		$category_count = count( $product_categories );
+		for ( $i = 0; $i < $category_count; ++$i ) {
+			if ( $i > 0 ) {
+				$category_list .= ',';
+				$cslug_list    .= '_';
+			}
+
+			$category_list .= $product_categories[ $i ]->name;
+			$cslug_list    .= $product_categories[ $i ]->slug;
+		}
+	}
+
+	$produce_payload['vdp']['form']['productCategories']    = $category_list;
+	$produce_payload['vdp']['form']['productCategorySlugs'] = $cslug_list;
+
+	$product_tags = get_the_terms( $parent_product->get_id(), 'product_tag' );
+
+	$tag_list   = '';
+	$tslug_list = '';
+	if ( is_array( $product_tags ) && count( $product_tags ) > 0 ) {
+		$tag_count = count( $product_tags );
+		for ( $i = 0; $i < $tag_count; ++$i ) {
+			if ( $i > 0 ) {
+				$tag_list   .= ',';
+				$tslug_list .= '_';
+			}
+
+			$tag_list   .= $product_tags[ $i ]->name;
+			$tslug_list .= $product_tags[ $i ]->slug;
+		}
+	}
+
+	$produce_payload['vdp']['form']['productTags']     = $tag_list;
+	$produce_payload['vdp']['form']['productTagSlugs'] = $tslug_list;
+
+	$only_char_and_number = function ( $star ) {
+		$ret = '';
+
+		$star_length = strlen( $star );
+		for ( $i = 0; $i < $star_length; ++$i ) {
+			if ( ( $star[ $i ] >= '0' && $star[ $i ] <= '9' ) || ( $star[ $i ] >= 'a' && $star[ $i ] <= 'z' ) || ( $star[ $i ] >= 'A' && $star[ $i ] <= 'Z' ) ) {
+				$ret .= $star[ $i ];
+			}
+		}
+
+		return $ret;
+	};
+
+	$product_helper = new PrintessProductHelpers( $product->get_id() );
+
+	try {
+		$meta_data = $line_item->get_meta_data();
+
+		foreach ( $meta_data as $key => $value ) {
+			if ( '_ywapo_meta_data' === $value->key ) {
+				$yith_values = printess_extract_yith_plugin_values( $value );
+
+				foreach ( $yith_values as $label => $yith_value ) {
+					$name = $only_char_and_number( $label );
+					if ( ! array_key_exists( $name, $produce_payload['vdp']['form'] ) ) {
+						$produce_payload['vdp']['form'][ $name ] = $yith_value;
+					}
+				}
+			} elseif ( ! str_starts_with( $value->key, 'ywapo-' ) && ! printess_is_internal_line_item_meta_key( $value->key ) ) {
+				$mapped_name_value = $product_helper->map_attribute_name_and_value( $value->key, $value->value );
+				$name              = $only_char_and_number( $mapped_name_value['name'] );
+				if ( ! array_key_exists( $name, $produce_payload['vdp']['form'] ) ) {
+					$produce_payload['vdp']['form'][ $name ] = $mapped_name_value['value'];
+				}
+			}
+		}
+	} catch ( \Throwable $ex ) {
+		$logger = wc_get_logger();
+
+		if ( isset( $logger ) ) {
+			$logger->error( 'Printess Editor Integration: Unable to add order item meta to the production payload: ' . $ex->getMessage(), array( 'source' => 'printess-editor' ) );
+		}
+	}
+
+	$product_attributes = $product_helper->get_attributes();
+
+	try {
+		foreach ( $product_attributes  as $key => $attribute ) {
+			if ( is_string( $attribute ) ) {
+				$mapped_name_value = $product_helper->map_attribute_name_and_value( $key, $attribute );
+
+				if ( ! array_key_exists( $mapped_name_value['name'], $produce_payload['vdp']['form'] ) ) {
+					$produce_payload['vdp']['form'][ $only_char_and_number( $mapped_name_value['name'] ) ] = $mapped_name_value['value'];
+				}
+			} elseif ( array_key_exists( 'key', $attribute ) && array_key_exists( 'name', $attribute ) && array_key_exists( 'values', $attribute ) ) {
+				$label = $only_char_and_number( $attribute['name'] );
+				$value = '';
+
+				foreach ( $attribute['values'] as $value_entry ) {
+					if ( ! empty( $value ) ) {
+						$value .= '_';
+					}
+
+					$value .= $value_entry;
+				}
+
+				if ( ! array_key_exists( $label, $produce_payload['vdp']['form'] ) ) {
+					$produce_payload['vdp']['form'][ $label ] = $value;
+				}
+			} else {
+				$taxonomy = get_taxonomy( $attribute['name'] );
+				$options  = wc_get_product_terms( $product->get_id(), $attribute['name'], array( 'fields' => 'all' ) );
+				$label    = $only_char_and_number( str_replace( 'Product ', '', $taxonomy->label ) );
+				$value    = '';
+
+				foreach ( $options as $option ) {
+					if ( ! empty( $value ) ) {
+						$value .= '_';
+					}
+
+					$value .= $option->name;
+				}
+
+				if ( ! array_key_exists( $label, $produce_payload['vdp']['form'] ) ) {
+					$produce_payload['vdp']['form'][ $label ] = $value;
+				}
+			}
+		}
+	} catch ( \Throwable $ex ) {
+		$logger = wc_get_logger();
+
+		if ( isset( $logger ) ) {
+			$logger->error( 'Printess Editor Integration: Unable to add product attributes to the production payload: ' . $ex->getMessage(), array( 'source' => 'printess-editor' ) );
+		}
+	}
+}
+
+	/**
+	 * Shortens an api error for the order note and the admin notice.
+	 *
+	 * A non 2xx error from the Printess api carries the whole production payload, which is far too
+	 * much for a notice or an order note. The full text stays in the log.
+	 *
+	 * @param string $message The exception message.
+	 * @param int    $limit   The maximum number of characters to keep.
+	 */
+function printess_shorten_failure_message( $message, $limit = 300 ) {
+	$message = trim( preg_replace( '/\s+/', ' ', (string) $message ) );
+
+	if ( strlen( $message ) <= $limit ) {
+		return $message;
+	}
+
+	return substr( $message, 0, $limit ) . '…';
+}
+
+	/**
+	 * Records a failed Printess request where support and the merchant can both find it:
+	 * the WooCommerce log, and a note on the order itself.
+	 *
+	 * The Printess api throws on a transport failure and on any non 2xx response. Every request
+	 * handler that can reach it has to end up here instead of letting the exception escape, because
+	 * an uncaught exception in a hook is a fatal error and the merchant only sees a blank page.
+	 *
+	 * @param string $context    Where the failure happened.
+	 * @param string $message    What went wrong, in words a merchant can act on.
+	 * @param mixed  $order      The order, or null when it could not be loaded.
+	 * @param mixed  $item_id    The order line item id, or null when it is not known.
+	 * @param mixed  $save_token The Printess save token, or null when it is not known.
+	 */
+function printess_log_production_failure( $context, $message, $order = null, $item_id = null, $save_token = null ) {
+	$logger = wc_get_logger();
+
+	if ( isset( $logger ) ) {
+		$logger->error(
+			'Printess Editor Integration: ' . $context . ': ' . $message
+			. ' (order: ' . ( $order instanceof WC_Order ? $order->get_id() : 'unknown' )
+			. ', line item: ' . ( ! empty( $item_id ) ? $item_id : 'unknown' )
+			. ', save token: ' . ( ! empty( $save_token ) ? $save_token : 'unknown' ) . ')',
+			array( 'source' => 'printess-editor' )
+		);
+	}
+
+	if ( $order instanceof WC_Order ) {
+		/* translators: %s: the reason the Printess request failed. */
+		$order->add_order_note( sprintf( __( 'Printess: %s', 'printess-editor' ), printess_shorten_failure_message( $message ) ) );
+	}
+}
+
+	/**
+	 * Remembers a message for the next admin screen this user opens.
+	 *
+	 * @param string $message The message to show.
+	 */
+function printess_set_admin_notice( $message ) {
+	$user_id = get_current_user_id();
+
+	if ( $user_id > 0 ) {
+		set_transient( 'printess_admin_notice_' . $user_id, $message, MINUTE_IN_SECONDS );
+	}
+}
+
+	/**
+	 * Prints and clears the message stored by printess_set_admin_notice().
+	 */
+function printess_render_admin_notice() {
+	$user_id = get_current_user_id();
+
+	if ( $user_id <= 0 ) {
+		return;
+	}
+
+	$key     = 'printess_admin_notice_' . $user_id;
+	$message = get_transient( $key );
+
+	if ( false === $message || empty( $message ) ) {
+		return;
+	}
+
+	delete_transient( $key );
+
+	echo '<div class="notice notice-error is-dismissible"><p>' . esc_html( $message ) . '</p></div>';
+}
+
+	/**
+	 * Sends the merchant back to the order they came from.
+	 *
+	 * @param mixed $order_id The order id.
+	 */
+function printess_redirect_to_order( $order_id ) {
+	$query_string = http_build_query(
+		array(
+			'post'   => $order_id,
+			'action' => 'edit',
+		)
+	);
+
+	$redirect = admin_url( 'post.php?' . $query_string );
+	wp_safe_redirect( $redirect );
+	die;
+}
+
+	/**
+	 * Sends the order line item to the Printess api for production.
+	 *
+	 * @param WC_Product $product           The product.
+	 * @param mixed      $order_id          The order id.
+	 * @param mixed      $line_item_id      The order line item id.
+	 * @param mixed      $line_item         The order line item.
+	 * @param mixed      $save_token        The save token.
+	 * @param mixed      $dropship_data_dto The dropship data.
+	 * @param int        $copies The number of copies that should be produced (quantity).
+	 * @throws \Exception In case the line item cannot be produced.
+	 */
+function printess_produce( $product, $order_id, $line_item_id, $line_item, $save_token, $dropship_data_dto = null, $copies = 1 ) {
+	if ( ! $product ) {
+		// get_product() returns false once the catalogue product behind the line has been deleted.
+		throw new \Exception( esc_html__( 'The product of this order line no longer exists, so it cannot be sent to production.', 'printess-editor' ) );
+	}
+
+	$printess_host       = PrintessAdminSettings::get_host();
+	$site_url            = get_site_url();
+	$callback_url        = "$site_url/wp-json/printess/v1/job/finished";
+	$dpi                 = $product->get_meta( 'printess_dpi', true );
+	$output_type         = $product->get_meta( 'printess_output_type', true );
+	$jpg_compresion      = $product->get_meta( 'printess_jpg_compression', true );
+	$output_files_config = $product->get_meta( 'printess_output_files', true );
+	$sku                 = $product->get_sku();
+
+	if ( PrintessAdminSettings::get_debug() ) {
+		$callback_url = str_replace( 'https://', 'http://', $callback_url );
+	}
+
+	if ( null !== $output_files_config && strlen( trim( $output_files_config ) ) > 0 ) {
+		$output_files_config = json_decode( $output_files_config, true );
+	}
+
+	$parent_id = $product->get_parent_id();
+
+	if ( isset( $parent_id ) && 0 < $parent_id ) {
+		$parent_product = wc_get_product( $parent_id );
+
+		if ( isset( $parent_product ) ) {
+			$dpi            = $parent_product->get_meta( 'printess_dpi', true );
+			$output_type    = $parent_product->get_meta( 'printess_output_type', true );
+			$jpg_compresion = $parent_product->get_meta( 'printess_jpg_compression', true );
+		}
+	}
+
+	if ( ! isset( $dpi ) || empty( $dpi ) ) {
+		$dpi = 300;
+	}
+
+	if ( ! is_int( $dpi ) ) {
+		$dpi = intval( $dpi );
+	}
+
+	if ( $dpi <= 0 ) {
+		$dpi = 300;
+	}
+
+	if ( ! isset( $output_type ) || empty( $output_type ) ) {
+		$output_type = get_option( 'printess_output_format', 'pdf' );
+
+		if ( null === $output_type || empty( $output_type ) ) {
+			$output_type = 'pdf';
+		}
+	}
+
+	if ( ! isset( $jpg_compresion ) || empty( $jpg_compresion ) || '0' === $jpg_compresion || 0 === $jpg_compresion ) {
+		$jpg_compresion = get_option( 'printess_jpg_compression', '90' );
+
+		if ( ! isset( $jpg_compresion ) || empty( $jpg_compresion ) || '0' === $jpg_compresion || 0 === $jpg_compresion ) {
+			$jpg_compresion = '90';
+		}
+	}
+
+	if ( ! is_int( $jpg_compresion ) ) {
+		$jpg_compresion = intval( $jpg_compresion );
+	}
+
+	$data = array(
+		'externalOrderId' => "$order_id",
+		'templateName'    => $save_token,
+		'copies'          => $copies,
+		'meta'            => wp_json_encode(
+			array(
+				'orderId'    => $order_id,
+				'lineItemId' => $line_item_id,
+			)
+		),
+		'callbackUrl'     => $callback_url,
+		'origin'          => "WC $site_url",
+		'outputType'      => $output_type,
+		'outputSettings'  => array(
+			'dpi'             => $dpi,
+			'jpegCompression' => $jpg_compresion,
+		),
+		'vdp'             => array(
+			'data' => array(
+				'orderId'    => "{$order_id}",
+				'lineItemId' => "{$line_item_id}",
+				'sku'        => $sku,
+			),
+			'form' => array(
+				'orderId'    => "{$order_id}",
+				'lineItemId' => "{$line_item_id}",
+				'sku'        => $sku,
+			),
+		),
+	);
+
+	$order = wc_get_order( $order_id );
+	printess_add_production_vdp_data( $order, $line_item, $product, $data );
+
+	// In case output file config is provided.
+	if ( is_array( $output_files_config ) && count( $output_files_config ) > 0 ) {
+		$data['outputFiles'] = array();
+
+		foreach ( $output_files_config as $document_name => &$output_settings ) {
+			if ( is_array( $output_settings ) ) {
+				$output_settings['documentName'] = $document_name;
+
+				if ( array_key_exists( 'outputFileName', $output_settings ) ) {
+					$output_settings['outputFileName'] = printess_variable_replacer(
+						$output_settings['outputFileName'],
+						$data['vdp']['form'],
+						function ( $variable_name, &$data ) {
+							if ( array_key_exists( $variable_name, $data ) ) {
+								return $data[ $variable_name ];
+							}
+
+							return $variable_name;
+						}
+					);
+				}
+
+				$data['outputFiles'][] = $output_settings;
+			}
+		}
+	}
+
+	$data['orderMetaData'] = json_encode( $data['vdp']['form'] );
+
+	$api_endpoint = '/production/produce';
+
+	if ( isset( $dropship_data_dto ) ) {
+		$data['dropship'] = $dropship_data_dto;
+		$api_endpoint     = '/dropship/produce';
+	}
+
+	$response = PrintessApi::send_post_request(
+		$printess_host . $api_endpoint,
+		PrintessAdminSettings::get_service_token(),
+		$data
+	);
+
+	if ( ! is_array( $response ) || ! isset( $response['jobId'] ) || empty( $response['jobId'] ) ) {
+		// Storing an empty job id would leave the line looking queued forever, so fail loudly.
+		throw new \Exception( esc_html__( 'Printess accepted the production request but did not return a job id.', 'printess-editor' ) );
+	}
+
+	return $response['jobId'];
+}
+
+/**
+ * Checks if an item has drop shipping enabled or not and returns the corresponding drop ship product definition id
+ *
+ * @param mixed $product The product information of the drop shipping item.
+ * @param mixed $item   The order item.
+ */
+function printess_order_item_get_dropship_product_definition_id( $product, &$item ) {
+	$system_dropshipping = get_option( 'printess_system_default_dropshipping', '' );
+	$save_token          = $item->get_meta( '_printess-save-token', true );
+
+	if ( ! isset( $save_token ) || '' === $save_token ) {
+		return -1;
+	}
+
+	if ( null === $system_dropshipping || '' === $system_dropshipping || ! is_numeric( $system_dropshipping ) ) {
+		$system_dropshipping = -2;
+	} else {
+		$system_dropshipping = intval( $system_dropshipping );
+	}
+
+	$dropshipping = $item->get_meta( '_printess-dropshipping', true );
+
+	if ( -2 !== $system_dropshipping && isset( $dropshipping ) && 0 === intval( $dropshipping ) ) {
+		$dropshipping = $system_dropshipping;
+	}
+
+	return intval( '' . $dropshipping );
+}
+
+/**
+ * Creates a new drop shipping address via the printess api
+ *
+ * @param mixed $data The Address data that should be used.
+ */
+function printess_create_dropshipping_address( $data ) {
+	$printess_host = PrintessAdminSettings::get_host();
+
+	return PrintessApi::send_post_request(
+		"$printess_host/dropshipData/save",
+		PrintessAdminSettings::get_service_token(),
+		$data
+	);
+}
+
+/**
+ * Returns a shipping property by its given key and returns en empty string in case there is no value
+ *
+ * @param string $key     the property name.
+ * @param mixed  $address the address object.
+ */
+function printess_get_shipping_value( $key, $address ) {
+	if ( null !== $address && array_key_exists( $key, $address ) && ! empty( '' . $address[ $key ] ) ) {
+		return '' . $address[ $key ];
+	}
+
+	return '';
+}
+
+/**
+ * Checks if we have to use the billing address instead of the shipping address in case of drop shipping orders
+ *
+ * @param mixed $shipping_address The shipping address object of the order.
+ */
+function printess_use_billing_address( $shipping_address ) {
+	// None of the name values provided or no street provided.
+	if ( ( empty( printess_get_shipping_value( 'first_name', $shipping_address ) ) && empty( printess_get_shipping_value( 'last_name', $shipping_address ) ) ) || empty( 'address_1' ) ) {
+		return true;
+	}
+
+	return false;
+}
+
+/***
+ * Splits all order items into dropship and non dropship items and handles the printess production
+ *
+ * @param mixed $order the current order the order items are coming from.
+ * @param mixed $order_items The order Items.
+ */
+function printess_handle_order_items( &$order, &$order_items ) {
+	$dropship_items     = array();
+	$non_dropship_items = array();
+	$order_id           = $order->get_id();
+
+	include_once 'includes/printess-saved-design-repository.php';
+	$repo = new Printess_Saved_Design_Repository();
+
+	// Seperates dropshipping and non drop shipping products.
+	foreach ( $order_items as $key => &$value ) {
+		if ( printess_order_item_get_dropship_product_definition_id( $value->get_product(), $value ) >= 0 ) {
+			$dropship_items[ $key ] = $value;
+		} else {
+			$non_dropship_items[ $key ] = $value;
+		}
+	}
+
+	foreach ( $non_dropship_items as $key => &$value ) {
+		$save_token = $value->get_meta( '_printess-save-token', true );
+		$job_id     = $value->get_meta( '_printess-job-id', true );
+		$design_id  = $value->get_meta( '_printess-design-id', true );
+
+		if ( ! empty( $save_token ) && empty( $job_id ) ) {
+			$product  = $value->get_product();
+			$quantity = $value->get_quantity();
+			$job_id   = printess_produce( $product, $order_id, $key, $value, $save_token, null, $quantity );
+
+			$value->update_meta_data( '_printess-job-id', $job_id, true );
+			$value->save_meta_data();
+
+			if ( $design_id ) {
+				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( true );
+
+				if ( false === PrintessApi::unexpire_save_token( $save_token, $valid_until ) ) {
+					$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+				}
+
+				$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $save_token, $valid_until );
+			}
+		}
+	}
+
+	if ( count( $dropship_items ) > 0 ) {
+		$shipping = $order->get_address( 'shipping' );
+
+		if ( printess_use_billing_address( $shipping ) ) {
+			$shipping = $order->get_address(); // Should return billing address.
+		}
+
+		$dropship_data = array(
+			'companyName'  => printess_get_shipping_value( 'company', $shipping ),
+			'firstName'    => printess_get_shipping_value( 'first_name', $shipping ),
+			'lastName'     => printess_get_shipping_value( 'last_name', $shipping ),
+			'address1'     => printess_get_shipping_value( 'address_1', $shipping ),
+			'address2'     => printess_get_shipping_value( 'address_2', $shipping ),
+			'city'         => printess_get_shipping_value( 'city', $shipping ),
+			'zip'          => printess_get_shipping_value( 'postcode', $shipping ),
+			'country'      => printess_get_shipping_value( 'country', $shipping ),
+			'countryState' => printess_get_shipping_value( 'state', $shipping ),
+			'phone'        => printess_get_shipping_value( 'phone', $shipping ),
+			'email'        => null !== $order->get_billing_email() && '' !== $order->get_billing_email() ? $order->get_billing_email() : null,
+		);
+
+		$shipping_items = $order->get_items( 'shipping' );
+
+		if ( isset( $shipping_items ) && count( $shipping_items ) > 0 ) {
+			foreach ( $shipping_items as $item_id => &$item ) {
+				$dropship_data['shipping'] = $item->get_method_title();
+				break;
+			}
+		}
+
+		$customer_notes = $order->get_customer_note();
+
+		if ( isset( $customer_notes ) && ! empty( $customer_notes ) ) {
+			$dropship_data['dispatchNotice'] = $customer_notes;
+		}
+
+		$dropship_id = printess_create_dropshipping_address(
+			array(
+				'userId' => '' . $order->get_customer_id(),
+				'type'   => 'printess-shipping',
+				'json'   => wp_json_encode( $dropship_data ),
+			)
+		);
+
+		foreach ( $dropship_items as $key => &$value ) {
+			$save_token = $value->get_meta( '_printess-save-token', true );
+			$job_id     = $value->get_meta( '_printess-job-id', true );
+			$design_id  = $value->get_meta( '_printess-design-id', true );
+
+			if ( ! empty( $save_token ) && empty( $job_id ) ) {
+				$product  = $value->get_product();
+				$quantity = $value->get_quantity();
+				$site_url = get_site_url();
+				$nonce    = uniqid( 'printess_', true );
+
+				$value->update_meta_data( '_printess-dropship-nonce', $nonce, true );
+				$value->save_meta_data();
+
+				$dropship_data_dto = array(
+					'dropshipDataId'         => $dropship_id,
+					'productDefinitionId'    => printess_order_item_get_dropship_product_definition_id( $product, $value ),
+					'callbackType'           => 3, /*url*/
+					'callbackPayload'        => array(
+						'url'          => "$site_url/wp-json/printess/v1/order/status/changed",
+						'thumbnailUrl' => $value->get_meta( '_printess-thumbnail-url', true ),
+						'orderId'      => $order_id,
+						'lineItemId'   => $value->get_id(),
+						'nonce'        => $nonce,
+					),
+					'linkedOrderLineItems'   => count( $dropship_items ) > 1 ? count( $dropship_items ) : 0,
+					'linkedOrderLineItemsId' => count( $dropship_items ) > 1 ? '' . $order_id : null,
+				);
+
+				$job_id = printess_produce( $product, $order_id, $key, $value, $save_token, $dropship_data_dto, $quantity );
+
+				$value->update_meta_data( '_printess-job-id', $job_id, true );
+				$value->save_meta_data();
+
+				if ( $design_id ) {
+					$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( true );
+
+					if ( false === PrintessApi::unexpire_save_token( $save_token, $valid_until ) ) {
+						$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+					}
+
+					$repo->update_last_ordered( $order->get_customer_id(), intval( $design_id ), $save_token, $valid_until );
+				}
+			}
+		}
+	}
+}
+
+	/**
+	 * Sends the Printess products from the order to Printess for production.
+	 * Sets the Printess job id in the meta data.
+	 *
+	 * @param mixed $order_id The order id.
+	 */
+function printess_send_to_printess_api( $order_id ) {
+	$approval_mode = PrintessAdminSettings::get_approval_mode();
+
+	if ( 'manual' === $approval_mode ) {
+		return;
+	}
+
+	$order = null;
+
+	try {
+		$order = new WC_Order( $order_id );
+		$items = $order->get_items();
+
+		printess_handle_order_items( $order, $items );
+	} catch ( \Throwable $ex ) {
+		/*
+		 * This runs while the order changes to processing, so it can sit inside a payment gateway's
+		 * callback. A Printess failure must never break that transition: log it, note it on the
+		 * order, and let the merchant send the line to production by hand from the order screen.
+		 */
+		printess_log_production_failure( 'Unable to send an order to production', $ex->getMessage(), $order, null, null );
+	}
+}
+
+	/**
+	 * The callback method when Printess finished production.
+	 * Will set the result for this order line item.
+	 *
+	 * @param mixed $request The request coming in.
+	 */
+function printess_post_custom_method( $request ) {
+	$parameters   = $request->get_json_params();
+	$meta         = json_decode( $parameters['meta'], true );
+	$job_id       = $parameters['jobId'];
+	$order_id     = $meta['orderId'];
+	$line_item_id = $meta['lineItemId'];
+
+	if ( ! empty( $order_id ) && ! empty( $line_item_id ) ) {
+		$order = wc_get_order( $order_id );
+		$item  = $order ? $order->get_item( $line_item_id ) : false;
+
+		if ( $item ) {
+			$item_job_id = $item->get_meta( '_printess-job-id', true );
+
+			if ( $item_job_id === $job_id ) {
+				$item->update_meta_data( '_printess-result', wp_json_encode( $parameters ), true );
+
+				try {
+					if ( array_key_exists( 'result', $parameters ) && array_key_exists( 'ff', $parameters['result'] ) ) {
+						$form_field_link = $parameters['result']['ff'];
+
+						if ( null != $form_field_link && ! empty( $form_field_link ) ) {
+							$form_fields = PrintessApi::send_get_request( $form_field_link );
+
+							if ( null != $form_fields && is_array( $form_fields ) && array_key_exists( 'environment', $form_fields ) ) {
+								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $form_fields['environment'] ), true );
+							}
+						}
+					}
+				} catch ( \Exception $e ) {
+					// Ignored on purpose: the form fields are optional, the result is stored either way.
+				}
+
+				$item->save_meta_data();
+			} else {
+				return 'jobId differs';
+			}
+		} else {
+			return 'cannot find order line item';
+		}
+	} else {
+		return 'either orderId or lineItemId are empty';
+	}
+
+	return $parameters;
+}
+
+	/**
+	 * The callback method when you want to approve an order externally.
+	 *
+	 * @param mixed $request The request coming in.
+	 */
+function printess_post_order_item_approve( $request ) {
+	$parameters   = $request->get_json_params();
+	$order_id     = $parameters['orderId'];
+	$line_item_id = $parameters['lineItemId'];
+	$save_token   = $parameters['saveToken'];
+	$access_token = $parameters['accessToken'];
+
+	$expected_access_token = PrintessAdminSettings::get_access_token();
+
+	if ( ! empty( $order_id ) && ! empty( $line_item_id ) && ! empty( $save_token ) && ! empty( $access_token ) ) {
+		if ( $expected_access_token !== $access_token ) {
+			return 'access tokens do not match';
+		}
+
+		$order = wc_get_order( $order_id );
+		$item  = $order ? $order->get_item( $line_item_id ) : false;
+
+		if ( $item ) {
+			$item->delete_meta_data( '_printess-result' );
+			$item->delete_meta_data( '_printess-job-id' );
+			$item->update_meta_data( '_printess-save-token', $save_token, true );
+			$item->save_meta_data();
+			$order_items = array( $line_item_id => $item );
+			printess_handle_order_items( $order, $order_items );
+			return 'ok';
+		} else {
+			return 'cannot find order line item';
+		}
+	} else {
+		return 'either orderId / lineItemId / saveToken / accessToken are empty';
+	}
+
+	return $parameters;
+}
+
+/**
+ * The callback method when Printess received a dropship status changed.
+ * Will set the result for the order line items.
+ *
+ * @param mixed $request The request coming in.
+ */
+function printess_post_status_changed( $request ) {
+	$parameters = $request->get_json_params();
+
+	if ( ! isset( $parameters )
+		|| ! array_key_exists( 'orderId', $parameters )
+		|| ! array_key_exists( 'orderStatus', $parameters )
+		|| ! array_key_exists( 'lineItems', $parameters )
+		|| ! isset( $parameters['lineItems'] )
+		|| empty( '' . $parameters['orderId'] )
+		|| empty( '' . $parameters['orderStatus'] )
+	) {
+
+		return 'Invalid order id or status';
+	}
+
+	$order            = new WC_Order( $parameters['orderId'] );
+	$line_item_lookup = array();
+
+	if ( ! isset( $order ) ) {
+		return 'Invalid order';
+	}
+
+	if ( count( $parameters['lineItems'] ) < 1 ) {
+		return 'Invalid order status';
+	}
+
+	$number_of_printess_dropship_items = 0;
+	$recorded_items                    = array();
+
+	foreach ( $parameters['lineItems'] as &$line_item ) {
+		if ( ! array_key_exists( 'lineItemId', $line_item ) ) {
+			return 'Invalid line item';
+		}
+
+		foreach ( $order->get_items() as &$order_line_item ) {
+			$dropshipping = $order_line_item->get_meta( '_printess-dropshipping' );
+
+			if ( null !== $dropshipping && ! empty( '' . $dropshipping ) && $dropshipping > -1 ) {
+				if ( ! array_key_exists( $order_line_item->get_id(), $recorded_items ) ) {
+					$recorded_items[ $order_line_item->get_id() ] = true;
+					$number_of_printess_dropship_items            = ++$number_of_printess_dropship_items;
+				}
+			}
+
+			if ( $order_line_item->get_id() === $line_item['lineItemId'] ) {
+				$nonce = $order_line_item->get_meta( '_printess-dropship-nonce' );
+
+				if ( $nonce !== $line_item['nonce'] ) {
+					return 'Invalid line item ' . $line_item['lineItemId'];
+				}
+
+				$line_item_lookup[ $line_item['lineItemId'] ] = $order_line_item;
+
+				$has_new_meta_data = false;
+
+				if ( array_key_exists( 'trackingId', $line_item ) && ! empty( $line_item['trackingId'] ) ) {
+					$order_line_item->update_meta_data( '_printess-dropship-tracking-id', $line_item['trackingId'] );
+					$has_new_meta_data = true;
+				}
+
+				if ( array_key_exists( 'trackingUrl', $line_item ) && ! empty( $line_item['trackingUrl'] ) ) {
+					$order_line_item->update_meta_data( '_printess-dropship-tracking-url', $line_item['trackingUrl'] );
+					$has_new_meta_data = true;
+				}
+
+				$order_line_item->update_meta_data( '_printess_shipping-status', $parameters['orderStatus'] );
+				$has_new_meta_data = true;
+
+				if ( $has_new_meta_data ) {
+					$order_line_item->save_meta_data();
+				}
+			}
+		}
+	}
+
+	$number_of_shipped_dropship_items = 0;
+
+	foreach ( $order->get_items() as &$order_line_item ) {
+		if ( $order_line_item->get_meta( '_printess_shipping-status' ) === 'shipped' ) {
+			$number_of_shipped_dropship_items = ++$number_of_shipped_dropship_items;
+		}
+	}
+
+	if ( $number_of_printess_dropship_items === $number_of_shipped_dropship_items ) {
+		$order->update_status( 'completed' );
+	}
+
+	return $parameters;
+}
+
+/**
+ * Incoming api call to create a new saved design database entry
+ *
+ * @param mixed $request The incoming web request.
+ */
+function printess_post_add_design( $request ) {
+	$parameters = $request->get_json_params();
+	$ret        = array();
+
+	$logger = wc_get_logger();
+
+	$customer_id = printess_get_current_user_id();
+
+	if ( null === $customer_id || $customer_id < 1 ) {
+		$ret['error'] = 'Not logged in';
+		return $ret;
+	}
+
+	if ( ! isset( $parameters )
+		|| ! array_key_exists( 'saveToken', $parameters )
+		|| ! array_key_exists( 'thumbnailUrl', $parameters )
+		|| ! array_key_exists( 'productId', $parameters )
+		|| ! array_key_exists( 'displayName', $parameters )
+		|| empty( '' . $parameters['saveToken'] )
+		|| empty( '' . $parameters['thumbnailUrl'] )
+		|| empty( '' . $parameters['productId'] )
+	) {
+		$ret['error'] = 'Invalid request';
+
+		if ( isset( $logger ) ) {
+			$logger->error( 'Invalid save design request: ' . json_encode( $parameters ), array( 'source' => 'printress-saved-designs' ) );
+		}
+
+		return $ret;
+	}
+
+	if ( ! ( array_key_exists( 'designId', $parameters ) && ! empty( $parameters['designId'] ) && intval( $parameters['designId'] ) > 0 ) && empty( '' . $parameters['displayName'] ) ) {
+		$ret['error'] = 'Invalid request';
+
+		if ( isset( $logger ) ) {
+			$logger->error( 'Invalid save design request: ' . json_encode( $parameters ), array( 'source' => 'printress-saved-designs' ) );
+		}
+
+		return $ret;
+	}
+
+	try {
+		$product = wc_get_product( intval( $parameters['productId'] ) );
+
+		if ( ! isset( $product ) || false === $product ) {
+			$ret['error'] = 'Unknown product';
+			return $ret;
+		}
+
+		include_once 'includes/printess-saved-design-repository.php';
+
+		$repo = new Printess_Saved_Design_Repository();
+
+		if ( array_key_exists( 'designId', $parameters ) && ! empty( '' . $parameters['designId'] ) && intval( $parameters['designId'] ) > 0 ) {
+			$design_id = intval( $parameters['designId'] );
+			$designs   = $repo->get_designs( $customer_id, '', 1, 1, $design_id );
+
+			if ( ! isset( $designs ) || count( $designs ) < 1 ) {
+				$ret['error'] = 'Invalid design id';
+
+				if ( isset( $logger ) ) {
+					$logger->error( 'Invalid design id' . $design_id . ': Provided values: ' . json_encode( $parameters ), array( 'source' => 'printress-saved-designs' ) );
+				}
+
+				return $ret;
+			} else {
+				$original_timeout = new DateTime( $designs[0]['validUntil'] );
+				$valid_until      = Printess_Saved_Design_Repository::create_new_unexpiration_date( false );
+
+				if ( $valid_until < $original_timeout ) {
+					$valid_until = $original_timeout;
+				}
+
+				if ( false === PrintessApi::unexpire_save_token( $parameters['saveToken'], $valid_until ) ) {
+					$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+				}
+
+				if ( array_key_exists( 'displayName', $parameters ) && null !== $parameters['displayName'] && '' !== $parameters['displayName'] && $parameters['displayName'] === $designs[0]['displayName'] ) {
+					$options = null;
+
+					if ( array_key_exists( 'options', $parameters ) ) {
+						$options = json_decode( $parameters['options'], true );
+					}
+
+					if ( isset( $logger ) ) {
+						$logger->notice( 'User with id ' . $customer_id . ' replaced existing saved design: ' . json_encode( $designs[0] ) . '    with values: ' . json_encode( $parameters ), array( 'source' => 'printress-saved-designs' ) );
+					}
+
+					$repo->update_design( $customer_id, $design_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $options, $valid_until );
+
+					return $design_id;
+				} else {
+						return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], $designs[0]['productId'], $designs[0]['productName'], $parameters['displayName'], $designs[0]['options'], $valid_until );
+				}
+			}
+		} else {
+			$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false );
+
+			if ( false === PrintessApi::unexpire_save_token( $parameters['saveToken'], $valid_until ) ) {
+				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+			}
+
+			return $repo->add_design( $customer_id, $parameters['saveToken'], $parameters['thumbnailUrl'], intval( '' . $parameters['productId'] ), $product->get_data()['name'], $parameters['displayName'], json_decode( $parameters['options'], true ), $valid_until );
+		}
+	} catch ( \Exception $ex ) {
+		$logger->error( 'Error while trying to store saved design: ' . json_encode( $ex ), array( 'source' => 'printress-saved-designs' ) );
+	}
+}
+
+
+	/**
+	 * Hide Printess specific meta entries.
+	 *
+	 * @param mixed $fields The meta data fields.
+	 */
+function printess_hide_order_item_meta_fields( $fields ) {
+	if ( ! PrintessAdminSettings::get_debug() ) {
+		$fields[] = '_printess-save-token';
+		$fields[] = '_printess-thumbnail-url';
+		$fields[] = '_printess-job-id';
+		$fields[] = '_printess-result';
+		$fields[] = '_printess-dropshipping';
+		$fields[] = '_printess-design-id';
+		$fields[] = '_printess-design-name';
+		$fields[] = '_printess-valid-until';
+		$fields[] = '_printess-dropship-nonce';
+		$fields[] = '_printess-original-save-token';
+		$fields[] = '_printess-form-fields';
+	}
+
+	return $fields;
+}
+
+	/**
+	 * Shows order line item specific thumbnail.
+	 *
+	 * @param mixed $image   The default image for this product.
+	 * @param mixed $item_id The order line item id.
+	 * @param mixed $item    The order line item.
+	 */
+function printess_admin_order_item_thumbnail( $image, $item_id, $item ) {
+	$printess_thumbnail_url = $item->get_meta( '_printess-thumbnail-url', true );
+
+	if ( ! empty( $printess_thumbnail_url ) ) {
+		return '<a href="' . esc_attr( $printess_thumbnail_url ) . '" target=_blank title="' . esc_attr__( 'View thumbnail in new window.', 'printess-editor' ) . '"><img src="' . esc_attr( $printess_thumbnail_url ) . '" /></a>';
+	}
+
+	return $image;
+}
+
+/**
+ * Renders the drop shipping table that is put under each line item insiode the admin order details page
+ *
+ * @param mixed $printess_tracking_id the tracking id of the shipping provider that can be used to track the package.
+ * @param mixed $printess_tracking_url   the tracking urkl that can be used to track this package.
+ * @param mixed $printess_shipping_status the current shipping status.
+ * @param mixed $classes White space seperated string list of additional class names that should be added to the table.
+ */
+function printess_render_dropship_table( $printess_tracking_id, $printess_tracking_url, $printess_shipping_status, $classes = '' ) {
+	if ( ( ! isset( $printess_tracking_id ) || empty( '' . $printess_tracking_id ) )
+		&& ( ! isset( $printess_tracking_url ) || empty( '' . $printess_tracking_url ) )
+		&& ( ! isset( $printess_shipping_status ) || empty( '' . $printess_shipping_status ) )
+	) {
+		return;
+	}
+
+	$link_text = esc_html__( 'Tracking link', 'printess-editor' );
+
+	if ( isset( $printess_tracking_id ) && ! empty( '' . $printess_tracking_id ) ) {
+		$link_text = esc_html( $printess_tracking_id );
+	}
+
+	?>
+	<table cellspacing="0" class="display_meta <?php echo esc_attr( $classes ); ?>">
+		<tbody>
+				<?php
+				if ( ( isset( $printess_tracking_id ) && ! empty( '' . $printess_tracking_id ) )
+					|| ( isset( $printess_tracking_url ) && ! empty( '' . $printess_tracking_url ) )
+				) {
+					?>
+						<tr>
+							<th>
+								<span><?php echo esc_html__( 'Tracking', 'printess-editor' ); ?></span>
+							</th>;
+							<td>
+					<?php
+					if ( isset( $printess_tracking_url ) && ! empty( '' . $printess_tracking_url ) ) {
+						?>
+										<a target=_blank href="<?php echo esc_url( $printess_tracking_url ); ?>"><?php echo $link_text; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?></a>
+						<?php
+					} else {
+						?>
+										<span><?php echo esc_html( $printess_tracking_id ); ?></span>
+						<?php
+					}
+					?>
+							</td>
+					<?php
+				}
+
+				if ( isset( $printess_shipping_status ) && ! empty( '' . $printess_shipping_status ) ) {
+					?>
+							<tr>
+								<th><?php echo esc_html__( 'Shipping status', 'printess-editor' ); ?></th>
+								<td>
+									<span><?php echo esc_html( $printess_shipping_status ); ?></span>
+								</td>
+							</tr>
+					<?php
+				}
+				?>
+		</tbody>
+	</table>
+	<?php
+}
+
+/**
+ * Checks an order item for the valid until flag and decides if the edit button for printess products should be hidden.
+ *
+ * @param mixed $order_item the order item that should be checked.
+ */
+function printess_do_render_edit_link( $order_item ) {
+	$ret = true;
+
+	$valid_until = $order_item->get_meta( '_printess-valid-until', true );
+
+	if ( null !== $valid_until && ! empty( $valid_until ) ) {
+		try {
+			$dt  = new \DateTime( $valid_until );
+			$now = new \DateTime();
+			$now->setTimezone( new DateTimeZone( 'UTC' ) );
+			$now = $now->format( 'Y-m-d H:i:s' );
+
+			return $valid_until > $now;
+
+		} catch ( \Exception $ex ) {
+			$valid_until = null;
+		}
+	}
+
+	return true;
+}
+
+/**
+ * Renders the html table to display personalized products, their thumbnail and their shipping status inside the order view.
+ *
+ * @param mixed $order The order that contains the line items that might be personalized.
+ */
+function printess_render_personalized_products_table( $order ) {
+	$has_tracking        = false;
+	$has_shipping_status = false;
+	$has_thumbnail       = false;
+	$has_save_token      = false;
+	$has_design_name     = false;
+	$render_line_item_id = 'on' === get_option( 'printess_displaylineitemid', 'wpadminbar, page' );
+
+	foreach ( $order->get_items() as &$item ) {
+		$tracking_id     = $item->get_meta( '_printess-dropship-tracking-id' );
+		$tracking_url    = $item->get_meta( '_printess-dropship-tracking-url' );
+		$shipping_status = $item->get_meta( '_printess_shipping-status' );
+		$thumbnail_url   = $item->get_meta( '_printess-thumbnail-url' );
+		$save_token      = $item->get_meta( '_printess-save-token' );
+		$design_name     = $item->get_meta( '_printess-design-name' );
+
+		if ( isset( $tracking_id ) && ! empty( $tracking_id ) ) {
+			$has_tracking = true;
+		}
+
+		if ( isset( $shipping_status ) && ! empty( $shipping_status ) ) {
+			$has_shipping_status = true;
+		}
+
+		if ( isset( $thumbnail_url ) && ! empty( $thumbnail_url ) ) {
+			$has_thumbnail = true;
+		}
+
+		if ( isset( $save_token ) && ! empty( $save_token ) ) {
+			$has_save_token = true;
+		}
+
+		if ( isset( $design_name ) && ! empty( $design_name ) ) {
+			$has_design_name = true;
+		}
+	}
+
+	if ( ! $has_save_token ) {
+		return;
+	}
+
+	?>
+	<section>
+		<h2 class="woocommerce-column__title"><?php echo esc_html__( 'Personalized products', 'printess-editor' ); ?></h2>
+
+	<?php
+		include_once 'includes/printess-table.php';
+
+		// Render css.
+		wp_enqueue_style( 'printess-editor' );
+
+		$settings = array( 'tableClasses' => 'bottom_table_padding' );
+		$table    = new PrintessTable( $settings );
+
+	if ( $has_thumbnail ) {
+		$table->add_column( '' );
+	}
+
+		$table->add_column( esc_html__( 'Product', 'printess-editor' ) );
+
+	if ( $has_tracking ) {
+		$table->add_column( esc_html__( 'Tracking', 'printess-editor' ) );
+	}
+
+	if ( $has_shipping_status ) {
+		$table->add_column( esc_html__( 'Shipping status', 'printess-editor' ) );
+	}
+
+	if ( $has_save_token ) {
+		$table->add_column( esc_html__( 'Open design', 'printess-editor' ) );
+		$table->add_column( esc_html__( 'Valid until', 'printess-editor' ) );
+	}
+
+	if ( $has_design_name ) {
+		$table->add_column( esc_html__( 'Design Name', 'printess-editor' ) );
+	}
+
+	if ( $render_line_item_id ) {
+		$table->add_column( esc_html__( 'Line item id', 'printess-editor' ) );
+	}
+
+	foreach ( $order->get_items() as &$item ) {
+		$tracking_id     = $item->get_meta( '_printess-dropship-tracking-id' );
+		$tracking_url    = $item->get_meta( '_printess-dropship-tracking-url' );
+		$shipping_status = $item->get_meta( '_printess_shipping-status' );
+		$link_text       = esc_html__( 'Tracking link', 'printess-editor' );
+		$thumbnail_url   = $item->get_meta( '_printess-thumbnail-url' );
+		$save_token      = $item->get_meta( '_printess-save-token' );
+		$design_name     = $item->get_meta( '_printess-design-name' );
+		$product         = wc_get_product( intval( $item->get_data()['variation_id'] < 1 ? $item->get_data() ['product_id'] : $item->get_data() ['variation_id'] ) );
+		$permalink       = $product->get_permalink();
+		$product_url     = add_query_arg( 'printess-save-token', $save_token, $permalink );
+		$attributes      = $product->get_attributes();
+		$design_name     = $item->get_meta( '_printess-design-name' );
+
+		foreach ( $attributes as $key => $value ) {
+			$product_url = add_query_arg( 'attribute_' . $key, $item->get_meta( $key ), $product_url );
+		}
+
+		if ( isset( $design_name ) && ! empty( $design_name ) ) {
+			$product_url = add_query_arg( 'design_name', $design_name, $product_url );
+		}
+
+		if ( isset( $tracking_id ) && ! empty( $tracking_id ) ) {
+			$has_tracking = true;
+		}
+
+		if ( isset( $shipping_status ) && ! empty( $shipping_status ) ) {
+			$has_shipping_status = true;
+		}
+
+		if ( $has_tracking ) {
+			$link_text = esc_html( $tracking_id );
+		}
+
+		if ( null === $save_token || empty( $save_token ) ) {
+			continue;
+		}
+
+		$content = array();
+
+		if ( $has_thumbnail ) {
+			if ( isset( $thumbnail_url ) && ! empty( '' . $thumbnail_url ) ) {
+				$content[] = array(
+					'thumbnail' => $thumbnail_url,
+					'alt'       => esc_attr__( 'Product thumbnail', 'printess-editor' ),
+				);
+			} else {
+				$content[] = '';
+			}
+		}
+
+		$content[] = esc_html( $item->get_name() );
+
+		if ( $has_tracking ) {
+			if ( isset( $tracking_url ) && ! empty( '' . $tracking_url ) ) {
+				$content[] = array(
+					'url'   => $tracking_url,
+					'label' => $link_text,
+				);
+			} else {
+				$content[] = $tracking_id;
+			}
+		}
+
+		if ( $has_shipping_status ) {
+			$content[] = $shipping_status;
+		}
+
+		if ( $has_save_token ) {
+			if ( printess_do_render_edit_link( $item ) ) {
+				$content[] = array(
+					'url'   => $product_url,
+					'label' => esc_html__( 'Open', 'printess-editor' ),
+				);
+			} else {
+				$content[] = '';
+			}
+
+			$expiration_date = null !== $save_token && ! empty( $save_token ) ? PrintessApi::get_expiration_date( $save_token ) : null;
+
+			$content[] = null !== $expiration_date ? wp_date( get_option( 'date_format' ), $expiration_date->getTimestamp() ) : '';
+		}
+
+		if ( $has_design_name ) {
+			$content[] = $design_name;
+		}
+
+		if ( $render_line_item_id ) {
+			$content[] = $item->get_id();
+		}
+
+		$table->add_row( $content );
+	}
+
+		echo $table->render( 'css_grid' );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
+	?>
+	</section>
+	<?php
+}
+
+
+	/**
+	 * Shows Printess specific order line items details.
+	 *
+	 * @param mixed $item_id The order item id.
+	 * @param mixed $item    The order item.
+	 */
+function printess_order_meta_customized_display( $item_id, $item ) {
+	$printess_save_token          = $item->get_meta( '_printess-save-token' );
+	$printess_original_save_token = $item->get_meta( '_printess-original-save-token' );
+	$printess_result              = $item->get_meta( '_printess-result' );
+	$printess_job_id              = $item->get_meta( '_printess-job-id' );
+	$printess_tracking_id         = $item->get_meta( '_printess-dropship-tracking-id' );
+	$printess_tracking_url        = $item->get_meta( '_printess-dropship-tracking-url' );
+	$printess_shipping_status     = $item->get_meta( '_printess_shipping-status' );
+	$display_name                 = $item->get_meta( '_printess-design-name' );
+	$printess_design_id           = $item->get_meta( '_printess-design-id' );
+	$form_fields                  = $item->get_meta( '_printess-form-fields' );
+
+	if ( null !== $display_name && ! empty( $display_name ) ) {
+		echo '<table cellspacing="0" class="display_meta"><tbody>';
+		echo '<tr><th>' . esc_html__( 'Design Name', 'printess-editor' ) . '</th><td>' . esc_html( $display_name ) . '</td></tr>';
+		echo '</tbody></table>';
+	}
+
+	$expiration_date = null !== $printess_save_token && ! empty( $printess_save_token ) ? PrintessApi::get_expiration_date( $printess_save_token ) : null;
+
+	if ( ! empty( $printess_save_token ) ) {
+		echo '<hr />';
+
+		$order_id = $item->get_order_id();
+
+		if ( 0 === $order_id ) {
+			$order_id = $item->get_data()['order_id'];
+		}
+
+		$url = add_query_arg(
+			array(
+				'action'              => 'printess_edit_order_line_item',
+				'order_id'            => $order_id,
+				'printess_save_token' => $printess_save_token,
+				'item_id'             => $item_id,
+				'nonce'               => wp_create_nonce( 'printess_edit_order_line_item' ),
+			),
+			home_url()
+		);
+
+		if ( null !== $printess_original_save_token && ! empty( $printess_original_save_token ) ) {
+			$original_edit_url = 'https://editor.printess.com?name=' . $printess_original_save_token;
+
+			echo ' <div style="white-space:nowrap">' . esc_html__( 'Original Save token:', 'printess-editor' ) . '&nbsp;<a href=\"' . esc_url( $original_edit_url ) . '>' . esc_html( $printess_original_save_token ) . '</a></div>';
+		}
+
+		if ( null !== $printess_save_token && ! empty( $printess_save_token ) ) {
+			$edit_url   = 'https://editor.printess.com?name=' . $printess_save_token;
+			$update_url = add_query_arg(
+				array(
+					'action'   => 'printess_update_save_token',
+					'order_id' => $order_id,
+					'item_id'  => $item_id,
+					'pst'      => '_NEW_SAVE_TOKEN_',
+					'nonce'    => wp_create_nonce( 'printess_update_save_token' . $order_id . '_' . $item->get_id() ),
+				),
+				home_url()
+			);
+
+			echo ' <div><div style="white-space:nowrap">' . esc_html__( 'Save token:', 'printess-editor' ) . '&nbsp;<a href="' . esc_url( $edit_url ) . "\" target=\"_blank\"')\">" . esc_html( $printess_save_token ) . '</a></div>';
+
+			echo "<script>
+				if(!window['printessUpdateSaveToken']) {
+					window['printessUpdateSaveToken'] = function(saveToken, updateUrl) {
+						let newSaveToken = window.prompt(\"New save token\", saveToken);
+
+						if(!newSaveToken) {
+							return;
+						} else {
+							newSaveToken = newSaveToken.trim();
+						}
+
+						if(!newSaveToken || newSaveToken.indexOf('st:') !== 0 || newSaveToken.length !== 89) {
+							alert(\"" . esc_html__( 'Invalid save token', 'printess-editor' ) . "\");
+							setTimeout(function() {
+								window['printessUpdateSaveToken'](saveToken);
+							}, 0)
+							return;
+						}
+
+						window.location.href = (updateUrl || \"\").replace(\"_NEW_SAVE_TOKEN_\", newSaveToken);
+						return;
+					};
+				}
+			</script>";
+			echo ' <div data-save-token="' . esc_html( $printess_save_token ) . '"><a href="#" onclick="window.printessUpdateSaveToken(\'' . esc_html( $printess_save_token ) . '\', \'' . esc_html( $update_url ) . '\')" >' . esc_html__( 'Edit save token', 'printess-editor' ) . '</a></div>';
+
+			if ( null !== $expiration_date ) {
+				echo ' <div><div style="white-space:nowrap">' . esc_html__( 'Expires On:', 'printess-editor' ) . '&nbsp;<span>' . esc_html( wp_date( get_option( 'date_format' ), $expiration_date->getTimestamp() ) ) . '</span></div>';
+				echo '</div>'; // Closes the <div> opened just above; without a date there is none to close.
+			}
+		}
+
+		if ( printess_do_render_edit_link( $item ) ) {
+			echo ' <a target=_blank href="' . esc_url( $url ) . '">' . esc_html__( 'Edit Customer Design', 'printess-editor' ) . '</a>';
+		}
+
+		if ( null !== $printess_job_id && ! empty( $printess_job_id ) ) {
+			$url = add_query_arg(
+				array(
+					'action'   => 'printess_reproduce_order_line_item',
+					'order_id' => $order_id,
+					'item_id'  => $item_id,
+					'pst'      => $printess_save_token,
+					'nonce'    => wp_create_nonce( 'printess_reproduce_order_line_item' ),
+				),
+				home_url()
+			);
+
+			echo '<div><a href="' . esc_url( $url ) . '">' . esc_attr__( 'Reproduce item', 'printess-editor' ) . '</a></div>';
+		}
+
+		echo ' <div>' . esc_html__( 'Line item id:', 'printess-editor' ) . '&nbsp;' . $item->get_id() . '</div>'; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
+	}
+
+	printess_render_dropship_table( $printess_tracking_id, $printess_tracking_url, $printess_shipping_status );
+
+	if ( ! empty( $printess_result ) ) {
+		$json_result = json_decode( $printess_result, true );
+
+		if ( $json_result['isFailure'] ) {
+			echo '<p>' . esc_html__( 'Printess Error Details', 'printess-editor' ) . ': ' . esc_html( $json_result['failureDetails'] ) . '</p>';
+		} else {
+			$document_links = $json_result['result']['r'];
+			$image_links    = $json_result['result']['p'];
+
+			if ( isset( $document_links ) && ! empty( $document_links ) ) {
+				echo '<p>' . esc_html__( 'Printess Production Files', 'printess-editor' ) . ':</p>';
+
+				foreach ( $document_links as $document_name => $download_url ) {
+					echo '<a href=' . esc_attr( $download_url ) . ' target=_blank>' . esc_html( $document_name ) . '</a>&nbsp;&nbsp;';
+				}
+			}
+
+			if ( isset( $image_links ) && ! empty( $image_links ) ) {
+				echo '<p>' . esc_html__( 'Printess Production Files', 'printess-editor' ) . ':</p>';
+
+				foreach ( $image_links as $item ) {
+					echo '<a href=' . esc_attr( $item['u'] ) . ' target=_blank>' . esc_html( $item['d'] ) . ' - Page ' . esc_html( $item['i'] + 1 ) . '</a>&nbsp;&nbsp;';
+				}
+			}
+		}
+	} elseif ( ! empty( $printess_save_token ) ) {
+		echo '<p>' . esc_html__( 'Printess Production Files', 'printess-editor' ) . ':</p>';
+
+		$approval_mode = PrintessAdminSettings::get_approval_mode();
+
+		if ( 'manual' === $approval_mode && empty( $printess_job_id ) ) {
+			$url = add_query_arg(
+				array(
+					'action'   => 'printess_approve_order_line_item',
+					'order_id' => $order_id,
+					'item_id'  => $item_id,
+					'pst'      => $printess_save_token,
+					'nonce'    => wp_create_nonce( 'printess_approve_order_line_item' ),
+				),
+				home_url()
+			);
+
+			echo '<a href="' . esc_url( $url ) . '">' . esc_attr__( 'Approve and send to production.', 'printess-editor' ) . '</a>';
+		} else {
+			echo '<span>' . esc_attr__( 'Processing.', 'printess-editor' ) . '</span>';
+
+			$url = add_query_arg(
+				array(
+					'action'   => 'printess_manually_check_order_status',
+					'order_id' => $order_id,
+					'item_id'  => $item_id,
+					'pst'      => $printess_save_token,
+					'nonce'    => wp_create_nonce( 'printess_manually_check_order_status' ),
+				),
+				home_url()
+			);
+
+			echo '<br><a href="' . esc_url( $url ) . '">' . esc_html__( 'Manually check production status', 'printess-editor' ) . '</a>';
+		}
+	}
+
+	if ( null !== $form_fields && ! empty( $form_fields ) ) {
+		$form_fields = json_decode( $form_fields, true );
+
+		if ( null !== $form_fields && is_array( $form_fields ) && count( $form_fields ) > 0 ) {
+			echo '<p>' . esc_html__( 'Printess Form Fields', 'printess-editor' ) . ':</p>';
+			try {
+				?>
+				<table cellspacing="0" class="display_meta">
+					<thead>
+						<tr>
+							<th><?php echo esc_html__( 'Form field', 'printess-editor' ); ?></th>
+							<th><?php echo esc_html__( 'Value', 'printess-editor' ); ?></th>
+						</tr>
+					</thead>
+					<tbody>
+<?php
+				foreach ( $form_fields as $key => $value ) {
+					?>
+						<tr>
+							<td><?php echo esc_html( $key ); ?></td>
+							<td><?php echo esc_html( $value ); ?></td>
+						</tr>
+<?php
+				}
+				?>
+					</tbody>
+				</table>
+<?php
+			} catch ( \Exception $ex ) {
+				// Ignored on purpose: the table is informational and must not break the order page.
+			}
+		}
+	}
+}
+
+	/**
+	 * Renders the Printess options page.
+	 */
+function printess_options_page_html() {
+	if ( ! current_user_can( 'manage_options' ) ) {
+		return;
+	}
+
+	?>
+	<div class="wrap">
+		<h1><?php echo esc_html( get_admin_page_title() ); ?></h1>
+		<div>
+	<?php echo esc_html__( 'Please copy & paste the shop and service tokens from your', 'printess-editor' ); ?>
+			<a href="https://account.printess.com/#account" target=_blank><?php echo esc_html__( 'account page', 'printess-editor' ); ?></a>.
+		</div>
+		<form action="options.php" method="post">
+	<?php
+	settings_fields( 'printess-settings' );
+	do_settings_sections( 'printess-settings' );
+	submit_button( __( 'Save Settings', 'printess-editor' ) );
+	?>
+		</form>
+	</div>
+	<?php
+}
+
+// TODOS:
+// add edit buyer/admin link (also entweder als buyer öffnen oder als admin) .
+
+
+/**
+ * Adds the edit link in the cart.
+ *
+ * @param mixed $cart_item     The cart item.
+ * @param mixed $cart_item_key The cart item key.
+ */
+function printess_after_cart_item_name( $cart_item, $cart_item_key ) {
+	if ( empty( $cart_item['printess-save-token'] ) ) {
+		return;
+	}
+
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook
+	$product             = apply_filters( 'woocommerce_cart_item_product', $cart_item['data'], $cart_item, $cart_item_key );
+	$printess_save_token = $cart_item['printess-save-token'];
+
+	// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hooks
+	if ( $product && $product->exists() && $cart_item['quantity'] > 0 && apply_filters( 'woocommerce_cart_item_visible', true, $cart_item, $cart_item_key ) ) {
+		// phpcs:ignore WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedHooknameFound -- WooCommerce core hook
+		$product_permalink = apply_filters( 'woocommerce_cart_item_permalink', $product->is_visible() ? $product->get_permalink( $cart_item ) : '', $cart_item, $cart_item_key );
+		$product_permalink = add_query_arg( 'qty', $cart_item['quantity'], add_query_arg( 'printess-save-token', $printess_save_token, $product_permalink ) );
+
+		if ( array_key_exists( 'design_name', $cart_item ) && null !== $cart_item['design_name'] && ! empty( $cart_item['design_name'] ) ) {
+			$product_permalink = add_query_arg( 'design_name', $cart_item['design_name'], $product_permalink );
+		} elseif ( array_key_exists( 'printess-design-name', $cart_item ) && null !== $cart_item['printess-design-name'] && ! empty( $cart_item['printess-design-name'] ) ) {
+			$product_permalink = add_query_arg( 'design_name', $cart_item['printess-design-name'], $product_permalink );
+		}
+
+		?>
+		<span> - </span><a class="printess-edit-link" href="<?php echo esc_url( $product_permalink ); ?>"><?php echo esc_html__( 'Edit', 'printess-editor' ); ?></a>
+		<?php
+	}
+}
+
+/**
+ * Sets the marker for an edited Printess product in the cart.
+ *
+ * @param mixed $cart The cart.
+ */
+function printess_cart_loaded_from_session( $cart ) {
+	$cart_contents       = $cart->cart_contents;
+	$edited_save_tokens  = array();
+	$needle              = 'printess-save-token-to-remove-from-cart';
+	$update_cart         = false;
+	$remove_option_value = get_option( 'printess_show_original_product_in_basket', true );
+	$sort_order          = array();
+
+	$index = 0;
+	foreach ( $cart_contents as $key => &$value ) {
+		if ( isset( $value[ $needle ] ) && ! empty( $value[ $needle ] ) ) {
+			$edited_save_tokens[] = $value[ $needle ];
+		}
+
+		$sort_order[ $key ] = $index;
+		++$index;
+	}
+
+	foreach ( $cart_contents as $cart_item_id => $cart_item ) {
+		if ( ! isset( $cart_item['printess-was-edited'] ) && isset( $cart_item['printess-save-token'] ) && in_array( $cart_item['printess-save-token'], $edited_save_tokens, true ) ) {
+			$cart_item['printess-was-edited']          = 1;
+			WC()->cart->cart_contents[ $cart_item_id ] = $cart_item;
+			$update_cart                               = true;
+		}
+	}
+
+	// Sort the cart items to newest item first.
+	$sorted_cart_contents = $cart_contents; // $b will be a different array.
+
+	try {
+		usort(
+			$sorted_cart_contents,
+			function ( $a, $b ) {
+				$a_date = null;
+				$a_id   = null;
+				$b_date = null;
+				$b_id   = null;
+
+				if ( is_array( $a ) ) {
+					if ( array_key_exists( 'printess_date_added', $a ) ) {
+						$a_date = $a['printess_date_added'];
+					}
+
+					if ( array_key_exists( 'id', $a ) ) {
+						$a_id = $a['id'];
+					}
+				} elseif ( is_object( $a ) ) {
+					if ( property_exists( $a, 'printess_date_added' ) ) {
+						$a_date = $a->printess_date_added;
+					}
+
+					if ( property_exists( $a, 'id' ) ) {
+						$a_id = $a->id;
+					}
+				}
+
+				if ( is_array( $b ) ) {
+					if ( array_key_exists( 'printess_date_added', $b ) ) {
+						$b_date = $b['printess_date_added'];
+					}
+
+					if ( array_key_exists( 'id', $b ) ) {
+						$b_id = $b['id'];
+					}
+				} elseif ( is_object( $b ) ) {
+					if ( property_exists( $b, 'printess_date_added' ) ) {
+						$b_date = $b->printess_date_added;
+					}
+
+					if ( property_exists( $b, 'id' ) ) {
+						$b_id = $b->id;
+					}
+				}
+
+				if ( null !== $a_date && null !== $b_date ) {
+					return strcmp( $a_date, $b_date ) * -1;
+				} elseif ( null !== $a_date && null === $b_date ) {
+					return -1;
+				} elseif ( null === $a_date && null !== $b_date ) {
+					return 1;
+				} elseif ( null !== $a_id && null !== $b_id ) {
+					return $b_id - $a_id;
+				} elseif ( null !== $a_id && null === $b_id ) {
+					return -1;
+				} elseif ( null === $a_id && null !== $b_date ) {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
+		);
+	} catch ( \InvalidArgumentException $ex ) {
+		$sorted_cart_contents = $cart_contents;
+	} catch ( \Exception $ex ) {
+		$sorted_cart_contents = $cart_contents;
+	} catch ( TypeError $e ) {
+		$sorted_cart_contents = $cart_contents;
+	} catch ( Throwable $e ) {
+		$sorted_cart_contents = $cart_contents;
+	}
+
+		$index          = 0;
+	$sort_order_changed = false;
+
+	foreach ( $sorted_cart_contents as $cart_item_id => $cart_item ) {
+		if ( $sort_order[ $cart_item['key'] ] !== $index ) {
+			$sort_order_changed = true;
+		}
+
+		++$index;
+	}
+
+	if ( true === $sort_order_changed ) {
+		$update_cart   = true;
+		$cart_contents = array();
+
+		foreach ( $sorted_cart_contents as $cart_item ) {
+			$cart_contents[ $cart_item['key'] ] = $cart_item;
+		}
+
+		$cart->cart_contents = $cart_contents;
+	}
+
+	if ( $update_cart ) {
+		WC()->cart->set_session();
+	}
+}
+
+/**
+ * Returns an associative array containing all available internal page names and their assoziated title
+ *
+ * @param bool $get_id_mappings If set to true, the page id's are returned instead of names.
+ */
+function printess_get_available_pages( bool $get_id_mappings = false ) {
+	$pages_lookup = array();
+
+	$page_query = array(
+		'sort_order'   => 'asc',
+		'sort_column'  => 'post_title',
+		'hierarchical' => 1,
+		'exclude'      => '',
+		'include'      => '',
+		'authors'      => '',
+		'child_of'     => 0,
+		'parent'       => -1,
+		'exclude_tree' => '',
+		'number'       => '',
+		'offset'       => 0,
+		'post_type'    => 'page',
+		'post_status'  => 'publish',
+	);
+
+	if ( ! $get_id_mappings ) {
+		foreach ( get_pages( $page_query ) as &$post_page ) {
+			$pages_lookup[ $post_page->post_name ] = $post_page->post_title;
+		}
+	} else {
+		foreach ( get_pages( $page_query ) as &$post_page ) {
+			$pages_lookup[ $post_page->post_name ] = $post_page->ID;
+		}
+	}
+
+	return $pages_lookup;
+}
+
+/**
+ * Callback that is called after items have been added to cart. Will redirect to different page if configured in product.
+ *
+ * @param string $redirect_url The redirect url.
+ * @param mixed  $product The product.
+ *
+ * @return string The redirect url.
+ */
+function printess_add_to_cart_redirect( $redirect_url, $product ) {
+	if ( isset( $product ) && method_exists( $product, 'get_meta' ) && ! array_key_exists( 'printess_ignore_redirect', $_REQUEST ) ) {
+		$redirect_page = $product->get_meta( 'printess_cart_redirect_page', true );
+
+		if ( null !== $redirect_page && '' !== $redirect_page ) {
+			$pages = printess_get_available_pages( true );
+
+			if ( array_key_exists( $redirect_page, $pages ) ) {
+				$result = get_permalink( $pages[ $redirect_page ] );
+
+				if ( false === $result ) {
+					$redirect_url = site_url( $redirect_page );
+				} else {
+					$redirect_url = $result;
+				}
+			} else {
+				$redirect_url = site_url( $redirect_page );
+			}
+		}
+	}
+
+	return $redirect_url;
+}
+
+	/**
+	 * Add message to cart in case it's an edited Printess product.
+	 * Will only show up if the customer edited a cart item and then added it to the cart.
+	 *
+	 * @param mixed $item_data The cart item data.
+	 * @param mixed $cart_item The cart item.
+	 */
+function printess_get_item_data( $item_data, $cart_item ) {
+	if ( isset( $cart_item['printess-design-name'] ) ) {
+		$item_data[] = array(
+			'key'     => __( 'Design Name', 'printess-editor' ),
+			'value'   => wc_clean( $cart_item['printess-design-name'] ),
+			'display' => '',
+		);
+	}
+
+	if ( ! isset( $cart_item['printess-was-edited'] ) ) {
+		return $item_data;
+	}
+
+	?>
+	<dl class="variation">
+		<?php echo esc_html__( 'This item was edited. Consider removing it from your cart.', 'printess-editor' ); ?>
+	</dl>
+	<?php
+
+	return $item_data;
+}
+
+	/**
+	 * Show Printess product settings tab.
+	 *
+	 * @param mixed $tabs The tabs item.
+	 */
+function printess_product_settings_tabs( $tabs ) {
+	$tabs['printess'] = array(
+		'label'    => 'Printess',
+		'target'   => 'printess_product_data',
+		'class'    => array( 'show_if_simple', 'show_if_variable' ),
+		'priority' => 21,
+	);
+
+	return $tabs;
+}
+
+	/**
+	 * Show the Printess template name
+	 * and allow searching for one to set it.
+	 */
+function printess_product_data_panels() {
+	PrintessProductHelpers::render_product_option_pane();
+}
+
+/**
+ * Updates the meta fields for the Printess settings.
+ *
+ * @param mixed $post_id The product id.
+ */
+function printess_process_product_meta( $post_id ) {
+	$keys        = array( 'printess_template', 'printess_dropshipping', 'printess_merge_template_1', 'printess_merge_template_2', 'printess_merge_template_3', 'printess_output_type', 'printess_dpi', 'printess_cart_redirect_page', 'printess_custom_formfield_mappings', 'printess_jpg_compression', 'printess_ui_version', 'printess_output_files', 'printess_item_usage', 'printess_editor_theme', 'printess_page_count_option', 'printess_use_record_count_as_quantity' );
+	$number_keys = array( 'printess_dpi' );
+
+	foreach ( $keys as $key ) {
+		$value = filter_input( INPUT_POST, $key );
+
+		if ( isset( $value ) ) {
+			update_post_meta( $post_id, $key, sanitize_text_field( $value ) );
+		}
+	}
+
+	foreach ( $number_keys as $key ) {
+		$value = filter_input( INPUT_POST, $key, FILTER_SANITIZE_NUMBER_INT );
+
+		if ( isset( $value ) ) {
+			update_post_meta( $post_id, $key, $value );
+		}
+	}
+}
+
+/**
+ * Adjusts the icon for Printess on the product configuration page.
+ */
+function printess_admin_head() {
+		echo '<style> #woocommerce-product-data ul.wc-tabs li.printess_options.printess_tab a:before{ content: "\f487"; } </style>';
+}
+
+/**
+ * Adjusts the overview pages to show "customize" instead of "add to cart"
+ * for Printess products.
+ * Changes the link to point to the product permalink.
+ *
+ * @param mixed $link    The link to the product.
+ * @param mixed $product The WC product.
+ * @param mixed $args    Arguments coming from the hook.
+ */
+function printess_adjust_add_to_cart( $link, $product, $args = null ) {
+		global $product;
+
+	if ( empty( $product->get_meta( 'printess_template', true ) ) ) {
+		return $link;
+	}
+
+	if ( ! PrintessAdminSettings::get_show_customize_on_archive_page() ) {
+		return null;
+	}
+
+		$class      = PrintessAdminSettings::get_customize_button_class() . ' button';
+		$attributes = '';
+
+	if ( null !== $args && isset( $args['attributes'] ) ) {
+		$attributes = wc_implode_html_attributes( $args['attributes'] );
+	}
+
+		/*
+		Class könnte man übernehmen.. aber da steht dann auch ajax submit und so drinne, was es in den cart packt.
+		if ( isset( $args['class'] ) ) {
+		$class = esc_attr( $args['class'] );
+		}
+		*/
+
+		return sprintf(
+			'<a href="%s" class="%s" %s>%s</a>',
+			esc_url( $product->get_permalink() ),
+			$class,
+			$attributes,
+			__( 'Customize', 'printess-editor' )
+		);
+}
+
+/**
+ * Request handler to edit an Printess order line item.
+ */
+function printess_edit_order_line_item() {
+	$action = filter_input( INPUT_GET, 'action' );
+	$nonce  = filter_input( INPUT_GET, 'nonce' );
+
+	if ( isset( $action ) && isset( $nonce ) && 'printess_edit_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_edit_order_line_item' ) ) {
+		$theme   = PrintessAdminSettings::get_default_theme();
+		$order   = new WC_Order( filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT ) );
+		$product = null;
+		$item_id = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+
+		foreach ( $order->get_items() as $item ) {
+			if ( $item->get_id() === intval( $item_id ) ) {
+				$product = $item->get_product();
+				break;
+			}
+		}
+
+		if ( is_null( $product ) || ! isset( $product ) ) {
+			echo esc_html__( 'Could not find line item or product...', 'printess-editor' );
+			die;
+		}
+
+		$product_theme = $product->get_meta( 'printess_editor_theme', true );
+
+		if ( null !== $product_theme && ! empty( $product_theme ) ) {
+			$theme = $product_theme;
+		}
+
+		$url = add_query_arg(
+			array(
+				'action'   => 'printess_save_edited_order_line_item',
+				'order_id' => filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT ),
+				'item_id'  => filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT ),
+				'nonce'    => wp_create_nonce( 'printess_save_edited_order_line_item' ),
+			),
+			home_url()
+		);
+
+		?>
+<script type="module">
+   const printessLoader = await import(<?php echo wp_json_encode( PrintessAdminSettings::get_editor_url() ); ?> + "/loader.js");
+    const printess = await printessLoader.load({
+      token: <?php echo wp_json_encode( PrintessAdminSettings::get_shop_token() ); ?>,
+      templateName: <?php echo wp_json_encode( filter_input( INPUT_GET, 'printess_save_token', FILTER_SANITIZE_SPECIAL_CHARS ) ); ?>,
+      templateVersion: "published",
+      basketId: "Some-Unique-Basket-Or-Session-Id",
+      theme: <?php echo wp_json_encode( $theme ); ?>,
+      addToBasketCallback: (saveToken, thumbnailUrl) => 
+        { 
+          window.location.href = <?php echo wp_json_encode( $url ); ?> +  "&pst=" + saveToken + "&ptu=" + encodeURI(thumbnailUrl);
+        } 
+    })
+    
+</script>
+<?php
+		die;
+	}
+}
+
+/**
+ * Request handler to save an edited Printess order line item.
+ *
+ * @throws \Exception Only internally: caught here and shown as an admin notice.
+ */
+function printess_save_edited_order_line_item() {
+	$action = filter_input( INPUT_GET, 'action' );
+	$nonce  = filter_input( INPUT_GET, 'nonce' );
+
+	if ( isset( $action ) && isset( $nonce )
+		&& 'printess_save_edited_order_line_item' === $action
+		&& wp_verify_nonce( $nonce, 'printess_save_edited_order_line_item' )
+	) {
+
+			$order_id               = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+			$line_item_id           = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+			$printess_save_token    = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+			$printess_thumbnail_url = filter_input( INPUT_GET, 'ptu', FILTER_SANITIZE_URL );
+
+			$order = null;
+
+		try {
+			$order         = new WC_Order( $order_id );
+			$item          = $order->get_item( $line_item_id );
+			$approval_mode = PrintessAdminSettings::get_approval_mode();
+
+			if ( ! $item ) {
+				throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+			}
+
+			if ( 'manual' === $approval_mode ) {
+				$item->delete_meta_data( '_printess-job-id' );
+			} else {
+				$order_items = array( $line_item_id => $item );
+				printess_handle_order_items( $order, $order_items );
+			}
+
+			$item->delete_meta_data( '_printess-result' );
+			$item->update_meta_data( '_printess-save-token', $printess_save_token, true );
+			$item->update_meta_data( '_printess-thumbnail-url', $printess_thumbnail_url, true );
+			$item->save_meta_data();
+		} catch ( \Throwable $ex ) {
+			printess_log_production_failure( 'Unable to save an edited order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+			/* translators: %s: the reason the Printess request failed. */
+			printess_set_admin_notice( sprintf( __( 'Printess could not save the edited order line: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
+		}
+
+			printess_redirect_to_order( $order_id );
+	}
+}
+
+/**
+ * Request handler to approve an Printess order line item.
+ *
+ * @throws \Exception Only internally: caught here and shown as an admin notice.
+ */
+function printess_approve_order_line_item() {
+	$action = filter_input( INPUT_GET, 'action' );
+	$nonce  = filter_input( INPUT_GET, 'nonce' );
+
+	if ( isset( $action ) && isset( $nonce ) && ( ( 'printess_approve_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_approve_order_line_item' ) ) || ( 'printess_reproduce_order_line_item' === $action && wp_verify_nonce( $nonce, 'printess_reproduce_order_line_item' ) ) ) ) {
+			$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+			$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+			$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+			$order               = null;
+
+		try {
+			$order = new WC_Order( $order_id );
+			$item  = $order->get_item( $line_item_id );
+
+			if ( ! $item ) {
+				throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+			}
+
+			$job_id = $item->get_meta( '_printess-job-id', true );
+
+			if ( null !== $job_id && ! empty( $job_id ) ) {
+				$item->delete_meta_data( '_printess-job-id' );
+			}
+
+			$order_items = array( $line_item_id => $item );
+			printess_handle_order_items( $order, $order_items );
+
+			$item->delete_meta_data( '_printess-result' );
+			$item->save_meta_data();
+		} catch ( \Throwable $ex ) {
+			printess_log_production_failure( 'Unable to approve an order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+			/* translators: %s: the reason the Printess request failed. */
+			printess_set_admin_notice( sprintf( __( 'Printess could not send this order line to production: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
+		}
+
+			printess_redirect_to_order( $order_id );
+	}
+}
+
+/**
+ * Request handler for "Manually check production status": asks Printess for the line's job
+ * status (or, without a job id, for orders of its save token) and stores the result.
+ *
+ * @throws \Exception Only internally: caught here and shown as an admin notice.
+ */
+function printess_manually_check_order_status() {
+	$action = filter_input( INPUT_GET, 'action' );
+	$nonce  = filter_input( INPUT_GET, 'nonce' );
+
+	if ( isset( $action ) && isset( $nonce ) && ( ( 'printess_manually_check_order_status' === $action && wp_verify_nonce( $nonce, 'printess_manually_check_order_status' ) ) ) ) {
+		$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+		$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+		$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+		$order               = null;
+
+		try {
+			$order = new WC_Order( $order_id );
+			$item  = $order->get_item( $line_item_id );
+
+			if ( ! $item ) {
+				throw new \Exception( esc_html__( 'This order line could not be found.', 'printess-editor' ) );
+			}
+
+			$job_id = $item->get_meta( '_printess-job-id', true );
+
+			$printess_host = PrintessAdminSettings::get_host();
+
+			if ( null !== $job_id && ! empty( $job_id ) ) {
+				$api_endpoint = '/production/status/get';
+				$response     = PrintessApi::send_post_request(
+					$printess_host . $api_endpoint,
+					PrintessAdminSettings::get_service_token(),
+					array( 'jobId' => $job_id )
+				);
+
+				if ( ! is_array( $response ) ) {
+					throw new \Exception( esc_html__( 'Printess returned an unexpected production status.', 'printess-editor' ) );
+				}
+
+				if ( false === ( $response['isFinalStatus'] ?? null ) && false === ( $response['isSuccess'] ?? null ) && null === ( $response['enqueuedOn'] ?? null ) ) {
+					// This production job does not exist anymore... somehow mark it.
+					printess_set_admin_notice( __( 'This production job does not exist anymore.', 'printess-editor' ) );
+					printess_redirect_to_order( $order_id );
+				} else {
+					$response['isFailure'] = false === ( $response['isSuccess'] ?? null );
+
+					if ( array_key_exists( 'result', $response ) && array_key_exists( 'ff', $response['result'] ) ) {
+						$form_field_link = $response['result']['ff'];
+
+						if ( null != $form_field_link && ! empty( $form_field_link ) ) {
+							$form_fields = PrintessApi::send_get_request( $form_field_link );
+
+							if ( null != $form_fields && is_array( $form_fields ) && array_key_exists( 'environment', $form_fields ) ) {
+								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $form_fields['environment'] ), true );
+							}
+						}
+					}
+
+					$item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+					$item->save_meta_data();
+				}
+			} else {
+				$order_items = array( $line_item_id => $item );
+
+				// Download production status.
+				$api_endpoint = '/orders/list';
+				$response     = PrintessApi::send_post_request(
+					$printess_host . $api_endpoint,
+					PrintessAdminSettings::get_service_token(),
+					array( 'saveToken' => $printess_save_token )
+				);
+
+				if ( ! is_array( $response ) ) {
+					throw new \Exception( esc_html__( 'Printess returned an unexpected production status.', 'printess-editor' ) );
+				}
+
+				if ( 0 == ( $response['count'] ?? 0 ) ) {
+					printess_set_admin_notice( __( 'No order found for save token', 'printess-editor' ) );
+					printess_redirect_to_order( $order_id );
+				}
+
+				if ( is_array( $response['orders'] ?? null ) && count( $response['orders'] ) > 0 ) {
+					$response = $response['orders'][0];
+
+					if ( array_key_exists( 'result', $response ) && array_key_exists( 'ff', $response['result'] ) ) {
+						$form_field_link = $response['result']['ff'];
+
+						if ( null != $form_field_link && ! empty( $form_field_link ) ) {
+							$form_fields = PrintessApi::send_get_request( $form_field_link );
+
+							if ( null != $form_fields && is_array( $form_fields ) && array_key_exists( 'environment', $form_fields ) ) {
+								$item->update_meta_data( '_printess-form-fields', wp_json_encode( $form_fields['environment'] ), true );
+							}
+						}
+					}
+
+					$item->update_meta_data( '_printess-result', wp_json_encode( $response ), true );
+					$item->save_meta_data();
+				} else {
+					printess_set_admin_notice( __( 'No order found for save token', 'printess-editor' ) );
+					printess_redirect_to_order( $order_id );
+				}
+			}
+		} catch ( \Throwable $ex ) {
+			printess_log_production_failure( 'Unable to check the production status of an order line item', $ex->getMessage(), $order, $line_item_id, $printess_save_token );
+			/* translators: %s: the reason the Printess request failed. */
+			printess_set_admin_notice( sprintf( __( 'Printess could not check the production status: %s', 'printess-editor' ), printess_shorten_failure_message( $ex->getMessage() ) ) );
+		}
+
+		printess_redirect_to_order( $order_id );
+	}
+}
+
+/**
+ * Request handler for "Edit save token": replaces an order line's save token, or restores the
+ * original one, and extends its lifetime.
+ */
+function printess_update_save_token() {
+	$action              = filter_input( INPUT_GET, 'action' );
+	$nonce               = filter_input( INPUT_GET, 'nonce' );
+	$order_id            = filter_input( INPUT_GET, 'order_id', FILTER_SANITIZE_NUMBER_INT );
+	$line_item_id        = filter_input( INPUT_GET, 'item_id', FILTER_SANITIZE_NUMBER_INT );
+	$printess_save_token = filter_input( INPUT_GET, 'pst', FILTER_SANITIZE_SPECIAL_CHARS );
+
+	if ( current_user_can( 'edit_shop_orders' ) && isset( $action ) && isset( $nonce ) && null !== $printess_save_token && ! empty( $printess_save_token ) && 'printess_update_save_token' === $action && wp_verify_nonce( $nonce, 'printess_update_save_token' . $order_id . '_' . $line_item_id ) ) {
+		$order = new WC_Order( $order_id );
+		$item  = $order->get_item( $line_item_id );
+
+		$save_token          = $item->get_meta( '_printess-save-token' );
+		$original_save_token = $item->get_meta( '_printess-original-save-token' );
+
+		if ( null === $printess_save_token || empty( $printess_save_token ) ) {
+			$query_string = http_build_query(
+				array(
+					'post'   => $order_id,
+					'action' => 'edit',
+				)
+			);
+
+			$redirect = admin_url( 'post.php?' . $query_string );
+			wp_safe_redirect( $redirect );
+			die;
+		}
+
+		include_once 'includes/printess-saved-design-repository.php';
+
+		if ( null !== $printess_save_token && ! empty( $printess_save_token ) && null !== $original_save_token && ! empty( $original_save_token ) && $printess_save_token === $original_save_token ) {
+			// Set the current save token to the original save token and remove original save token property.
+			$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( true );
+
+			if ( false === PrintessApi::unexpire_save_token( $printess_save_token, $valid_until ) ) {
+				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+			}
+
+			wc_update_order_item_meta( $item->get_id(), '_printess-save-token', $printess_save_token );
+			wc_delete_order_item_meta( $item->get_id(), '_printess-original-save-token' );
+			wc_update_order_item_meta( $item->get_id(), '_printess-valid-until', $valid_until->format( 'Y-m-d H:i:s' ) );
+
+			Printess_Saved_Design_Repository::update_valid_until( $order->get_customer_id(), $printess_save_token, $valid_until );
+
+			$query_string = http_build_query(
+				array(
+					'post'   => $order_id,
+					'action' => 'edit',
+				)
+			);
+
+			$redirect = admin_url( 'post.php?' . $query_string );
+			wp_safe_redirect( $redirect );
+			die;
+		}
+
+		if ( null === $save_token || empty( $save_token ) ) {
+			$save_token = $printess_save_token;
+		}
+
+		if ( null === $original_save_token || empty( $original_save_token ) ) {
+			wc_update_order_item_meta( $item->get_id(), '_printess-original-save-token', $save_token );
+		}
+
+		wc_update_order_item_meta( $item->get_id(), '_printess-save-token', $printess_save_token );
+
+		$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( true );
+
+		if ( false === PrintessApi::unexpire_save_token( $printess_save_token, $valid_until ) ) {
+			$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+		}
+
+		wc_update_order_item_meta( $item->get_id(), '_printess-valid-until', $valid_until->format( 'Y-m-d H:i:s' ) );
+
+		Printess_Saved_Design_Repository::update_valid_until( $order->get_customer_id(), $printess_save_token, $valid_until );
+
+		$query_string = http_build_query(
+			array(
+				'post'   => $order_id,
+				'action' => 'edit',
+			)
+		);
+
+		$redirect = admin_url( 'post.php?' . $query_string );
+		wp_safe_redirect( $redirect );
+		die;
+	}
+}
+
+/**
+ * Adds a custom field to the variations view of the admin side.
+ * Used to assign a different Printess template to this variation.
+ *
+ * @param mixed $loop           .
+ * @param mixed $variation_data .
+ * @param mixed $variation      .
+ */
+function printess_add_custom_field_to_variations( $loop, $variation_data, $variation ) {
+	$template_name = get_post_meta( $variation->ID, 'printess_template_name', true );
+	$is_checked    = 'on' === get_post_meta( $variation->ID, 'printess_template_is_merge_template', 'on' );
+	?>
+		<p class="form-field form-row form-row-full">
+			<label for="printess_template_name[<?php echo esc_attr( $loop ); ?>]"><?php echo __( 'Template name', 'printess-editor' ); ?> (&nbsp;&nbsp;<input type="checkbox" class="short" style="" name="printess_template_is_merge_template[<?php echo esc_attr( $loop ); ?>]" id="printess_template_is_merge_template[<?php echo esc_attr( $loop ); ?>]" <?php echo true === $is_checked ? 'checked="checked"' : ''; /* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */ ?>> <?php echo esc_html( __( 'Is merge template', 'printess-editor' ) ); ?>)</label>
+			<input type="text" class="short" style="" name="printess_template_name[<?php echo esc_attr( $loop ); ?>]" id="printess_template_name[<?php echo esc_attr( $loop ); ?>]" value="<?php echo esc_attr( $template_name ); ?>" placeholder="<?php echo esc_attr( __( 'Template name or merge template', 'printess-editor' ) ); ?>">
+		</p>
+	<?php
+}
+
+/**
+ * Save the variation data for the custom field.
+ *
+ * @param mixed $variation_id .
+ * @param mixed $i            .
+ */
+function printess_save_custom_field_variations( $variation_id, $i ) {
+	$template_names    = filter_input( INPUT_POST, 'printess_template_name', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
+	$is_merge_template = filter_input( INPUT_POST, 'printess_template_is_merge_template', FILTER_DEFAULT, FILTER_REQUIRE_ARRAY );
+
+	if ( ! isset( $template_names ) ) {
+										return;
+	}
+
+	$template_name     = $template_names[ $i ] ?? null;
+	$is_merge_template = $is_merge_template[ $i ] ?? null;
+
+	if ( isset( $template_name ) ) {
+		update_post_meta( $variation_id, 'printess_template_name', esc_attr( $template_name ) );
+
+		if ( isset( $is_merge_template ) ) {
+			update_post_meta( $variation_id, 'printess_template_is_merge_template', esc_attr( $is_merge_template ) );
+		} else {
+			update_post_meta( $variation_id, 'printess_template_is_merge_template', false );
+		}
+	}
+}
+
+
+/**
+ * This is the data written to the variations json on the WC product page.
+ *
+ * @param mixed $variations .
+ */
+function printess_add_custom_field_variation_data( $variations ) {
+	$variations['printess_template_name'] = get_post_meta( $variations['variation_id'], 'printess_template_name', true );
+
+	return $variations;
+}
+
+/**
+ * Adds the new acccount menu entry for saved designs
+ *
+ * @param mixed $content The list of my account entries.
+ * @return mixed new modified array of my account menu items.
+ */
+function printess_add_my_account_menu_item( $content ) {
+	if ( get_option( 'printess_enable_design_save', false ) ) {
+										$logout = $content['customer-logout'];
+
+										unset( $content['customer-logout'] );
+
+										$content['printess_saved_designs'] = esc_html__( 'Saved Designs', 'printess-editor' );
+
+										$content['customer-logout'] = $logout;
+	}
+
+			return $content;
+}
+
+/**
+ * Returns the valid query vars that are used by this plugin
+ *
+ * @param mixed $vars The already used valid query variables.
+ * @return mixed A list of all valid query param names.
+ */
+function printess_item_query_vars( $vars ) {
+	$vars[] = 'printess_saved_designs';
+	$vars[] = 'printess_search';
+	$vars[] = 'printess_page';
+	$vars[] = 'printess_delete';
+	$vars[] = 'redirect_url';
+
+	return $vars;
+}
+
+/**
+ * Returns the id of the current logged in user
+ *
+ * @return int the current user id.
+ */
+function printess_get_current_user_id() {
+	if ( ! function_exists( 'wp_get_current_user' ) ) {
+										return 0;
+	}
+			$user = wp_get_current_user();
+			return ( isset( $user->ID ) ? (int) $user->ID : 0 );
+}
+
+/**
+ * Creates a new encrypted url token
+ *
+ * @param int $product_id The product id.
+ *
+ * @return string The encrypted url token
+ */
+function printess_create_url_token( int $product_id ): string {
+	$dt = new DateTime();
+	$dt->add( new DateInterval( 'P1D' ) );
+	$dt->setTimezone( new DateTimeZone( 'UTC' ) );
+	$valid_until = $dt->format( 'Y-m-d H:i:s' );
+
+	include_once 'includes/printess-tools.php';
+
+	return PrintessTools::encrypt(
+		wp_json_encode(
+			array(
+				'valid_until' => $valid_until,
+				'product_id'  => $product_id,
+			)
+		)
+	);
+}
+
+/**
+ * Validates the given encrypted token
+ *
+ * @param string $encrypted The encrypted value.
+ * @param int    $product_id The product id.
+ *
+ * @return bool true in case the token is valid
+ */
+function printess_validate_url_token( string $encrypted, int $product_id ): bool {
+	try {
+		include_once 'includes/printess-tools.php';
+
+		$arr = json_decode( PrintessTools::decrypt( $encrypted ), true );
+
+		if ( is_array( $arr ) && array_key_exists( 'valid_until', $arr ) && ! empty( $arr['valid_until'] ) && array_key_exists( 'product_id', $arr ) && ! empty( $arr['product_id'] ) ) {
+			if ( new DateTime( $arr['valid_until'] ) > new DateTime() && intval( $arr['product_id'] ) === intval( $product_id ) ) {
+				return true;
+			}
+		}
+	} catch ( Throwable $ex ) {
+		return false; // A token that does not decrypt, or decrypts to something else, is just invalid.
+	}
+
+	return false;
+}
+
+/**
+ * Always returns a value when accessing assoz. array members that doe not exist without throwing error,
+ *
+ * @param mixed  $arr The array.
+ * @param string $key The array key.
+ * @param string $default_value The default value that should be returned.
+ *
+ * @return mixed A valeu even if the given key does not exists inside the array.
+ */
+function printess_get_value_from_array( $arr, $key, $default_value = '' ) {
+	if ( isset( $arr ) && isset( $key ) && ! empty( $key ) && array_key_exists( $key, $arr ) ) {
+										return $arr[ $key ];
+	}
+
+			return $default_value;
+}
+
+/***
+ * Returns a lookup for product option names and the correponding slug.
+ *
+ * @param mixed $product The woocmmerce product object (wp post).
+ *
+ * @return array Associative array that can be used as lookup for product option name -> slug
+ */
+function printess_get_product_options_and_slugs( $product ) {
+	$product_attributes = printess_get_product_attributes( $product );
+	$ret                = array();
+
+	foreach ( $product->get_attributes() as $key => $attribute ) {
+		if ( is_string( $attribute ) ) {
+			if ( array_key_exists( $key, $product_attributes ) ) {
+				$ret[ $attribute ] = $key;
+			}
+		} elseif ( method_exists( $attribute, 'get_data' ) ) {
+				$data = $attribute->get_data();
+
+			if ( array_key_exists( 'name', $data ) ) {
+				$ret[ $data['name'] ] = $key;
+			}
+		}
+	}
+
+	return $ret;
+}
+
+/**
+ * Returns all attributes related to a product (parent product in case of variation) !!Important: does not map global product attribute keys / values
+ *
+ * @param WC_Product $product The product.
+ */
+function printess_get_product_attributes( $product ) {
+	$ret = array();
+
+	$parent_id = $product->get_data()['parent_id'];
+	if ( $parent_id > 0 ) {
+		$product = wc_get_product( $parent_id );
+	}
+
+	if ( isset( $product ) && false !== $product ) {
+		foreach ( $product->get_attributes() as $key => $value ) {
+			$ret[ $key ] = array(
+				'key'    => $key,
+				'name'   => $value['name'],
+				'values' => $value['options'],
+			);
+		}
+	}
+
+	return $ret;
+}
+
+/**
+ * Saves a design after login in case the user has not been logged in before
+ *
+ * @param mixed $redirect The redirect url that should be called afterwards.
+ * @param mixed $user The current logged in user.
+ * @return string The new redirect url.
+ */
+function printess_redirect_after_login( $redirect, $user = null ) {
+
+	try {
+		$product_id    = printess_get_value_from_array( $_GET, 'productId' );
+		$save_token    = printess_get_value_from_array( $_GET, 'saveToken' );
+		$thumbnail_url = printess_get_value_from_array( $_GET, 'thumbnailUrl' );
+		$variant_id    = printess_get_value_from_array( $_GET, 'variantId' );
+		$options       = printess_get_value_from_array( $_GET, 'options' );
+		$token         = printess_get_value_from_array( $_GET, 'token' );
+		$display_name  = printess_get_value_from_array( $_GET, 'displayName' );
+		$options       = printess_get_value_from_array( $_GET, 'options' );
+		$user_id       = null;
+
+		if ( null !== $user ) {
+			$user_id = isset( $user->ID ) ? (int) $user->ID : -1;
+		}
+
+		if ( $user_id < 1 ) {
+			$user_id = printess_get_current_user_id();
+		}
+
+		if ( $user_id > 0 && null !== $save_token && ! empty( $save_token ) && null !== $thumbnail_url && ! empty( $thumbnail_url ) && null !== $display_name && ! empty( $display_name ) ) {
+			if ( null !== $token && ! empty( $token ) && printess_validate_url_token( $token, intVal( $product_id ) ) ) {
+				include_once 'includes/printess-saved-design-repository.php';
+
+				$product = wc_get_product( intval( $product_id ) );
+
+				if ( ! isset( $product ) || false === $product ) {
+					return $redirect;
+				}
+
+				$repo = new Printess_Saved_Design_Repository();
+
+				$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false );
+
+				if ( false === PrintessApi::unexpire_save_token( $save_token, $valid_until ) ) {
+					$valid_until = Printess_Saved_Design_Repository::create_new_unexpiration_date( false, 30 );
+				}
+
+				$product_options    = json_decode( stripslashes( $options ), true );
+				$product_attributes = printess_get_product_options_and_slugs( $product );
+				$variant_options    = array();
+
+				if ( isset( $product_options ) && ! empty( $options ) ) {
+					foreach ( $product_options as $key => $value ) {
+						if ( strpos( $key, 'attribute_' ) === 0 ) {
+							$variant_options[ $key ] = $value;
+						} elseif ( array_key_exists( $key, $product_attributes ) ) {
+							$variant_options[ 'attribute_' . $product_attributes[ $key ] ] = $value;
+						}
+					}
+				}
+
+				$design_id = $repo->add_design( $user_id, $save_token, $thumbnail_url, intval( '' . $product_id ), $product->get_data()['name'], $display_name, $variant_options, $valid_until );
+
+				$design = $repo->get_design( $user_id, $design_id );
+
+				$product_id  = $design['productId'];
+				$product     = wc_get_product( intval( '' . $product_id ) );
+				$permalink   = $product->get_permalink();
+				$product_url = add_query_arg( 'printess-save-token', $design['saveToken'], $permalink );
+				$product_url = add_query_arg( 'design_id', '' . $design['id'], $product_url );
+
+				if ( null !== $display_name && ! empty( $display_name ) ) {
+					$product_url = add_query_arg( 'design_name', '' . $display_name, $product_url );
+				}
+
+				foreach ( $variant_options as $key => $value ) {
+					$product_url = $product_url . '&' . rawurlencode( $key ) . '=' . rawurlencode( $value );
+				}
+
+				return $product_url;
+			}
+		}
+	} catch ( Exception $ex ) {
+		return $redirect;
+	}
+
+	return $redirect;
+}
+
+/**
+ * Renders the account view for saved designs
+ */
+function printess_render_saved_designs() {
+	global $wp;
+	global $wp_query;
+
+	$customer_id      = printess_get_current_user_id();
+	$current_search   = '';
+	$current_page     = 1;
+	$per_page         = 20;
+	$query_params     = array();
+	$delete_design_id = -1;
+
+	// Render css.
+	wp_enqueue_style( 'printess-editor' );
+
+	if ( null === $customer_id || $customer_id < 1 ) {
+		?>
+			<span class="printess_error"><?php echo esc_html__( 'Not logged in', 'printess-editor' ); ?></span>
+		<?php
+			return;
+	}
+
+	if ( null !== $wp_query && null !== $wp_query->query ) {
+		$query_params = $wp_query->query;
+
+		if ( array_key_exists( 'printess_page', $wp_query->query ) && '' !== $wp_query->query['printess_page'] ) {
+				$current_page = max( intval( $wp_query->query['printess_page'] ), 1 );
+		}
+
+		if ( array_key_exists( 'printess_search', $wp_query->query ) && '' !== $wp_query->query['printess_search'] ) {
+			$current_search = '' . $wp_query->query['printess_search'];
+		}
+
+		if ( array_key_exists( 'printess_delete', $wp_query->query ) && '' !== $wp_query->query['printess_delete'] ) {
+			$delete_design_id = max( intval( $wp_query->query['printess_delete'] ), 0 );
+
+			unset( $wp_query->query['printess_delete'] );
+		}
+	}
+
+	if ( array_key_exists( 'printess_delete', $wp->query_vars ) ) {
+		unset( $wp->query_vars['printess_delete'] );
+	}
+
+	$current_url = add_query_arg( $wp->query_vars, home_url( $wp->request ) );
+
+	include_once 'includes/printess-saved-design-repository.php';
+
+	$repo = new Printess_Saved_Design_Repository();
+
+	if ( $delete_design_id > 0 ) {
+		$saved_design = $repo->get_design( $customer_id, $delete_design_id );
+
+		$logger = wc_get_logger();
+
+		if ( isset( $logger ) ) {
+			$logger->notice( 'User with id ' . $customer_id . ' deleted a saved design: ' . json_encode( $saved_design ), array( 'source' => 'printress-saved-designs' ) );
+		}
+
+		$repo->delete_design( $customer_id, $delete_design_id );
+	}
+
+	$saved_designs = $repo->get_designs( $customer_id, $current_search, $current_page, $per_page );
+
+	if ( null === $saved_designs || ( count( $saved_designs ) < 1 && empty( $current_search ) && $current_page < 2 ) ) {
+		?>
+										<span class="printess_error"><?php echo esc_html__( 'No saved designs yet', 'printess-editor' ); ?></span>
+			<?php
+				return;
+	}
+
+	?>
+	<form action="<?php echo esc_attr( $current_url ); ?>" method="get" name="printess_search_form">
+		<?php
+		foreach ( $query_params as $key => $value ) {
+			if ( 'printess_search' !== $key ) {
+				?>
+						<input type="hidden" name="<?php echo esc_attr( $key ); ?>" value="<?php echo esc_attr( $value ); ?>">
+					<?php
+			}
+		}
+		?>
+
+		<div class="printess_search_bar">
+			<div class="printess_search_input">
+				<label for="printess_search" class=""><?php esc_html__( 'Saved Designs', 'printess-editor' ); ?></label>
+				<span class="woocommerce-input-wrapper"><input type="text" class="input-text " name="printess_search" placeholder="<?php echo esc_html__( 'Search for name', 'printess-editor' ); ?>" value="<?php echo esc_attr( $current_search ); ?>" autocomplete="given-name" ></span>
+			</div>
+			<button type="submit" class="button wp-element-button" name="apply_search" value="Search"><?php echo esc_html__( 'Search', 'printess-editor' ); ?></button>
+		</div>
+	</form>
+
+	<?php
+	include_once 'includes/printess-table.php';
+
+	$table = new PrintessTable();
+	$table->add_column( array( esc_html__( 'Thumbnail', 'printess-editor' ), esc_html__( 'Display name', 'printess-editor' ), esc_html__( 'Product name', 'printess-editor' ), esc_html__( 'Available until', 'printess-editor' ), esc_html__( 'Edit', 'printess-editor' ), esc_html__( 'Delete', 'printess-editor' ) ) );
+
+	foreach ( $saved_designs as &$design ) {
+		$product_id  = $design['productId'];
+		$product     = wc_get_product( intval( '' . $product_id ) );
+		$permalink   = $product->get_permalink();
+		$product_url = add_query_arg( 'printess-save-token', $design['saveToken'], $permalink );
+		$product_url = add_query_arg( 'design_id', '' . $design['id'], $product_url );
+		$product_url = add_query_arg( 'design_name', '' . $design['displayName'], $product_url );
+
+		if ( array_key_exists( 'options', $design ) && null !== $design['options'] && '' !== $design['options'] ) {
+			try {
+				foreach ( $design['options'] as $key => $value ) {
+					if ( strpos( $key, 'attribute_' ) === 0 ) {
+						$product_url = $product_url . '&' . rawurlencode( $key ) . '=' . rawurlencode( $value );
+					}
+				}
+			} catch ( \Exception $ex ) {
+				// just ignore on error.
+			}
+		}
+
+		$content = array(
+			array(
+				'thumbnail' => $design['thumbnailUrl'],
+				'alt'       => 'Saved design thumbnail',
+			),
+			$design['displayName'],
+			$design['productName'],
+			wp_date( get_option( 'date_format' ), ( new DateTime( $design['validUntil'] ) )->getTimestamp() ),
+			array(
+				'url'   => $product_url,
+				'label' => esc_html__( 'Edit', 'printess-editor' ),
+			),
+			array(
+				'url'     => add_query_arg( 'printess_search', $current_search, add_query_arg( 'printess_page', $current_page, add_query_arg( 'printess_delete', $design['id'], $current_url ) ) ),
+				'label'   => esc_html__( 'Delete', 'printess-editor' ),
+				'confirm' => str_replace( '{0}', $design['displayName'], esc_html__( 'Do you really want to delete the design {0}?', 'printess-editor' ) ),
+			),
+		);
+
+		$table->add_row( $content );
+	}
+
+	echo $table->render( 'css_grid' );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
+
+	?>
+		<div class="woocommerce-pagination woocommerce-pagination--without-numbers woocommerce-Pagination printess-Pager">
+			<?php
+				$next_url     = add_query_arg( 'printess_search', $current_search, add_query_arg( 'printess_page', $current_page + 1, $current_url ) );
+				$previous_url = add_query_arg( 'printess_search', $current_search, add_query_arg( 'printess_page', max( $current_page - 1, 1 ), $current_url ) );
+			?>
+
+			<?php if ( $current_page > 1 ) { ?>
+				<a class="woocommerce-button woocommerce-button--previous woocommerce-Button woocommerce-Button--previous button wp-element-button printess-Button-previous" href="<?php echo esc_attr( $previous_url ); ?>"><?php echo esc_html__( 'Previous', 'printess-editor' ); ?></a>
+			<?php } ?>
+
+			<?php if ( 1 <= $current_page && count( $saved_designs ) >= $per_page ) { ?>
+				<a class="woocommerce-button woocommerce-button--next woocommerce-Button woocommerce-Button--next button wp-element-button printess-Button-next" href="<?php echo esc_attr( $next_url ); ?>"><?php echo esc_html__( 'Next', 'printess-editor' ); ?></a>
+			<?php } ?>
+		</div>
+    <script>
+      const printessNonce = <?php echo wp_json_encode( wp_create_nonce( 'wp_rest' ) ); ?>;
+
+      function printessGetStoredSaveTokens() {
+        let storedSaveTokens = [];
+
+        try {
+          const json = localStorage.getItem("printessStoredSaveTokens") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        try {
+          const json = sessionStorage.getItem("printessStoredSaveTokens") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedSaveTokens = [...storedSaveTokens, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        return storedSaveTokens;
+      }
+
+      function printessStoreSaveToken(item, loadExisting = true) {
+        let storedSaveTokens = loadExisting ? printessGetStoredSaveTokens() : [];
+
+        if(item) {
+          if(Array.isArray(item)) {
+            storedSaveTokens = [...storedSaveTokens, ...item];
+          } else {
+            storedSaveTokens.push(item);
+          }
+        }
+
+        try {
+          localStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+        } catch(e) {
+          try {
+            sessionStorage.setItem("printessStoredSaveTokens", JSON.stringify(storedSaveTokens));
+          } catch(e) {
+          
+          } 
+        }
+      }
+
+      function printessRemoveStoredSaveToken(saveToken) {
+        const storedSaveTokens = printessGetStoredSaveTokens();
+        const index = storedSaveTokens.findIndex((x) => {
+          return x === saveToken;
+        });
+
+        if(index > -1) {
+          storedSaveTokens.splice(index, 1);
+
+          printessStoreSaveToken(storedSaveTokens, false);
+        }
+      }
+
+      function printessGetStoredSavedDesigns() {
+        let storedDesigns = [];
+
+        try {
+          const json = localStorage.getItem("printessSavedDesigns") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedDesigns = [...storedDesigns, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        try {
+          const json = sessionStorage.getItem("printessSavedDesigns") || "";
+
+          if(json) {
+            const strorageItems = JSON.parse(json);
+
+            if(strorageItems && Array.isArray(strorageItems)) {
+              storedDesigns = [...storedDesigns, ...strorageItems];
+            }
+          }
+        } catch(e) {
+
+        }
+
+        return storedDesigns;
+      }
+
+      function printessRemoveStoredDesign(id) {
+        const storedDesigns = printessGetStoredSavedDesigns();
+        const index = storedDesigns.findIndex((x) => {
+          return x.storageId === id;
+        });
+
+        if(index > -1) {
+          if(storedDesigns[index] && storedDesigns[index].saveToken) {
+            printessRemoveStoredSaveToken(storedDesigns[index].saveToken);
+          }
+
+          storedDesigns.splice(index, 1);
+
+          printessStoreSavedDesign(storedDesigns, false);
+        }
+      }
+
+      function printessStoreSavedDesign(item, loadExisting = true) {
+        let storedDesigns = loadExisting ? printessGetStoredSavedDesigns() : [];
+
+        if(item) {
+          if(Array.isArray(item)) {
+            storedDesigns = [...storedDesigns, ...item];
+          } else {
+            storedDesigns.push(item);
+          }
+        }
+
+        try {
+          localStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+        } catch(e) {
+          try {
+            sessionStorage.setItem("printessSavedDesigns", JSON.stringify(storedDesigns));
+          } catch(e) {
+          
+          } 
+        }
+       }
+
+      async function printessPostSavedDesign(item) {
+        return fetch("/index.php/wp-json/printess/v1/design/add", {
+          method: "POST",
+          mode: "cors",
+          cache: "no-cache",
+          credentials: "same-origin",
+          headers: {
+            "Content-Type": "application/json",
+            "X-WP-Nonce": printessNonce
+          },
+          redirect: "follow",
+          referrerPolicy: "no-referrer",
+          body: JSON.stringify(item),
+        });
+      }
+
+      async function printessRetryFailedSaves(retryCount = 0) {
+        let storedDesigns = printessGetStoredSavedDesigns();
+        let fixedItem = storedDesigns.length > 0;
+
+        await Promise.all(storedDesigns.map(async (design) => {
+          try {
+            const response = await printessPostSavedDesign(design);
+
+            if(response.ok) {
+              printessRemoveStoredDesign(design.storageId);
+            }
+          } catch(e) {
+
+          }
+        }));
+
+        storedDesigns = printessGetStoredSavedDesigns();
+
+        if(fixedItem && storedDesigns.length === 0) {
+          alert(<?php echo wp_json_encode( __( 'Restored saved designs from browser storage. Reloading page now.', 'printess-editor' ) ); ?>);
+          location.reload();
+        } else {
+          if(storedDesigns.length > 0 && retryCount < 5) {
+            printessRetryFailedSaves(retryCount + 1);
+          }
+        }
+      }
+
+      function displayStoredSaveTokens() {
+        let saveTokens = printessGetStoredSaveTokens();
+        const designs = printessGetStoredSavedDesigns();
+        const tokensToKeep = [];
+        const lookup = {};
+
+        saveTokens.forEach((x) => {
+          lookup[x] = true;
+        });
+
+        designs.forEach((x) => {
+          if(lookup[x.saveToken]) {
+            const index = saveTokens.indexOf(x.saveToken);
+            
+            if(index > -1) {
+              saveTokens.splice(index, 1);
+            }
+
+            tokensToKeep.push(x.saveToken);
+          }
+        });
+
+        if(saveTokens.length > 0) {
+          const pager = document.querySelector('div.printess-Pager');
+
+          if(!pager) {
+            if(prompt(<?php echo wp_json_encode( __( 'The following orphaned save tokens have been found. Do you want to clear the list of orphanes save tokens now?', 'printess-editor' ) ); ?>, saveTokens.join()) !== null) {
+              printessStoreSaveToken(tokensToKeep, false);
+            };
+
+            return;
+          }
+
+          const wrapper = document.createElement("div");
+          wrapper.classList.add("printess-orphaned-savetokens");
+          const label = document.createElement("div");
+          label.classList.add("label");
+          label.classList.add("printess-label");
+          label.innerText = <?php echo wp_json_encode( __( 'The following orphaned save tokens have been found. Do you want to clear the list of orphanes save tokens now?', 'printess-editor' ) ); ?>;
+          wrapper.appendChild(label);
+
+          const valueEdit = document.createElement("textarea");
+          valueEdit.id="printess-stored-items";
+          const sortedArray = [...saveTokens].reverse();
+          valueEdit.value = sortedArray.join("\n\n");
+          valueEdit.rows = 10;
+          valueEdit.cols = 50;
+          valueEdit.readOnly = true;
+          wrapper.appendChild(valueEdit);
+          
+
+          const clearButton = document.createElement("button");
+          clearButton.setAttribute("type", "button");
+          clearButton.classList.add("button");
+          clearButton.classList.add("wp-element-button");
+          clearButton.classList.add("printess-clear-button");
+          clearButton.textContent = <?php echo wp_json_encode( __( 'Clear the list of orphaned save tokens', 'printess-editor' ) ); ?>;
+
+          clearButton.addEventListener("click", () => {
+            printessStoreSaveToken(tokensToKeep, false);
+            valueEdit.value = "";
+            wrapper.remove();
+          });
+
+          wrapper.appendChild(clearButton);
+
+
+          pager.after(wrapper);
+        }
+
+        //<form action="<?php echo esc_attr( $current_url ); ?>" method="get" name="printess_search_form">
+      }
+
+      printessRetryFailedSaves();
+
+      window.addEventListener('load', (event) => {
+        displayStoredSaveTokens();
+      });
+    </script>
+	<?php
+}
+
+/**
+ * Renders an Edit link inside the mini basket
+ *
+ * @param string $html The html content of the mioni basket item.
+ * @param mixed  $cart_item The cart item that might contain a printess save token.
+ *
+ * @return string the modified html that now might contain a printess edit button.
+ */
+function printess_render_edit_button_before_mini_basket_buttons( $html, $cart_item ) {
+	if ( array_key_exists( 'printess-save-token', $cart_item ) && ! empty( $cart_item['printess-save-token'] ) ) {
+		$product_id   = $cart_item['product_id'];
+		$variation_id = $cart_item['variation_id'];
+		$permalink_id = is_null( $variation_id ) || $variation_id <= 0 ? $product_id : $variation_id;
+
+		$edit_link = get_permalink( $permalink_id );
+		$edit_link = add_query_arg( 'printess-save-token', $cart_item['printess-save-token'], $edit_link );
+
+		if ( array_key_exists( 'design_name', $cart_item ) && null !== $cart_item['design_name'] && ! empty( $cart_item['design_name'] ) ) {
+			$edit_link = add_query_arg( 'design_name', $cart_item['design_name'], $edit_link );
+		} elseif ( array_key_exists( 'printess-design-name', $cart_item ) && null !== $cart_item['printess-design-name'] && ! empty( $cart_item['printess-design-name'] ) ) {
+			$edit_link = add_query_arg( 'design_name', $cart_item['printess-design-name'], $edit_link );
+		}
+
+		return $html . '<a class="printess-edit-link" href="' . esc_attr( $edit_link ) . '" style="z-index: 99; background: transparent;" >' . esc_html__( 'Edit', 'printess-editor' ) . '</a>';
+	}
+
+	return $html;
+}
+
+/**
+ * Renders a script that is moving url query params into the form submit action. (Required for woodman theme)
+ */
+function printess_render_login_script() {
+	?>
+	<script>
+		function printess_modify_login_form_paramters() {
+			try {
+				const urlParams = new URLSearchParams(window.location.search);
+				const saveToken = urlParams.get('saveToken');
+
+				if(saveToken) {
+					let form = document.querySelector(".login.woocommerce-form.woocommerce-form-login");
+					let query = "saveToken=" + encodeURIComponent(saveToken);
+
+					if(urlParams.get('thumbnailUrl')) {
+						query += "&thumbnailUrl=" + encodeURIComponent(urlParams.get('thumbnailUrl'));
+					}
+
+					if(urlParams.get('token')) {
+						query += "&token=" + encodeURIComponent(urlParams.get('token'));
+					}
+
+					if(urlParams.get('displayName')) {
+						query += "&displayName=" + encodeURIComponent(urlParams.get('displayName'));
+					}
+
+					if(urlParams.get('productId')) {
+						query += "&productId=" + encodeURIComponent(urlParams.get('productId'));
+					}
+
+					if(urlParams.get('variantId')) {
+						query += "&variantId=" + encodeURIComponent(urlParams.get('variantId'));
+					}
+
+					if(urlParams.get('options')) {
+						query += "&options=" + encodeURIComponent(urlParams.get('options'));
+					}
+
+					if(form && form.length > 0) {
+						const formUrl = form.getAttribute("action");
+
+						form.setAttribute("action", formUrl.indexOf("?") > -1 ? (formUrl + "&" + query) : (formUrl + "?" + query));
+					}
+
+					let retries = 0;
+					const applyRegisterForm = function() {
+						form = document.querySelector(".woocommerce-form.woocommerce-form-register.register");
+
+						if(form && form.length > 0) {
+							const formUrl = form.getAttribute("action");
+
+							form.setAttribute("action", formUrl.indexOf("?") > -1 ? (formUrl + "&" + query) : (formUrl + "?" + query));
+						} else {
+							if(retries < 20) {
+								retries ++;
+
+								setTimeout(() => {
+									applyRegisterForm();
+								}, 500);
+							}
+						}
+					};
+
+					applyRegisterForm();
+				}
+			} catch(e) {
+
+			}
+		}
+
+
+		printess_modify_login_form_paramters();
+	</script>
+	<?php
+}
+
+/**
+ * Renders a script that is moving url query params into the form submit action. (Required for woodman theme)
+ */
+function printess_on_after_login_form() {
+	ob_start();
+
+	printess_render_login_script();
+
+	$output = ob_get_contents();
+
+	ob_end_clean();
+
+	echo str_replace( "\n", '', str_replace( "\r\n", '', $output ) );/* phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped */
+}
+
+/**
+ * Inputs helper scripts / css in front of the woodmart mini basket
+ */
+function printess_insert_helper_script_before_minibasket() {
+	?>
+	<style>
+		.woocommerce-mini-cart-item.mini_cart_item > .wd-fill {
+		inset: 0 0 40px 0;
+		}
+	</style>
+	<?php
+}
+
+/**
+ * WooCommerce callback for price recalculations in case of itemUsage params.
+ *
+ * @param WC_Cart $cart_object The cart.
+ */
+function printess_recalculate_basketitem_price( $cart_object ) {
+	foreach ( $cart_object->get_cart() as $id => $basket_item ) {
+		if ( array_key_exists( 'printess-item-usage', $basket_item ) && ! empty( $basket_item['printess-item-usage'] ) ) {
+			try {
+				$used_items = json_decode( $basket_item['printess-item-usage'], true );
+
+				if ( null === $used_items || ! is_array( $used_items ) ) {
+					continue;
+				}
+				$product = wc_get_product( $basket_item['product_id'] );
+				$variant = null;
+				$price   = 0;
+
+				if ( null === $product ) {
+					continue;
+				}
+
+				if ( 0 < $basket_item['variation_id'] ) {
+					$variant = wc_get_product( $basket_item['variation_id'] );
+					$price   = $variant->get_price();
+				} else {
+					$price = $product->get_price();
+				}
+
+				$configuration = $product->get_meta( 'printess_item_usage', true );
+
+				if ( null !== $configuration && ! empty( $configuration ) ) {
+					$configuration = json_decode( $configuration, true );
+
+					if ( null === $used_items || ! is_array( $used_items ) ) {
+						continue;
+					}
+				}
+
+				$price_lookup = array();
+				foreach ( $configuration as $key => $value ) {
+					if ( is_array( $value ) && array_key_exists( 'formFieldName', $value ) && array_key_exists( 'pricePerUsage', $value ) ) {
+						$price_lookup[ $value['formFieldName'] ] = $value['pricePerUsage'];
+					} elseif ( is_numeric( $value ) ) {
+						$price_lookup[ $key ] = $value;
+					}
+				}
+
+				foreach ( $used_items as $key => $value ) {
+					if ( array_key_exists( $key, $price_lookup ) ) {
+						$price = $price + ( intval( $value ) * $price_lookup[ $key ] );
+					}
+				}
+
+				$basket_item['data']->set_price( $price );
+			} catch ( \Exception $ex ) {
+				// Ignored on purpose: the line keeps its regular price.
+			}
+		}
+	}
+}
+
+/**
+ * Enqueues external javascripts
+ */
+function printess_load_externalscripts() {
+	wp_enqueue_script( 'printess_editor_core', PRINTESS_LEGACY_URL . 'includes/js/printessEditor.js', array(), PRINTESS_EDITOR_VERSION, array( 'in_footer' => true ) );
+	wp_enqueue_script( 'printess_editor_woo', PRINTESS_LEGACY_URL . 'includes/js/printessWoocommerce.js', array(), PRINTESS_EDITOR_VERSION, array( 'in_footer' => true ) );
+}
+
+/**
+ * Add quantity url parameter support to product page.
+ *
+ * @param array $args The quantity input arguments.
+ */
+function printess_woocommerce_quantity_input_args( $args ) {
+	$qty = isset( $_GET['qty'] ) ? absint( wp_unslash( $_GET['qty'] ) ) : 0;
+	if ( $qty > 0 ) {
+		$args['input_value'] = $qty;
+	}
+	return $args;
+}
+
+/**
+ * Adds the design name to the order email.
+ *
+ * @param int                   $item_id The order line item id.
+ * @param WC_Order_Item_Product $item    The order line item.
+ */
+function printess_woocommerce_email_order_line_item_meta_fields( $item_id, $item ) {
+	if ( ! is_wc_endpoint_url() && $item->is_type( 'line_item' ) ) {
+		if ( isset( $item['printess-design-name'] ) ) {
+			?>
+			<div><?php echo esc_html( __( 'Design Name', 'printess-editor' ) ); ?>: <?php echo esc_html( $item['printess-design-name'] ); ?></div>
+
+			<?php
+		}
+	}
+}
+
+/**
+ * Makes sure that every Printess product added to the cart carries a save token.
+ *
+ * @param bool $validation The validation result so far.
+ * @param int  $product_id The product id.
+ */
+function printess_validate_cart_item( $validation, $product_id ) {
+	if ( PrintessAdminSettings::get_disable_basket_warning_on_unpersonalized_items() ) {
+			return $validation;
+	}
+
+	$variation_id = null;
+
+	if ( array_key_exists( 'variation_id', $_REQUEST ) ) {
+		$variation_id = intval( wp_unslash( $_REQUEST['variation_id'] ) );
+	}
+
+	$helper                = new PrintessProductHelpers( null === $variation_id || empty( $variation_id ) ? $product_id : intval( $variation_id ) );
+	$product_template_name = $helper->get_template_name( true );
+
+	if ( null !== $product_template_name && ! empty( $product_template_name ) ) {
+		$product_template_name = trim( $product_template_name );
+	}
+
+	if ( null !== $product_template_name && ! empty( $product_template_name ) ) {
+		$cart_save_token = filter_input( INPUT_POST, 'printess-save-token', FILTER_SANITIZE_SPECIAL_CHARS );
+
+		if ( null === $cart_save_token || empty( $cart_save_token ) ) {
+			wc_add_notice( __( 'You just added a personalized product without any personalization. Please personalize the product first.', 'printess-editor' ), 'error' );
+			$validation = false;
+		}
+	}
+
+	return $validation;
+}
+
+/**
+ * Weekly job: deletes saved designs that expired more than 30 days ago.
+ *
+ * Runs from Action Scheduler (WooCommerce → Status → Scheduled Actions, hook
+ * printess_cleanup_saved_designs). The grace period can be changed with the filter
+ * printess_saved_designs_cleanup_grace_days.
+ */
+function printess_cleanup_saved_designs() {
+	require_once __DIR__ . '/includes/printess-saved-design-repository.php';
+
+	$grace_days = (int) apply_filters( 'printess_saved_designs_cleanup_grace_days', 30 );
+	$deleted    = Printess_Saved_Design_Repository::delete_expired_designs( $grace_days );
+
+	wc_get_logger()->info(
+		sprintf( 'Saved design cleanup: deleted %d saved design(s) that expired more than %d days ago.', $deleted, $grace_days ),
+		array( 'source' => 'printess-editor' )
+	);
+}
+
+/**
+ * Makes sure the weekly cleanup is scheduled. Runs on admin pages, so a job cancelled by hand comes
+ * back, and costs one query there and nothing on the storefront.
+ */
+function printess_schedule_saved_designs_cleanup() {
+	if ( ! function_exists( 'as_next_scheduled_action' ) || ! function_exists( 'as_schedule_recurring_action' ) ) {
+		return;
+	}
+
+	if ( false === as_next_scheduled_action( 'printess_cleanup_saved_designs', array(), 'printess-editor' ) ) {
+		as_schedule_recurring_action( time() + HOUR_IN_SECONDS, WEEK_IN_SECONDS, 'printess_cleanup_saved_designs', array(), 'printess-editor' );
+	}
+}
+
+/**
+ * Removes the weekly cleanup when the plugin is deactivated.
+ */
+function printess_unschedule_saved_designs_cleanup() {
+	if ( function_exists( 'as_unschedule_all_actions' ) ) {
+		as_unschedule_all_actions( 'printess_cleanup_saved_designs', array(), 'printess-editor' );
+	}
+}
+
+/**
+ * Registers the plugin hooks used for the Printess integration.
+ */
+function printess_register_hooks() {
+	add_action( 'woocommerce_before_single_product', 'printess_show_printess_view_if_printess_product' );
+
+	// Weekly cleanup of expired saved designs.
+	add_action( 'printess_cleanup_saved_designs', 'printess_cleanup_saved_designs' );
+	add_action( 'admin_init', 'printess_schedule_saved_designs_cleanup' );
+
+	add_filter( 'woocommerce_loop_add_to_cart_link', 'printess_adjust_add_to_cart', 10, 3 );
+
+	add_action( 'woocommerce_checkout_create_order_line_item', 'printess_add_save_token_to_order_items', 10, 4 );
+	add_filter( 'woocommerce_get_item_data', 'printess_get_item_data', 10, 2 );
+
+	// ORDERS.
+	add_action( 'woocommerce_order_status_processing', 'printess_send_to_printess_api' );
+	add_filter( 'woocommerce_hidden_order_itemmeta', 'printess_hide_order_item_meta_fields' );
+	add_filter( 'woocommerce_admin_order_item_thumbnail', 'printess_admin_order_item_thumbnail', 10, 3 );
+	add_action( 'woocommerce_after_order_itemmeta', 'printess_order_meta_customized_display', 10, 2 );
+	add_action( 'woocommerce_order_details_before_order_table', 'printess_render_personalized_products_table', 10, 2 );
+	add_action( 'woocommerce_order_item_meta_start', 'printess_woocommerce_email_order_line_item_meta_fields', 10, 3 );
+
+	add_action( 'init', 'printess_edit_order_line_item' );
+	add_action( 'init', 'printess_save_edited_order_line_item' );
+	add_action( 'init', 'printess_approve_order_line_item' );
+	add_action( 'init', 'printess_manually_check_order_status' );
+	add_action( 'init', 'printess_update_save_token' );
+
+	// CART.
+	add_filter( 'woocommerce_add_cart_item_data', 'printess_add_cart_item_data', 10, 1 );
+	add_filter( 'woocommerce_cart_item_thumbnail', 'printess_get_thumbnail', 10, 3 );
+	add_action( 'woocommerce_after_cart_item_name', 'printess_after_cart_item_name', 10, 2 );
+	add_action( 'woocommerce_cart_loaded_from_session', 'printess_cart_loaded_from_session', 10, 1 );
+	add_filter( 'woocommerce_add_to_cart_redirect', 'printess_add_to_cart_redirect', 10, 2 );
+	add_filter( 'woocommerce_add_to_cart_validation', 'printess_validate_cart_item', 10, 2 );
+
+	add_action( 'admin_notices', 'printess_render_admin_notice' );
+
+	// PRODUCT.
+	add_action( 'admin_head', 'printess_admin_head' );
+	add_filter( 'woocommerce_product_data_tabs', 'printess_product_settings_tabs' );
+	add_action( 'woocommerce_product_data_panels', 'printess_product_data_panels' );
+	add_action( 'woocommerce_process_product_meta', 'printess_process_product_meta' );
+
+	// VARIATIONS.
+	add_action( 'woocommerce_variation_options_pricing', 'printess_add_custom_field_to_variations', 10, 3 );
+	add_action( 'woocommerce_save_product_variation', 'printess_save_custom_field_variations', 10, 2 );
+	add_filter( 'woocommerce_available_variation', 'printess_add_custom_field_variation_data' );
+
+	add_filter( 'wc_product_has_unique_sku', '__return_false', PHP_INT_MAX );
+
+	// My account page.
+	add_filter( 'woocommerce_account_menu_items', 'printess_add_my_account_menu_item', 99, 1 );
+	add_filter( 'query_vars', 'printess_item_query_vars' );
+	add_rewrite_endpoint( 'printess_saved_designs', EP_ROOT | EP_PAGES );
+	add_action( 'woocommerce_account_printess_saved_designs_endpoint', 'printess_render_saved_designs' );
+
+	// Login redirect.
+	add_filter( 'woocommerce_login_redirect', 'printess_redirect_after_login', 10, 2 );
+	add_filter( 'woocommerce_registration_redirect', 'printess_redirect_after_login', 10, 2 );
+	add_action( 'woocommerce_login_form_end', 'printess_on_after_login_form' );
+
+	// Woodmart Mini Basket.
+	add_filter( 'woocommerce_widget_cart_item_quantity', 'printess_render_edit_button_before_mini_basket_buttons', 10, 2 );
+	add_action( 'woocommerce_before_mini_cart_contents', 'printess_insert_helper_script_before_minibasket' );
+
+	// Support for quantity parameter on product page.
+	add_filter( 'woocommerce_quantity_input_args', 'printess_woocommerce_quantity_input_args' ); // Simple products.
+	add_filter( 'woocommerce_available_variation', 'printess_woocommerce_quantity_input_args' ); // Variations.
+
+	// Recalculate basket item prices.
+	add_action( 'woocommerce_before_calculate_totals', 'printess_recalculate_basketitem_price' );
+
+	// New theme block supports.
+	include_once 'includes/printess-block-integrations.php';
+	printess_register_block_hooks();
+
+	// CALLBACKS.
+	add_action(
+		'rest_api_init',
+		function () {
+					// POST https://woo:8890/wp-json/printess/v1/job/finished .
+				register_rest_route(
+					'printess/v1',
+					'job/finished',
+					array(
+						'methods'             => 'POST',
+						'callback'            => 'printess_post_custom_method',
+						'permission_callback' => '__return_true',
+					)
+				);
+		}
+	);
+
+	add_action(
+		'rest_api_init',
+		function () {
+					// POST https://woo:8890/wp-json/printess/v1/order/status/changed .
+				register_rest_route(
+					'printess/v1',
+					'order/status/changed',
+					array(
+						'methods'             => 'POST',
+						'callback'            => 'printess_post_status_changed',
+						'permission_callback' => '__return_true',
+					)
+				);
+		}
+	);
+
+	add_action(
+		'rest_api_init',
+		function () {
+					// POST https://woo:8890/wp-json/printess/v1/order/item/approve .
+				register_rest_route(
+					'printess/v1',
+					'order/item/approve',
+					array(
+						'methods'             => 'POST',
+						'callback'            => 'printess_post_order_item_approve',
+						'permission_callback' => '__return_true',
+					)
+				);
+		}
+	);
+
+	// Saved Design api methods.
+	add_action(
+		'rest_api_init',
+		function () {
+					// POST https://woo:8890/wp-json/printess/v1/design/add .
+				register_rest_route(
+					'printess/v1',
+					'design/add',
+					array(
+						'methods'             => 'POST',
+						'callback'            => 'printess_post_add_design',
+						'permission_callback' => '__return_true',
+					)
+				);
+		}
+	);
+
+	// Register style.
+	wp_register_style( 'printess-editor', PRINTESS_LEGACY_URL . 'printess.css', array(), PRINTESS_EDITOR_VERSION );
+	add_action( 'wp_enqueue_scripts', 'printess_load_externalscripts' );
+}
+
+/**
+ * Initializes the plugin. Initializes the translations and makes sure the table for saved designs is created / updated
+ */
+function printess_init_plugin() {
+	require_once 'includes/printess-saved-design-repository.php';
+
+	$repo = new Printess_Saved_Design_Repository();
+	$repo->install_or_update_db_table();
+}
+
+
+if ( in_array( $printess_global_plugin_path, wp_get_active_and_valid_plugins(), true ) || ( function_exists( 'wp_get_active_network_plugins' ) && in_array( $printess_global_plugin_path, wp_get_active_network_plugins(), true ) ) ) {
+	add_action( 'woocommerce_init', 'printess_register_hooks' );
+
+	add_action(
+		'admin_menu',
+		function () {
+			PrintessAdminSettings::register_settings();
+		}
+	);
+
+	add_action( 'plugins_loaded', 'printess_init_plugin' );
+
+	register_deactivation_hook( PRINTESS_EDITOR_FILE, 'printess_unschedule_saved_designs_cleanup' );
+
+	add_action(
+		'before_woocommerce_init',
+		function () {
+			if ( class_exists( \Automattic\WooCommerce\Utilities\FeaturesUtil::class ) ) {
+				\Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility( 'custom_order_tables', PRINTESS_EDITOR_FILE, true );
+			}
+		}
+	);
+}
+
+/**
+ * Replaces [[name]] placeholders in a string, used for output file names.
+ *
+ * @param string   $input_string              The string with placeholders.
+ * @param array    $data                      The values, passed on to the callback.
+ * @param callable $replace_variable_callback Returns the value for a placeholder name.
+ * @return string The string with every placeholder replaced.
+ */
+function printess_variable_replacer( $input_string, &$data, $replace_variable_callback ) {
+	$ret           = '';
+	$is_in_var     = false;
+	$current_token = '';
+
+	$input_length = strlen( $input_string );
+	for ( $i = 0; $i < $input_length; ++$i ) {
+		if ( $is_in_var ) {
+			if ( ']' == $input_string[ $i ] ) {
+				if ( $i < strlen( $input_string ) - 1 && ']' == $input_string[ $i + 1 ] ) {
+					$is_in_var = false;
+					++$i;
+					$ret          .= $replace_variable_callback( $current_token, $data );
+					$current_token = '';
+				} else {
+					$ret .= ']';
+				}
+			} else {
+				$current_token .= $input_string[ $i ];
+			}
+		} elseif ( '[' == $input_string[ $i ] ) {
+			if ( $i < strlen( $input_string ) - 1 && '[' == $input_string[ $i + 1 ] ) {
+				$is_in_var = true;
+				++$i;
+			} else {
+				$ret .= '[';
+			}
+		} else {
+			$ret .= $input_string[ $i ];
+		}
+	}
+
+	if ( strlen( $current_token ) > 0 ) {
+		$ret .= $current_token;
+	}
+
+	return $ret;
+}
+?>

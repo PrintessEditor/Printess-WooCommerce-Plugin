@@ -1,21 +1,118 @@
 <?xml version="1.0"?>
-<ruleset name="WooCommerce Coding Standards">
-	<description>My projects ruleset.</description>
-	
-	<!-- Configs -->
-	<config name="minimum_supported_wp_version" value="4.7" />
-	<config name="testVersion" value="7.2-" />
+<ruleset name="Printess Editor">
+	<description>WordPress coding standards for Printess Editor. legacy/ is version 1, kept behaviour-identical (tools/harness/legacy pins it), so findings there are fixed only where the fix cannot change behaviour.</description>
 
-	<!-- Rules -->
-	<rule ref="WooCommerce-Core" />
+	<file>.</file>
+
+	<exclude-pattern>*/node_modules/*</exclude-pattern>
+	<exclude-pattern>*/vendor/*</exclude-pattern>
+	<exclude-pattern>*/languages/*</exclude-pattern>
+
+	<arg name="extensions" value="php"/>
+	<arg name="basepath" value="."/>
+	<arg name="parallel" value="8"/>
+	<arg value="ps"/>
+
+	<config name="minimum_wp_version" value="5.9"/>
+	<config name="testVersion" value="8.1-"/>
+
+	<rule ref="WordPress"/>
+	<rule ref="PluginCheck"/>
+
+	<!--
+	legacy/ (version 1) renders its markup as inline HTML between PHP tags, and that markup is
+	output. These whitespace fixers rewrite inline HTML too: the 1.7.0 formatting pass changed 149
+	pieces of it, which were restored byte for byte. Every remaining finding of these sniffs in
+	legacy/ is on an inline-HTML line, so in legacy/ they are switched off rather than left to
+	rewrite the shop's markup on the next phpcbf run. The PHP code itself is formatted.
+	-->
+	<rule ref="Generic.WhiteSpace.DisallowSpaceIndent">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="Universal.WhiteSpace.PrecisionAlignment">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.WhiteSpace.ScopeIndent">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="Squiz.PHP.EmbeddedPhp">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+
+	<!--
+	Auto-fixable, but the fix changes behaviour: == becomes ===, and version 1 compares ids,
+	option values and quantities that arrive as strings with ints. legacy/ is behaviour-frozen.
+	-->
+	<rule ref="Universal.Operators.StrictComparisons">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+
+	<!--
+	The remaining findings in legacy/ would change behaviour if fixed, so they stay as they are:
+	- StrictInArray: v1 compares ids and option values that arrive as strings with ints; strict
+	  matching would stop matching them.
+	- json_encode: wp_json_encode() handles invalid UTF-8 differently, and v1 stores and sends what
+	  json_encode() produces (orderMetaData, the production result, form fields).
+	- NonceVerification.Recommended: the reads are URL parameters of links that carry no nonce and
+	  must keep working (?qty=, printess_ignore_redirect, variation_id, the login redirect's design).
+	- EmptyStatement.DetectedCatch: each empty catch ignores its exception on purpose and says why in
+	  a comment; satisfying the sniff takes a statement, i.e. new behaviour such as logging.
+	- FileName.InvalidClassFileName: the class names are v1's public API, and the matching file
+	  names (class-printessadminsettings.php) would add nothing.
+	- base64_encode/decode: the URL token format; changing it would break tokens already handed out.
+	- IncludingFile.UseRequireOnce: v1 includes its own files with include_once. A missing file (a
+	  broken FTP upload) then logs a warning and the shop runs on; require_once would stop every page.
+	  phpcbf "fixes" this automatically, which is how 1.7.0 nearly shipped the change (W112).
+	-->
+	<rule ref="PEAR.Files.IncludingFile.UseRequireOnce">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.StrictInArray">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.WP.AlternativeFunctions.json_encode_json_encode">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Security.NonceVerification.Recommended">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="Generic.CodeAnalysis.EmptyStatement.DetectedCatch">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.Files.FileName.InvalidClassFileName">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_encode">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
+	<rule ref="WordPress.PHP.DiscouragedPHPFunctions.obfuscation_base64_decode">
+		<exclude-pattern>legacy/*</exclude-pattern>
+	</rule>
 
 	<rule ref="WordPress.WP.I18n">
 		<properties>
-			<property name="text_domain" type="array" value="new-text-domain" />
+			<property name="text_domain" type="array">
+				<element value="printess-editor"/>
+			</property>
 		</properties>
 	</rule>
 
-	<rule ref="PHPCompatibility">
-		<exclude-pattern>tests/</exclude-pattern>
+	<rule ref="WordPress.WP.Capabilities">
+		<properties>
+			<property name="custom_capabilities" type="array">
+				<element value="manage_woocommerce"/>
+				<element value="edit_shop_orders"/>
+			</property>
+		</properties>
+	</rule>
+
+	<rule ref="WordPress.NamingConventions.PrefixAllGlobals">
+		<properties>
+			<property name="prefixes" type="array">
+				<element value="printess"/>
+				<element value="Printess"/>
+				<element value="PRINTESS"/>
+			</property>
+		</properties>
 	</rule>
 </ruleset>
